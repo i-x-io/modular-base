@@ -111,6 +111,7 @@ This index is maintained manually from [`Directory.Packages.props`](../../Direct
 | [`SpecsFor`](specsfor.md) | `8.0.0-rc2a` | PackageVersion — catalog-only; pre-release |
 | [`Testcontainers.PostgreSql`](testcontainers-postgresql.md) | `4.13.0` | PackageVersion — centrally pinned |
 | [`Testcontainers.Redis`](testcontainers-redis.md) | `4.13.0` | PackageVersion — centrally pinned |
+| [`TngTech.ArchUnitNET.xUnitV3`](tngtech-archunitnet-xunitv3.md) | `0.13.3` | PackageVersion — centrally pinned; architecture-test-only |
 | [`xunit.runner.visualstudio`](xunit-runner-visualstudio.md) | `3.1.5` | PackageVersion — centrally pinned |
 | [`xunit.v3`](xunit-v3.md) | `3.2.2` | PackageVersion — centrally pinned |
 

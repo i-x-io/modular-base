@@ -2,7 +2,7 @@
 
 ## Scope and enforcement
 
-This is the quality contract for future projects placed beneath the repository root. The policy is configured now but cannot compile or analyze code until at least one supported project exists.
+This is the quality contract for projects beneath the repository root. It applies to the non-packable `ArchitectureTest` project at `test/IX.Modularity.Architecture.Tests` and to future production projects. The architecture-test project validates governance; `src/` contains no production projects.
 
 `Directory.Build.props` supplies the default framework, language, nullable, documentation-file, determinism, analyzer, and warning policy. `Directory.Build.targets` supplies package-reference validation, packable-project validation, and a self-contained lexical source-policy MSBuild task. The root `.editorconfig` supplies file-scoped editor and C# style rules. `ModularBase.globalconfig` supplies repository-wide analyzer diagnostic defaults through `GlobalAnalyzerConfigFiles`.
 
@@ -16,7 +16,7 @@ For analyzer configuration, `.editorconfig` is rooted at this repository and con
 
 The Banned API analyzer reads [`BannedSymbols.txt`](../../BannedSymbols.txt). Its generated-code exclusion prevents diagnostics from SDK and source-generator output. Banned API analysis alone does not catch every plain type declaration, so `ValidateSourcePolicy` runs before `CoreCompile` as a lexical MSBuild task, not a custom analyzer or Roslyn AST task. It tokenizes source, ignores comments and literals, excludes generated files, and still tokenizes expressions inside interpolated strings. Because this is not a custom analyzer, semantic API operations remain Banned API analyzer responsibility.
 
-The source-policy task emits these diagnostics for future non-generated source:
+The source-policy task emits these diagnostics for non-generated source:
 
 - `MB0001` for `dynamic`.
 - `MB0002` for qualified `IDictionary` usage and recognizable type-position syntax. Unrelated class, member, or local identifiers named `IDictionary` pass.
@@ -24,18 +24,20 @@ The source-policy task emits these diagnostics for future non-generated source:
 
 The Banned API analyzer semantically detects actual `System.Activator`, `object.GetType`, and other banned reflection operations. The lexical task does not claim to detect arbitrary reflection member names or `Activator` usages.
 
-Future production code must not use:
+The source-policy task makes one narrow, path-specific exception for `test/IX.Modularity.Architecture.Tests/IX.Modularity.Architecture.Tests.csproj`: that non-packable architecture-test project may inspect compiled assembly metadata to enforce architectural rules. The lexical exception skips only `MB0003`; `MB0001` and `MB0002` remain active. The required Banned API suppression is scoped to the two assembly-metadata statements in the test source. No project-wide suppression exists, and production or ordinary test projects receive no exception. See [architectural rules](architectural-rules.md), [project structure](project-structure.md), and [architecture terminology](terminology.md) for the governing role and rule definitions.
+
+Production code must not use:
 
 - Non-generic `IDictionary` or generic `IDictionary<TKey, TValue>` as a contract. Prefer `IReadOnlyDictionary<TKey, TValue>` for read-only inputs, a concrete `Dictionary<TKey, TValue>` for owned mutation, or a purpose-specific immutable type.
 - Ambient clocks: `DateTime.Now`, `DateTime.UtcNow`, `DateTime.Today`, `DateTimeOffset.Now`, and `DateTimeOffset.UtcNow`. Domain and application code depends on a consuming-project-owned `IClock` contract instead; this catalog does not supply that interface. An infrastructure `IClock` implementation may wrap `TimeProvider.System`, using `GetUtcNow()` by default and `GetLocalNow()` only when the local-zone meaning is required. Do not make `TimeProvider` the primary domain/application contract.
 - Runtime reflection: `object.GetType`, `Type`, `Activator`, and `System.Reflection`. Prefer source generators, explicit registration, generated serializers, or a reviewed framework integration.
 - The `dynamic` keyword.
 
-`Microsoft.Extensions.TimeProvider.Testing` is catalogued for tests. Test code may back or fake `IClock` with `FakeTimeProvider` to control time-dependent behavior deterministically once test projects exist. This repository defines no `IClock` implementation because it is configuration-only.
+`Microsoft.Extensions.TimeProvider.Testing` is catalogued for tests. Test code may back or fake `IClock` with `FakeTimeProvider` to control time-dependent behavior deterministically. This repository defines no `IClock` implementation.
 
 ## Analyzer and public API policy
 
-The following analyzers are configured as centrally-versioned `GlobalPackageReference` items and apply to all future projects: Meziantou, Banned API, Visual Studio Threading, Roslynator, and SonarAnalyzer. They are build-only (`PrivateAssets="all"`) and never become package dependencies.
+The following analyzers are configured as centrally-versioned `GlobalPackageReference` items and apply to all projects: Meziantou, Banned API, Visual Studio Threading, Roslynator, and SonarAnalyzer. They are build-only (`PrivateAssets="all"`) and never become package dependencies.
 
 For packable projects only, shared targets add `Microsoft.CodeAnalysis.PublicApiAnalyzers` and include `PublicAPI.Shipped.txt` and `PublicAPI.Unshipped.txt` when present. Before packing, the policy requires both files, a `PackageId`, and `PackageVersion` or `Version`. This keeps API-compatibility tracking a package concern rather than a catalog-wide requirement.
 

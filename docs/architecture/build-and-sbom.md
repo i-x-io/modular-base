@@ -2,25 +2,28 @@
 
 ## Build entry points
 
-The root [`Makefile`](../../Makefile) is the public build interface. It delegates to the internal `eng/Build.proj` orchestration project; developers and automation call `make` targets rather than invoking the MSBuild project directly. The build discovers `.sln`, `.slnx`, and language project files. It prefers a solution when projects exist and otherwise reports the projectless skip behavior. `CONFIGURATION` is allow-listed to `Debug` and `Release` and defaults to `Release`.
+The root [`Makefile`](../../Makefile) is the public build interface. It delegates to the internal `eng/Build.proj` orchestration project; developers and automation call `make` targets rather than invoking the MSBuild project directly. The build discovers `.sln`, `.slnx`, and language project files and prefers the solution when it contains projects. `CONFIGURATION` is allow-listed to `Debug` and `Release` and defaults to `Release`.
 
-Common invocations are `make`, `make validate`, `make tool-restore`, and `make build CONFIGURATION=Debug`.
+Common invocations are `make`, `make validate`, `make tool-restore`, `make build CONFIGURATION=Debug`, and `make test CONFIGURATION=Debug`.
 
 The target contract is:
 
-| Target | Intended behavior when an entry exists | Projectless behavior |
-| --- | --- | --- |
-| `Validate` | Validate `global.json`, the central catalog, `NuGet.Config`, and tool manifest. | Runs without a project in principle. |
-| `ToolRestore` | Validate, then restore local tools. | Does not require a project. |
-| `Restore` | Restore each discovered solution or project. | Invokes `SkipRestore`; no project operation is attempted. |
-| `Format` | Run `dotnet format --no-restore --verify-no-changes` for each discovered solution or project. | Invokes `SkipFormat`; no project operation is attempted. |
-| `Build`, `Test` | Build or test each discovered solution or project. | Invoke their `Skip*` path; no project operation is attempted. |
-| `Audit` | Run the noun-first `dotnet package list ... --include-transitive --vulnerable --format json --output-version 1` audit for each discovered solution or project. | Invokes `SkipAudit`; no project operation is attempted. |
-| `Outdated`, `Sbom` | Restore tools, then operate on each discovered solution or project. | Invoke their `Skip*` path; no project operation is attempted. |
+| Target | Behavior for the current solution |
+| --- | --- |
+| `Validate` | Validate `global.json`, the central catalog, `NuGet.Config`, and tool manifest. |
+| `ToolRestore` | Validate, then restore local tools. |
+| `Restore` | Restore the populated `IX.Modularity.slnx` solution. |
+| `Format` | Run `dotnet format --no-restore --verify-no-changes` for the solution. |
+| `Build` | Build the solution in the selected configuration. |
+| `Test` | Run the solution tests in the selected configuration. `make test CONFIGURATION=Debug` is the authoritative ArchUnit bytecode check; `Release` is also supported. |
+| `Audit` | Run the noun-first `dotnet package list --project <project> ... --include-transitive --vulnerable --format json --output-version 1 --no-restore` audit for every restored project. Project-level batching avoids incomplete `.slnx` package-list output. |
+| `Outdated`, `Sbom` | Restore tools, then operate on the solution. |
 
-### Current projectless behavior
+### Current solution contents
 
-The repository currently has an empty `IX.Modularity.slnx` solution and zero supported project files, so no compilation, tests, package audit, outdated-package scan, package lock-file generation, or project SBOM can occur. `make`, `make validate`, `make tool-restore`, and every projectless target path pass: `Validate` checks the repository configuration, `ToolRestore` restores the local tools, and project-dependent targets emit their intentional skip message. These checks validate the repository policy and orchestration, not a package build.
+`IX.Modularity.slnx` contains `test/IX.Modularity.Architecture.Tests`, a non-packable project with the `ArchitectureTest` role. It enforces the repository's architectural governance without adding a production project under `src/`. Build, restore, test, audit, outdated-package scanning, and SBOM generation therefore run against a real solution and project graph.
+
+The project role, permitted dependency direction, and rule force are defined by [project structure](project-structure.md), [architectural rules](architectural-rules.md), and [architecture terminology](terminology.md). This build document describes how the checks run; those documents remain the normative architecture contract.
 
 ## Build output and package artifacts
 
@@ -30,18 +33,18 @@ Future projects inherit deterministic builds, portable PDBs, source embedding, r
 
 Use **CycloneDX JSON** as the repository SBOM output format. The checked-in local tool is `CycloneDX` `6.2.0`, exposed as `dotnet-CycloneDX`. CycloneDX is selected because the configured .NET generator natively produces a dependency BOM from solution/project input and supports an explicit JSON output format. SPDX is not a second generated format in this build: it is an alternative SBOM standard, not an additional authoritative artifact. Produce SPDX only if a downstream compliance consumer explicitly requires it, with that consumer’s validation rules recorded alongside the export.
 
-For every discovered solution, `Sbom` writes `bom.cdx.json` to a collision-safe directory beneath `artifacts/sbom/solutions/<relative-entry>/`. When no solution exists, it writes one BOM per discovered project beneath `artifacts/sbom/projects/<relative-entry>/`. The target owns this location and filename; callers do not override them.
+For the current root solution, `Sbom` writes `bom.cdx.json` beneath `artifacts/sbom/solutions/IX.Modularity/`. When no solution exists, it writes one BOM per discovered project beneath `artifacts/sbom/projects/<relative-entry>/`. The target owns this location and filename; callers do not override them.
 
-When projects exist, the configured target executes this equivalent command for each discovered entry:
+For the current solution, the configured target executes this equivalent command:
 
 ```sh
-dotnet tool run dotnet-CycloneDX -- <solution-or-project> \
-  --output artifacts/sbom/<solutions-or-projects>/<relative-entry> \
+dotnet tool run dotnet-CycloneDX -- IX.Modularity.slnx \
+  --output artifacts/sbom/solutions/IX.Modularity \
   --filename bom.cdx.json \
   --output-format Json
 ```
 
-This command has not been run because this repository intentionally has no solution or project. The local tool restore that makes the command available was verified on 2026-07-27.
+The command requires the restored local tools and the solution's restored dependencies.
 
 ## Future per-package BOMs
 

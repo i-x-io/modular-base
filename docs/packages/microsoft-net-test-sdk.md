@@ -10,7 +10,7 @@ Use only in a future project that deliberately selects the cataloged VSTest alte
 
 ## Recommended registration and use
 
-Set `<IsTestProject>true</IsTestProject>` and, after selecting a VSTest-compatible xUnit package variant, reference this package with `xunit.runner.visualstudio`. Run the project with `dotnet test`; use VSTest-compatible collector and logger options only.
+Use only a project with `IXModularityProjectRole=Test` or `ArchitectureTest`, set `<IsTestProject>true</IsTestProject>`, and, after selecting a VSTest-compatible xUnit package variant, reference this package with `xunit.runner.visualstudio`. Run the project with `dotnet test`; use VSTest-compatible collector and logger options only.
 
 ## Enterprise implementation guidance
 
@@ -32,7 +32,7 @@ Do not add it to libraries, combine it with the default MTP `xunit.v3` package, 
 
 - Confirm `dotnet test` discovers the expected tests only after the VSTest-compatible framework/adapter combination is selected.
 - Run the selected VSTest collector and result logger in CI.
-- Verify the test project is marked `IsTestProject=true` and has no package-local version.
+- Verify the project role is `Test` or `ArchitectureTest`, it is marked `IsTestProject=true`, and it has no package-local version.
 
 ## Sources
 

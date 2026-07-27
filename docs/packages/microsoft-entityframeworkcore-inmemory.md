@@ -35,7 +35,7 @@ The provider is not designed for production robustness or performance. It cannot
 
 ## Verification checklist
 
-- [ ] Confirm every reference is in an `IsTestProject=true` project.
+- [ ] Confirm every reference is in a project with `IXModularityProjectRole=Test` or `ArchitectureTest` and `IsTestProject=true`.
 - [ ] Identify tests whose result depends on non-relational behavior.
 - [ ] Duplicate relational/provider assertions against disposable PostgreSQL.
 

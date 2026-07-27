@@ -190,7 +190,7 @@ indent_size = 2
 indent_size = 2
 trim_trailing_whitespace = false
 
-[tests/**/*.cs]
+[test/**/*.cs]
 # Test names commonly use underscores to describe behavior.
 dotnet_diagnostic.CA1707.severity = none
 

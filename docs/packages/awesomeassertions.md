@@ -10,7 +10,7 @@ Use in future test projects to make test intent and failed expectations easy to 
 
 ## Recommended registration and use
 
-Reference it only from projects with `<IsTestProject>true</IsTestProject>`. Import `AwesomeAssertions` in tests, use direct value assertions for simple outcomes, and use `BeEquivalentTo` only with an explicit configuration when members, ordering, or exclusions matter.
+Reference it only from projects with `IXModularityProjectRole=Test` or `ArchitectureTest`; those roles also require `<IsTestProject>true</IsTestProject>`. Import `AwesomeAssertions` in tests, use direct value assertions for simple outcomes, and use `BeEquivalentTo` only with an explicit configuration when members, ordering, or exclusions matter.
 
 ## Enterprise implementation guidance
 

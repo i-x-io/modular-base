@@ -14,10 +14,10 @@
     <RepositoryProject Include="$(RepositoryRoot)**/*.csproj;$(RepositoryRoot)**/*.fsproj;$(RepositoryRoot)**/*.vbproj"
                        Exclude="$(RepositoryRoot)**/bin/**;$(RepositoryRoot)**/obj/**;$(RepositoryRoot)**/artifacts/**" />
     <RepositoryBuildEntry Include="@(RepositorySolution)" Condition="'@(RepositorySolution)' != '' And '@(RepositoryProject)' != ''">
-      <SbomOutputSubdirectory>solutions/%(RepositorySolution.RecursiveDir)%(RepositorySolution.Filename)</SbomOutputSubdirectory>
+      <SbomOutputSubdirectory>solutions/%(RecursiveDir)%(Filename)</SbomOutputSubdirectory>
     </RepositoryBuildEntry>
     <RepositoryBuildEntry Include="@(RepositoryProject)" Condition="'@(RepositorySolution)' == ''">
-      <SbomOutputSubdirectory>projects/%(RepositoryProject.RecursiveDir)%(RepositoryProject.Filename)</SbomOutputSubdirectory>
+      <SbomOutputSubdirectory>projects/%(RecursiveDir)%(Filename)</SbomOutputSubdirectory>
     </RepositoryBuildEntry>
   </ItemGroup>
 
@@ -121,8 +121,8 @@
   </Target>
 
   <Target Name="Audit" DependsOnTargets="Restore">
-    <CallTarget Targets="SkipAudit" Condition="'@(RepositoryBuildEntry)' == ''" />
-    <Exec Command="dotnet package list &quot;%(RepositoryBuildEntry.FullPath)&quot; --include-transitive --vulnerable --format json --output-version 1" WorkingDirectory="$(RepositoryRoot)" Condition="'@(RepositoryBuildEntry)' != ''" />
+    <CallTarget Targets="SkipAudit" Condition="'@(RepositoryProject)' == ''" />
+    <Exec Command="dotnet package list --project &quot;%(RepositoryProject.FullPath)&quot; --include-transitive --vulnerable --format json --output-version 1 --no-restore" WorkingDirectory="$(RepositoryRoot)" Condition="'@(RepositoryProject)' != ''" />
   </Target>
 
   <Target Name="Outdated" DependsOnTargets="ToolRestore">
@@ -148,8 +148,8 @@
   <Target Name="SkipTest" Condition="'@(RepositoryBuildEntry)' == ''">
     <Message Importance="high" Text="Test skipped: the solution contains no projects." />
   </Target>
-  <Target Name="SkipAudit" Condition="'@(RepositoryBuildEntry)' == ''">
-    <Message Importance="high" Text="Audit skipped: the solution contains no projects; restore will apply the configured NuGet audit policy when projects are added." />
+  <Target Name="SkipAudit" Condition="'@(RepositoryProject)' == ''">
+    <Message Importance="high" Text="Audit skipped: no supported project exists; restore will apply the configured NuGet audit policy when projects are added." />
   </Target>
   <Target Name="SkipOutdated" Condition="'@(RepositoryBuildEntry)' == ''">
     <Message Importance="high" Text="Outdated skipped: the solution contains no projects." />

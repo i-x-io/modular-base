@@ -1,1 +1,5 @@
-<Solution />
+<Solution>
+  <Folder Name="/test/">
+    <Project Path="test/IX.Modularity.Architecture.Tests/IX.Modularity.Architecture.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -10,7 +10,7 @@ Do not adopt for new tests. Retain the catalog entry only for controlled evaluat
 
 ## Recommended registration and use
 
-No future project should reference it by default. If an approved migration experiment needs it, isolate it in one `IsTestProject=true` project, pin only through the central catalog, and document the exact transitive graph and exit plan.
+No future project should reference it by default. If an approved migration experiment needs it, isolate it in one project with `IXModularityProjectRole=Test` or `ArchitectureTest` and `IsTestProject=true`, pin only through the central catalog, and document the exact transitive graph and exit plan.
 
 ## Enterprise implementation guidance
 

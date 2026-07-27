@@ -109,6 +109,7 @@
     <PackageVersion Include="SpecsFor" Version="8.0.0-rc2a" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.13.0" />
     <PackageVersion Include="Testcontainers.Redis" Version="4.13.0" />
+    <PackageVersion Include="TngTech.ArchUnitNET.xUnitV3" Version="0.13.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
   </ItemGroup>

@@ -10,7 +10,7 @@ Use only for a future project that deliberately selects the cataloged VSTest sta
 
 ## Recommended registration and use
 
-Reference it only from an `IsTestProject=true` project that has selected the VSTest-compatible framework/adapter combination, then collect with `dotnet test --collect:"XPlat Code Coverage"`. Treat generated coverage as CI evidence, not a quality target; publish a configured report artifact outside source control.
+Reference it only from a project with `IXModularityProjectRole=Test` or `ArchitectureTest` and `IsTestProject=true` that has selected the VSTest-compatible framework/adapter combination, then collect with `dotnet test --collect:"XPlat Code Coverage"`. Treat generated coverage as CI evidence, not a quality target; publish a configured report artifact outside source control.
 
 ## Enterprise implementation guidance
 

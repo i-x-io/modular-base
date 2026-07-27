@@ -10,7 +10,7 @@ Use for all new unit and integration tests. xUnit v3 is the preferred replacemen
 
 ## Recommended registration and use
 
-Create an `IsTestProject=true` project, reference the catalog's `xunit.v3`, and run it through the MTP-compatible `dotnet test` path. Mark parameterless tests with `[Fact]`; use asynchronous APIs and fixtures for external resources rather than blocking calls. Do not add the cataloged VSTest SDK/adapter/collector packages to this MTP configuration.
+Create a project with `IXModularityProjectRole=Test` or `ArchitectureTest` and `IsTestProject=true`, reference the catalog's `xunit.v3`, and run it through the MTP-compatible `dotnet test` path. On .NET SDK 10 and later, the root `global.json` must select `Microsoft.Testing.Platform` through `test.runner`; this repository does so centrally. Mark parameterless tests with `[Fact]`; use asynchronous APIs and fixtures for external resources rather than blocking calls. Do not add the cataloged VSTest SDK/adapter/collector packages to this MTP configuration.
 
 ## Enterprise implementation guidance
 
@@ -38,4 +38,5 @@ Do not use SpecsFor for new tests, mix VSTest adapter/collector packages into th
 
 - https://www.nuget.org/packages/xunit.v3/3.2.2 (Accessed 2026-07-27)
 - https://xunit.net/docs/getting-started/v3/getting-started (Accessed 2026-07-27; Context7 consulted first)
+- https://xunit.net/docs/getting-started/v3/microsoft-testing-platform (Accessed 2026-07-27; Context7 consulted first)
 - https://github.com/xunit/xunit (Accessed 2026-07-27)

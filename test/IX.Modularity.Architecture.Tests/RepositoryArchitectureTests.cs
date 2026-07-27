@@ -1,0 +1,133 @@
+using ArchUnitNET.Fluent;
+using ArchUnitNET.Loader;
+using ArchUnitNET.xUnitV3;
+using Xunit;
+using static ArchUnitNET.Fluent.ArchRuleDefinition;
+using ArchUnitArchitecture = ArchUnitNET.Domain.Architecture;
+
+namespace IX.Modularity.Architecture.Tests;
+
+/// <summary>Verifies repository metadata and the ArchUnitNET test harness.</summary>
+public sealed class RepositoryArchitectureTests
+{
+    private static readonly string s_repositoryRoot = FindRepositoryRoot();
+
+    /// <summary>Validates every discovered project and project reference.</summary>
+    [Fact]
+    public void Project_graph_conforms_to_the_repository_contract()
+    {
+        var graph = ProjectGraph.Load(s_repositoryRoot);
+
+        _ = Assert.Single(graph.Projects, static project => string.Equals(project.Role, "ArchitectureTest", StringComparison.Ordinal));
+        Assert.Equal(graph.Projects.Select(static project => project.RelativePath).Order(StringComparer.Ordinal), graph.SolutionProjectPaths.Order(StringComparer.Ordinal));
+        Assert.Equal(graph.SolutionProjectPaths.Count, graph.SolutionProjectPaths.Distinct(StringComparer.Ordinal).Count());
+
+        foreach (ProjectDefinition project in graph.Projects)
+        {
+            Assert.Contains(project.Role, ProjectGraph.ValidRoles, StringComparer.Ordinal);
+            _ = Assert.Single(project.DeclaredRoles);
+            Assert.Equal(project.DeclaredRoles[0], project.Role);
+            Assert.Matches(ProjectGraph.NamePatternFor(project.Role), project.Name);
+            Assert.Equal(ProjectGraph.IsTestRole(project.Role), project.IsTestProject);
+            Assert.False(project.HasPackageVersionMetadata, "Central package management owns package versions.");
+            Assert.True(ProjectGraph.IsCanonicalLocation(project));
+            Assert.True(project.HasCanonicalIdentityMetadata);
+
+            if (ProjectGraph.IsTestRole(project.Role))
+            {
+                Assert.False(project.IsPackable, "Test and ArchitectureTest projects must not be package assets.");
+            }
+
+            if (ProjectGraph.IsNeutralRole(project.Role))
+            {
+                Assert.Empty(project.PackageReferences);
+            }
+
+            if (project.IsPackable)
+            {
+                Assert.True(File.Exists(Path.Combine(project.DirectoryPath, "PublicAPI.Shipped.txt")));
+                Assert.True(File.Exists(Path.Combine(project.DirectoryPath, "PublicAPI.Unshipped.txt")));
+            }
+
+            foreach (ProjectDefinition referencedProject in project.References)
+            {
+                Assert.True(ProjectGraph.IsReferenceAllowed(project.Role, referencedProject.Role), $"{project.RelativePath} ({project.Role}) may not reference {referencedProject.RelativePath} ({referencedProject.Role}).");
+            }
+        }
+
+        Assert.False(graph.HasCycle());
+    }
+
+    /// <summary>Proves a permitted fixture dependency satisfies an ArchUnitNET rule.</summary>
+    [Fact]
+    public void Self_test_architecture_rule_allows_a_permitted_dependency()
+    {
+        AllowedDependentFixture fixture = new();
+        Assert.Equal("allowed", fixture.DependencyValue);
+
+        ArchUnitArchitecture architecture = LoadTestAssemblyArchitecture();
+        IArchRule allowed = Classes().That().HaveName(nameof(AllowedDependentFixture)).Should().DependOnAnyTypesThat().HaveName(nameof(AllowedDependencyFixture));
+
+        allowed.Check(architecture);
+    }
+
+    /// <summary>Proves a forbidden fixture dependency is reported without failing this self-test.</summary>
+    [Fact]
+    public void Self_test_architecture_rule_detects_a_forbidden_dependency()
+    {
+        ViolatingFixture fixture = new();
+        Assert.Equal("forbidden", fixture.DependencyValue);
+
+        ArchUnitArchitecture architecture = LoadTestAssemblyArchitecture();
+        IArchRule forbidden = Classes().That().HaveName(nameof(ViolatingFixture)).Should().NotDependOnAnyTypesThat().HaveName(nameof(ForbiddenDependencyFixture));
+
+        void Check() => forbidden.Check(architecture);
+
+        _ = Assert.ThrowsAny<Exception>(Check);
+    }
+
+    private static ArchUnitArchitecture LoadTestAssemblyArchitecture()
+    {
+#pragma warning disable RS0030 // ArchUnitNET requires the architecture test to load its own compiled assembly.
+        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+        return new ArchLoader().LoadAssemblies(assembly).Build();
+#pragma warning restore RS0030
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        for (DirectoryInfo? directory = new(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "IX.Modularity.slnx")))
+            {
+                return directory.FullName;
+            }
+        }
+
+        throw new DirectoryNotFoundException("Could not locate the repository root containing IX.Modularity.slnx.");
+    }
+
+    private sealed class AllowedDependencyFixture
+    {
+        public string Value { get; } = "allowed";
+    }
+
+    private sealed class AllowedDependentFixture
+    {
+        private readonly AllowedDependencyFixture _dependency = new();
+
+        public string DependencyValue => _dependency.Value;
+    }
+
+    private sealed class ForbiddenDependencyFixture
+    {
+        public string Value { get; } = "forbidden";
+    }
+
+    private sealed class ViolatingFixture
+    {
+        private readonly ForbiddenDependencyFixture _dependency = new();
+
+        public string DependencyValue => _dependency.Value;
+    }
+}

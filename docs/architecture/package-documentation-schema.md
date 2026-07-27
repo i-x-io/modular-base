@@ -44,4 +44,4 @@ Every future package page in `docs/packages/` uses the following exact heading o
 - Keep examples compatible with the repository’s `net10.0` and C# `14.0` baseline and its central-package policy: project `PackageReference` entries omit `Version`.
 - Mark catalog-only entries as not approved for automatic project consumption.
 - Identify analyzer entries as build-time only and note `PrivateAssets="all"` where relevant.
-- Test every command and code example against a real project before calling it verified. This configuration-only repository cannot itself compile package examples.
+- Test every command and code example against a representative project before calling it verified. The repository's architecture-test project validates repository governance only; it is not evidence that package integration examples compile or behave correctly.

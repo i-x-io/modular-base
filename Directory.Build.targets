@@ -4,6 +4,8 @@
              AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
     <ParameterGroup>
       <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <ProjectPath ParameterType="System.String" Required="true" />
+      <RepositoryRoot ParameterType="System.String" Required="true" />
     </ParameterGroup>
     <Task>
       <Using Namespace="System" />
@@ -13,6 +15,7 @@
         public override bool Execute()
         {
             var success = true;
+            var allowArchitectureMetadataInspection = IsArchitectureTestProject(ProjectPath, RepositoryRoot);
 
             foreach (var item in Files)
             {
@@ -67,6 +70,11 @@
                         continue;
                     }
 
+                    if (diagnosticId == "MB0003" && allowArchitectureMetadataInspection)
+                    {
+                        continue;
+                    }
+
                     int line;
                     int column;
                     GetLineAndColumn(source, token.Start, out line, out column);
@@ -85,6 +93,19 @@
             }
 
             return success;
+        }
+
+        private static bool IsArchitectureTestProject(string projectPath, string repositoryRoot)
+        {
+            var expectedProjectPath = Path.GetFullPath(Path.Combine(
+                repositoryRoot,
+                "test",
+                "IX.Modularity.Architecture.Tests",
+                "IX.Modularity.Architecture.Tests.csproj"));
+            return string.Equals(
+                Path.GetFullPath(projectPath),
+                expectedProjectPath,
+                StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsQualifiedSystemType(List<Token> tokens, int index)
@@ -617,6 +638,317 @@
     </Task>
   </UsingTask>
 
+  <UsingTask TaskName="ValidateModularityProjectPolicy"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <ProjectPath ParameterType="System.String" Required="true" />
+      <RepositoryRoot ParameterType="System.String" Required="true" />
+      <EvaluatedRole ParameterType="System.String" />
+      <IsTestProject ParameterType="System.String" />
+      <IsPackable ParameterType="System.String" />
+      <ProjectReferences ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Xml" />
+      <Code Type="Method" Language="cs"><![CDATA[
+        private static readonly HashSet<string> ValidRoles = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Library", "Contracts", "Abstractions", "Adapter", "Integration", "Testing",
+            "Analyzer", "SourceGenerator", "Test", "ArchitectureTest"
+        };
+
+        public override bool Execute()
+        {
+            var success = true;
+            List<string> declaredRoles;
+            string readError;
+            if (!TryReadDeclaredRoles(ProjectPath, out declaredRoles, out readError))
+            {
+                Error("IXARCH001", "Unable to read the project's IXModularityProjectRole declaration: " + readError);
+                return false;
+            }
+
+            if (declaredRoles.Count != 1)
+            {
+                Error("IXARCH001", "Project must declare exactly one direct <IXModularityProjectRole> value.");
+                return false;
+            }
+
+            var role = declaredRoles[0];
+            if (!ValidRoles.Contains(role))
+            {
+                Error("IXARCH001", "IXModularityProjectRole '" + role + "' is invalid. Allowed values: Library, Contracts, Abstractions, Adapter, Integration, Testing, Analyzer, SourceGenerator, Test, ArchitectureTest.");
+                return false;
+            }
+
+            if (!string.Equals(role, EvaluatedRole, StringComparison.Ordinal))
+            {
+                Error("IXARCH001", "IXModularityProjectRole must evaluate to its directly declared value; imported or command-line overrides are not permitted.");
+                return false;
+            }
+
+            ValidateProjectLocationAndFlags(role, ref success);
+            ValidateProjectReferences(role, ref success);
+            return success;
+        }
+
+        private void ValidateProjectLocationAndFlags(string role, ref bool success)
+        {
+            var projectFullPath = Path.GetFullPath(ProjectPath);
+            var sourceRoot = Path.GetFullPath(Path.Combine(RepositoryRoot, "src")) + Path.DirectorySeparatorChar;
+            var testRoot = Path.GetFullPath(Path.Combine(RepositoryRoot, "test")) + Path.DirectorySeparatorChar;
+            var isTestRole = role == "Test" || role == "ArchitectureTest";
+            var expectedProjectPath = Path.GetFullPath(Path.Combine(
+                RepositoryRoot,
+                "test",
+                "IX.Modularity.Architecture.Tests",
+                "IX.Modularity.Architecture.Tests.csproj"));
+
+            if (isTestRole ? !StartsWithPath(projectFullPath, testRoot) : !StartsWithPath(projectFullPath, sourceRoot))
+            {
+                Error("IXARCH002", "Role '" + role + "' projects must be located under " + (isTestRole ? "test/" : "src/") + ".");
+                success = false;
+            }
+
+            if (role == "ArchitectureTest" && !string.Equals(projectFullPath, expectedProjectPath, StringComparison.OrdinalIgnoreCase))
+            {
+                Error("IXARCH002", "ArchitectureTest is reserved for test/IX.Modularity.Architecture.Tests/IX.Modularity.Architecture.Tests.csproj.");
+                success = false;
+            }
+
+            var isTestProject = IsTrue(IsTestProject);
+            if (isTestRole != isTestProject)
+            {
+                Error("IXARCH003", "Role '" + role + "' requires IsTestProject=" + (isTestRole ? "true" : "false") + ".");
+                success = false;
+            }
+
+            if (isTestRole && IsTrue(IsPackable))
+            {
+                Error("IXARCH003", "Test and ArchitectureTest projects must set IsPackable=false.");
+                success = false;
+            }
+
+            if (!HasCanonicalName(role, Path.GetFileNameWithoutExtension(projectFullPath)))
+            {
+                Error("IXARCH004", "Project name '" + Path.GetFileNameWithoutExtension(projectFullPath) + "' does not match the canonical naming rule for role '" + role + "'.");
+                success = false;
+            }
+        }
+
+        private void ValidateProjectReferences(string role, ref bool success)
+        {
+            if (ProjectReferences == null)
+            {
+                return;
+            }
+
+            foreach (var reference in ProjectReferences)
+            {
+                var referencePath = reference.GetMetadata("FullPath");
+                if (string.IsNullOrEmpty(referencePath) || !File.Exists(referencePath))
+                {
+                    Error("IXARCH007", "Referenced project '" + reference.ItemSpec + "' does not resolve to an existing project file.");
+                    success = false;
+                    continue;
+                }
+
+                var repositoryRoot = Path.GetFullPath(RepositoryRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                var fullReferencePath = Path.GetFullPath(referencePath);
+                if (!StartsWithPath(fullReferencePath, repositoryRoot)
+                    || ContainsReparsePoint(fullReferencePath))
+                {
+                    Error("IXARCH007", "Referenced project '" + referencePath + "' is outside the repository root or traverses a symbolic link or junction.");
+                    success = false;
+                    continue;
+                }
+
+                List<string> referencedRoles;
+                string readError;
+                if (!TryReadDeclaredRoles(fullReferencePath, out referencedRoles, out readError))
+                {
+                    Error("IXARCH007", "Referenced project '" + referencePath + "' could not be read safely: " + readError);
+                    success = false;
+                    continue;
+                }
+
+                if (referencedRoles.Count != 1 || !ValidRoles.Contains(referencedRoles.Count == 1 ? referencedRoles[0] : string.Empty))
+                {
+                    Error("IXARCH005", "Referenced project '" + referencePath + "' must declare exactly one valid IXModularityProjectRole.");
+                    success = false;
+                    continue;
+                }
+
+                var referencedRole = referencedRoles[0];
+                if (!IsReferenceAllowed(role, referencedRole))
+                {
+                    Error("IXARCH006", "Role '" + role + "' may not reference role '" + referencedRole + "' (" + referencePath + ").");
+                    success = false;
+                }
+            }
+        }
+
+        private static bool IsReferenceAllowed(string role, string referencedRole)
+        {
+            if (role == "Library" || role == "Adapter")
+            {
+                return referencedRole == "Library"
+                    || referencedRole == "Contracts"
+                    || referencedRole == "Abstractions";
+            }
+
+            if (role == "Integration")
+            {
+                return referencedRole == "Library"
+                    || referencedRole == "Contracts"
+                    || referencedRole == "Abstractions"
+                    || referencedRole == "Adapter";
+            }
+
+            if (role == "Contracts")
+            {
+                return referencedRole == "Contracts" || referencedRole == "Abstractions";
+            }
+
+            if (role == "Abstractions")
+            {
+                return referencedRole == "Abstractions";
+            }
+
+            if (role == "Analyzer" || role == "SourceGenerator")
+            {
+                return referencedRole == "Contracts"
+                    || referencedRole == "Abstractions"
+                    || referencedRole == "Analyzer"
+                    || referencedRole == "SourceGenerator";
+            }
+
+            if (role == "Testing")
+            {
+                return referencedRole == "Library"
+                    || referencedRole == "Contracts"
+                    || referencedRole == "Abstractions"
+                    || referencedRole == "Adapter"
+                    || referencedRole == "Integration"
+                    || referencedRole == "Testing"
+                    || referencedRole == "Analyzer"
+                    || referencedRole == "SourceGenerator";
+            }
+
+            return role == "Test" || role == "ArchitectureTest";
+        }
+
+        private static bool HasCanonicalName(string role, string projectName)
+        {
+            if (role == "Library")
+            {
+                const string prefix = "IX.Modularity.";
+                return projectName.StartsWith(prefix, StringComparison.Ordinal)
+                    && projectName.Length > prefix.Length
+                    && projectName.IndexOf('.', prefix.Length) < 0;
+            }
+
+            if (role == "Contracts") return projectName.EndsWith(".Contracts", StringComparison.Ordinal);
+            if (role == "Abstractions") return projectName.EndsWith(".Abstractions", StringComparison.Ordinal);
+            if (role == "Adapter") return projectName.IndexOf(".Adapters.", StringComparison.Ordinal) >= 0;
+            if (role == "Integration") return projectName.IndexOf(".Integrations.", StringComparison.Ordinal) >= 0;
+            if (role == "Testing") return projectName.EndsWith(".Testing", StringComparison.Ordinal);
+            if (role == "Analyzer") return projectName.EndsWith(".Analyzers", StringComparison.Ordinal);
+            if (role == "SourceGenerator") return projectName.EndsWith(".Generators", StringComparison.Ordinal);
+            return projectName.EndsWith(".Tests", StringComparison.Ordinal);
+        }
+
+        private static bool TryReadDeclaredRoles(string projectPath, out List<string> roles, out string error)
+        {
+            roles = new List<string>();
+            error = string.Empty;
+            try
+            {
+                var settings = new XmlReaderSettings
+                {
+                    DtdProcessing = DtdProcessing.Prohibit,
+                    XmlResolver = null
+                };
+                var document = new XmlDocument
+                {
+                    XmlResolver = null
+                };
+                using (var reader = XmlReader.Create(projectPath, settings))
+                {
+                    document.Load(reader);
+                }
+
+                var nodes = document.SelectNodes("//*[local-name()='PropertyGroup']/*[local-name()='IXModularityProjectRole']");
+                if (nodes == null)
+                {
+                    return true;
+                }
+
+                foreach (XmlNode node in nodes)
+                {
+                    roles.Add((node.InnerText ?? string.Empty).Trim());
+                }
+
+                return true;
+            }
+            catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException || exception is XmlException)
+            {
+                error = exception.Message;
+                return false;
+            }
+        }
+
+        private static bool ContainsReparsePoint(string path)
+        {
+            try
+            {
+                var root = Path.GetPathRoot(path);
+                var relativePath = path.Substring(root.Length);
+                var segments = relativePath.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+                var current = root;
+                for (var index = 0; index < segments.Length; index++)
+                {
+                    current = Path.Combine(current, segments[index]);
+                    if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (IOException)
+            {
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return true;
+            }
+        }
+
+        private static bool StartsWithPath(string path, string root)
+        {
+            return path.StartsWith(root, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsTrue(string value)
+        {
+            return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void Error(string code, string message)
+        {
+            Log.LogError(null, code, null, ProjectPath, 0, 0, 0, 0, message);
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers"
                       PrivateAssets="all"
@@ -638,7 +970,8 @@
   </ItemGroup>
 
   <Target Name="ValidateCentralPackageReferences"
-          BeforeTargets="CollectPackageReferences">
+          BeforeTargets="CollectPackageReferences"
+          DependsOnTargets="ValidateModularityProjectRole">
     <ItemGroup>
       <_PackageReferenceWithVersion Include="@(PackageReference)"
                                     Condition="'%(PackageReference.Version)' != ''" />
@@ -657,14 +990,18 @@
                                          Or '%(PackageReference.Identity)' == 'Testcontainers.Redis'
                                          Or '%(PackageReference.Identity)' == 'xunit.v3'
                                          Or '%(PackageReference.Identity)' == 'xunit.runner.visualstudio'" />
+      <_ArchitectureTestOnlyPackageReference Include="@(PackageReference)"
+                                             Condition="'%(PackageReference.Identity)' == 'TngTech.ArchUnitNET.xUnitV3'" />
     </ItemGroup>
 
     <Error Condition="'@(_PackageReferenceWithVersion)' != ''"
            Text="PackageReference versions must be declared in Directory.Packages.props. Remove Version from: @(_PackageReferenceWithVersion, ', ')." />
     <Error Condition="'@(_PackageReferenceWithOverride)' != ''"
            Text="PackageReference VersionOverride is prohibited. Remove it from: @(_PackageReferenceWithOverride, ', ')." />
-    <Error Condition="'$(IsTestProject)' != 'true' And '@(_TestOnlyPackageReference)' != ''"
-           Text="Test-only packages may only be referenced by projects with IsTestProject=true. Invalid references: @(_TestOnlyPackageReference, ', ')." />
+    <Error Condition="'$(IXModularityProjectRole)' != 'Test' And '$(IXModularityProjectRole)' != 'ArchitectureTest' And '@(_TestOnlyPackageReference)' != ''"
+           Text="Test-only packages may only be referenced by projects with IXModularityProjectRole=Test or ArchitectureTest. Invalid references: @(_TestOnlyPackageReference, ', ')." />
+    <Error Condition="'$(IXModularityProjectRole)' != 'ArchitectureTest' And '@(_ArchitectureTestOnlyPackageReference)' != ''"
+           Text="Architecture-test-only packages may only be referenced by the project with IXModularityProjectRole=ArchitectureTest. Invalid references: @(_ArchitectureTestOnlyPackageReference, ', ')." />
   </Target>
 
   <Target Name="ValidatePackableProjectPolicy"
@@ -688,6 +1025,19 @@
                          Condition="'%(Compile.AutoGen)' != 'true' And '%(Compile.DesignTime)' != 'true'" />
     </ItemGroup>
     <ValidateModularBaseSourcePolicy Files="@(_SourcePolicyFile)"
+                                     ProjectPath="$(MSBuildProjectFullPath)"
+                                     RepositoryRoot="$(MSBuildThisFileDirectory)"
                                      Condition="'@(_SourcePolicyFile)' != ''" />
+  </Target>
+
+  <Target Name="ValidateModularityProjectRole"
+          BeforeTargets="CollectPackageReferences;CoreCompile;Pack"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <ValidateModularityProjectPolicy ProjectPath="$(MSBuildProjectFullPath)"
+                                     RepositoryRoot="$(MSBuildThisFileDirectory)"
+                                     EvaluatedRole="$(IXModularityProjectRole)"
+                                     IsTestProject="$(IsTestProject)"
+                                     IsPackable="$(IsPackable)"
+                                     ProjectReferences="@(ProjectReference)" />
   </Target>
 </Project>

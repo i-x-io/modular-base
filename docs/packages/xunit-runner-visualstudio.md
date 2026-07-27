@@ -10,7 +10,7 @@ Use only when a future project deliberately selects the VSTest xUnit v3 path. Th
 
 ## Recommended registration and use
 
-In an `IsTestProject=true` project, pair this package with `Microsoft.NET.Test.Sdk` and the xUnit VSTest-compatible `mtp-off` package variant. Run `dotnet test` and use VSTest options such as the coverlet collector. That compatible package is not currently a catalog entry; add it centrally before authoring a VSTest test project.
+In a project with `IXModularityProjectRole=Test` or `ArchitectureTest` and `IsTestProject=true`, pair this package with `Microsoft.NET.Test.Sdk` and the xUnit VSTest-compatible `mtp-off` package variant. Run `dotnet test` and use VSTest options such as the coverlet collector. That compatible package is not currently a catalog entry; add it centrally before authoring a VSTest test project.
 
 ## Enterprise implementation guidance
 

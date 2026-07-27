@@ -10,7 +10,7 @@ Use for integration tests that require actual Redis protocol, expiration, serial
 
 ## Recommended registration and use
 
-Reference it only from `IsTestProject=true` projects. Use `RedisBuilder` in an xUnit asynchronous fixture, await startup, pass `GetConnectionString()` to the test-owned client, and asynchronously dispose the container. Use a deterministic image tag.
+Reference it only from projects with `IXModularityProjectRole=Test` or `ArchitectureTest`; those roles also require `IsTestProject=true`. Use `RedisBuilder` in an xUnit asynchronous fixture, await startup, pass `GetConnectionString()` to the test-owned client, and asynchronously dispose the container. Use a deterministic image tag.
 
 ## Enterprise implementation guidance
 

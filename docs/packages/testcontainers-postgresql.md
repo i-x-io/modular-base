@@ -10,7 +10,7 @@ Use for integration tests that need PostgreSQL behavior unavailable from unit-te
 
 ## Recommended registration and use
 
-Reference it only from `IsTestProject=true` projects. Start a `PostgreSqlContainer` through xUnit's asynchronous fixture lifecycle, obtain its connection string only after startup, and dispose it asynchronously. Use a deterministic image tag and an application-owned schema setup.
+Reference it only from projects with `IXModularityProjectRole=Test` or `ArchitectureTest`; those roles also require `IsTestProject=true`. Start a `PostgreSqlContainer` through xUnit's asynchronous fixture lifecycle, obtain its connection string only after startup, and dispose it asynchronously. Use a deterministic image tag and an application-owned schema setup.
 
 ## Enterprise implementation guidance
 
