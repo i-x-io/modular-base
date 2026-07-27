@@ -10,11 +10,47 @@ Use for explicit input and command validation. Validation establishes input acce
 
 ## Recommended registration and use
 
-Inject `IValidator<T>` and call `ValidateAsync` from asynchronous endpoints/handlers. Keep validators focused on one request type and use rule sets only when the contract genuinely has distinct validation modes.
+The catalog supplies the version centrally, so the consuming project keeps the reference versionless:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="FluentValidation" />
+</ItemGroup>
+```
+
+Define one validator per request or command, inject `IValidator<T>`, and call `ValidateAsync` from asynchronous endpoints or handlers:
+
+```csharp
+using FluentValidation;
+
+public sealed record CreateUser(string Email, int Age);
+
+public sealed class CreateUserValidator : AbstractValidator<CreateUser>
+{
+    public CreateUserValidator()
+    {
+        RuleFor(x => x.Email).NotEmpty().EmailAddress();
+        RuleFor(x => x.Age).InclusiveBetween(18, 120);
+    }
+}
+
+static async Task<IReadOnlyDictionary<string, string[]>> ValidateRequestAsync(
+    CreateUser request,
+    IValidator<CreateUser> validator,
+    CancellationToken cancellationToken)
+{
+    var result = await validator.ValidateAsync(request, cancellationToken);
+    return result.IsValid
+        ? new Dictionary<string, string[]>()
+        : result.ToDictionary();
+}
+```
+
+Use rule sets only when the same contract genuinely has distinct validation modes. For an asynchronous `MustAsync`/`CustomAsync` rule, pass its supplied cancellation token to the dependency and always invoke the validator with `ValidateAsync`.
 
 ## Enterprise implementation guidance
 
-Make external checks asynchronous, cancellation-aware, and bounded. Map validation failures consistently at the HTTP boundary. FastEndpoints integrations should invoke the validator using the framework's supported validation path; do not assume MVC's automatic-validation behavior applies.
+The usual workflow is: deserialize, validate once, stop on failure, convert failures to the application result/error contract, and execute the command only after success. Map `PropertyName`, `ErrorCode`, and a client-safe message consistently at the HTTP boundary; never expose internal property paths accidentally. Make external checks asynchronous, cancellation-aware, and bounded, but keep race-sensitive uniqueness and authorization checks in the command transaction. FastEndpoints integrations should invoke the validator using the framework's supported validation path; do not assume MVC's automatic-validation behavior applies.
 
 ## Integration with the catalog
 
@@ -22,7 +58,7 @@ Registration/scanning lives in `fluentvalidation-dependencyinjectionextensions.m
 
 ## Security, performance, AOT, trimming, and operations
 
-Automatic MVC validation is synchronous and MVC-specific; asynchronous rules require `ValidateAsync`. Avoid existence checks that reveal sensitive records. Reflection-based discovery is a trimming concern when used through the companion DI package.
+Automatic MVC validation is synchronous and MVC-specific; asynchronous rules require `ValidateAsync`, and calling `Validate` when async rules exist throws in current FluentValidation. Avoid existence checks and different error wording that reveal sensitive records. Bound collection sizes before per-item validation and keep remote calls out of hot validation paths where possible. Reflection-based discovery is a trimming concern when used through the companion DI package; FluentValidation 12 requires .NET 8 or later and is compatible with this catalog's `net10.0` target.
 
 ## Avoid
 
@@ -30,12 +66,15 @@ Do not call `Validate` for a validator containing asynchronous rules, perform un
 
 ## Verification checklist
 
-- Unit-test valid, invalid, boundary, and conditional rules.
-- Test async rules with cancellation and dependency failure behavior.
-- Verify FastEndpoints returns the agreed validation response shape.
+- [ ] Unit-test valid, invalid, boundary, and conditional rules.
+- [ ] Test async rules with cancellation, timeout, and dependency failure behavior.
+- [ ] Assert the boundary maps `ErrorCode` and property names to the agreed response shape.
+- [ ] Verify the command or handler is not called after validation fails.
 
 ## Sources
 
-- https://www.nuget.org/packages/FluentValidation/12.1.1 (Accessed 2026-07-27)
-- https://docs.fluentvalidation.net/en/latest/async.html (Accessed 2026-07-27)
-- https://docs.fluentvalidation.net/en/latest/aspnet.html (Accessed 2026-07-27)
+- [NuGet Gallery: FluentValidation 12.1.1](https://www.nuget.org/packages/FluentValidation/12.1.1) (Accessed 2026-07-27)
+- [FluentValidation: creating validators](https://docs.fluentvalidation.net/en/latest/start.html) (Accessed 2026-07-27)
+- [FluentValidation: asynchronous validation](https://docs.fluentvalidation.net/en/latest/async.html) (Accessed 2026-07-27)
+- [FluentValidation: ASP.NET Core integration](https://docs.fluentvalidation.net/en/latest/aspnet.html) (Accessed 2026-07-27)
+- [FluentValidation 12 upgrade guide](https://docs.fluentvalidation.net/en/latest/upgrading-to-12.html) (Accessed 2026-07-27)

@@ -15,6 +15,14 @@ Use this provider for Azure Blob Storage, not Azure Files. Containers and blob n
 
 ## Recommended registration and use
 
+Reference the provider without a version; central package management remains authoritative:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="FluentStorage.Azure.Blobs" />
+</ItemGroup>
+```
+
 Prefer an existing `BlobServiceClient` configured with `DefaultAzureCredential` and Azure SDK options, then wrap it. This preserves passwordless authentication and makes the Azure SDK the single owner of retry, transport, logging, and client encryption configuration.
 
 ```csharp
@@ -31,6 +39,8 @@ IAzureBlobStore store = AzureBlobStorage.FromClient(client, "documents");
 ```
 
 Use a managed identity in hosted environments and Entra roles scoped to data-plane access. `FromTokenCredential` and `FromMsi` are available alternatives, but `FromClient` is the clearest way to retain an explicitly configured Azure SDK client. Shared key/SAS helpers are for tightly controlled compatibility cases; do not make account keys the default credential.
+
+Provision the lowercase `documents` container separately, assign the workload a data-plane role such as Storage Blob Data Contributor at the narrowest practical scope, and enable the required firewall/private endpoint before startup. After construction, use the shared upload/download/list/delete workflow in [FluentStorage](fluentstorage.md). Keep `FolderPath` prefix-bounded; recursive deletion enumerates blobs and is not atomic. If a workflow requires create-if-absent, replace-if-current, a lease, tags, a tier, or a version ID, perform that operation with `BlobContainerClient`/`BlobClient` in a provider-specific adapter.
 
 Dispose returned FluentStorage streams. For large objects, use streaming APIs. `OpenWrite` commits when the returned stream is disposed, and generic `IStore` calls cannot express every Azure conditional or lease requirement.
 
@@ -76,4 +86,5 @@ Accessed 2026-07-27.
 - [FluentStorage.Azure.Blobs 8.0.10 on NuGet](https://www.nuget.org/packages/FluentStorage.Azure.Blobs/8.0.10)
 - [Azure Blob .NET authentication guidance](https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-dotnet)
 - [Azure Blob .NET retry configuration](https://learn.microsoft.com/azure/storage/blobs/storage-retry-policy)
+- [Azure Blob authorization with Microsoft Entra ID](https://learn.microsoft.com/azure/storage/blobs/authorize-access-azure-active-directory)
 - [Azure Storage encryption at rest](https://learn.microsoft.com/azure/storage/common/storage-service-encryption)

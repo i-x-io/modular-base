@@ -12,6 +12,14 @@ Use this package for SDK behavior. It is not an exporter, protocol implementatio
 
 ## Recommended registration and use
 
+With central package management, add a versionless application reference; the catalog supplies `1.17.0`:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="OpenTelemetry" />
+</ItemGroup>
+```
+
 For ASP.NET Core or Generic Host applications, configure the SDK through `OpenTelemetry.Extensions.Hosting`; see [OpenTelemetry.Extensions.Hosting](opentelemetry.extensions.hosting.md). Register application source and meter names explicitly, and make those names stable public telemetry contracts.
 
 ```csharp
@@ -28,10 +36,25 @@ internal static class Telemetry
 
 The host configuration must call `.AddSource(Telemetry.Name)` and `.AddMeter(Telemetry.Name)` for these signals to be collected. Do not create a provider in a library.
 
+For a short-lived, non-hosted process, own and dispose the provider in the process composition root. Disposal is the normal final flush path; do not dispose it while work is still producing telemetry.
+
+```csharp
+using OpenTelemetry;
+using OpenTelemetry.Trace;
+
+using TracerProvider provider = Sdk.CreateTracerProviderBuilder()
+    .SetSampler(new ParentBasedSampler(new TraceIdRatioBasedSampler(0.10)))
+    .AddSource(Telemetry.Name)
+    .Build();
+
+// Run the process workload while provider remains alive.
+```
+
 ## Enterprise implementation guidance
 
 - Define `service.name`, `service.version`, and deployment-environment resource attributes once at the application composition root. `service.name` identifies the emitting service; it is not a per-request, tenant, user, pod, or database value.
 - Use parent-based ratio sampling for normal production traffic and an intentionally documented policy for error retention. Sampling changes what is available for diagnosis; it is not a data-redaction control.
+- Treat processor order as behavior. Use processors for cross-cutting span mutation or export, keep `OnStart`/`OnEnd` work small, and use batch export for network exporters; synchronous/simple export belongs in local diagnostics or narrowly justified tests.
 - Keep metric label cardinality bounded. Never use request IDs, user IDs, email addresses, full URLs, SQL text, opaque tokens, or unbounded exception messages as metric dimensions.
 - Treat telemetry as sensitive production data. Filter/redact headers, query strings, route values, database statements, and exception data before export, and restrict collector/backend access accordingly.
 
@@ -53,6 +76,7 @@ This catalog does not claim the complete observability stack is Native-AOT or tr
 
 - Do not reference the SDK from reusable domain libraries merely to emit spans; reference `OpenTelemetry.Api` and expose stable source/meter names instead.
 - Do not create more than one provider for the same hosted application container.
+- Do not call `ForceFlush` on request paths. Reserve it for bounded shutdown/test workflows where waiting for pending exports is explicitly required.
 - Do not put PII, credentials, bearer tokens, raw SQL parameters, or high-cardinality identifiers into tags, baggage, logs, or metric labels.
 - Do not treat a sampler as a privacy boundary or an exporter as durable audit storage.
 
@@ -62,14 +86,16 @@ This catalog does not claim the complete observability stack is Native-AOT or tr
 - [ ] The application registers every application `ActivitySource` and `Meter` by its stable name.
 - [ ] A resource has a stable, deployment-approved `service.name` and no high-cardinality resource attributes.
 - [ ] Sampling, tag redaction, and exporter failure behavior have an operational owner and test coverage.
+- [ ] Processor ordering and batch queue/export timeouts are load-tested against the expected telemetry rate.
 - [ ] The exact publish mode used in production has been tested for trim/AOT warnings and runtime startup.
 
 ## Sources
 
 Accessed 2026-07-27:
 
-- https://www.nuget.org/packages/OpenTelemetry/1.17.0
-- https://github.com/open-telemetry/opentelemetry-dotnet/tree/main/src/OpenTelemetry
-- https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/docs/trace/customizing-the-sdk/README.md
-- https://opentelemetry.io/docs/concepts/resources/
-- https://opentelemetry.io/docs/concepts/sampling/
+- [OpenTelemetry 1.17.0 on NuGet](https://www.nuget.org/packages/OpenTelemetry/1.17.0)
+- [OpenTelemetry .NET SDK source](https://github.com/open-telemetry/opentelemetry-dotnet/tree/main/src/OpenTelemetry)
+- [Customizing the OpenTelemetry .NET SDK](https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/docs/trace/customizing-the-sdk/README.md)
+- [OpenTelemetry .NET tracing best practices](https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/docs/trace/README.md)
+- [OpenTelemetry resource concepts](https://opentelemetry.io/docs/concepts/resources/)
+- [OpenTelemetry .NET sampling](https://opentelemetry.io/docs/languages/dotnet/sampling/)

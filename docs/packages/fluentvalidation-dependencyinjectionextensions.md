@@ -10,11 +10,38 @@ Use for controlled validator registration. It is a convenience scanner, not a un
 
 ## Recommended registration and use
 
-Call `AddValidatorsFromAssemblyContaining<TMarker>(ServiceLifetime.Transient)` with a fixed, application-owned marker type. Transient is the FluentValidation documentation's simplest and safest recommendation when validators may depend on scoped or transient services.
+The catalog supplies the version centrally, so the consuming project keeps the reference versionless:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+</ItemGroup>
+```
+
+Call `AddValidatorsFromAssemblyContaining<TMarker>` with a fixed, application-owned marker type. Transient is the FluentValidation documentation's simplest and safest recommendation when validators may depend on scoped or transient services:
+
+```csharp
+using FluentValidation;
+using Microsoft.Extensions.DependencyInjection;
+
+public sealed class ValidationAssemblyMarker
+{
+}
+
+public static class ValidationRegistration
+{
+    public static IServiceCollection AddRequestValidators(
+        this IServiceCollection services) =>
+        services.AddValidatorsFromAssemblyContaining<ValidationAssemblyMarker>(
+            ServiceLifetime.Transient);
+}
+```
+
+The scan registers public, non-abstract validators from the marker assembly. When only a subset is intended for production, pass the overload's filter and exclude types by `filter.ValidatorType`.
 
 ## Enterprise implementation guidance
 
-Keep scans to explicitly selected assemblies and apply a filter when only a subset is intended. Prefer explicit registrations or a source-generated approach for trim-sensitive applications. Never register validators as singleton when they depend on scoped/transient services.
+The common startup workflow is: select the assembly marker, choose a lifetime, optionally filter, build the provider in a composition-root test, and resolve each required closed `IValidator<T>`. Keep scans to explicitly selected assemblies. Prefer explicit registrations or a source-generated approach for trim-sensitive applications. Never register validators as singleton when they depend on scoped/transient services; transient validators may safely resolve scoped dependencies only while created from an active scope.
 
 ## Integration with the catalog
 
@@ -22,7 +49,7 @@ This companion supports `fluentvalidation.md`; FastEndpoints endpoint validation
 
 ## Security, performance, AOT, trimming, and operations
 
-The automatic-registration methods scan assemblies with reflection. Startup work and trimming reachability therefore depend on the selected marker assembly. Test registration discovery and published trimmed output when this package is enabled.
+The automatic-registration methods scan assemblies with reflection. Startup work and trimming reachability therefore depend on the selected marker assembly. Do not let untrusted plugin assemblies enter the scan set. Validate the service graph at startup where the host supports it, and test registration discovery plus published trimmed/NativeAOT output when this package is enabled. Avoid logging validator type inventories if application structure is sensitive.
 
 ## Avoid
 
@@ -30,11 +57,12 @@ Do not scan all loaded assemblies, rely on an assembly name string, or make life
 
 ## Verification checklist
 
-- Build the service provider and resolve every required `IValidator<T>`.
-- Verify excluded validators are not registered.
-- Run the application’s trimmed/NativeAOT publish smoke test if scanning remains enabled.
+- [ ] Build the service provider with scope validation and resolve every required `IValidator<T>`.
+- [ ] Verify excluded and internal/non-public validators are not registered.
+- [ ] Assert validator lifetimes are compatible with all injected dependencies.
+- [ ] Run the application’s trimmed/NativeAOT publish smoke test if scanning remains enabled.
 
 ## Sources
 
-- https://www.nuget.org/packages/FluentValidation.DependencyInjectionExtensions/12.1.1 (Accessed 2026-07-27)
-- https://docs.fluentvalidation.net/en/latest/di.html (Accessed 2026-07-27)
+- [NuGet Gallery: FluentValidation.DependencyInjectionExtensions 12.1.1](https://www.nuget.org/packages/FluentValidation.DependencyInjectionExtensions/12.1.1) (Accessed 2026-07-27)
+- [FluentValidation: dependency injection and automatic registration](https://docs.fluentvalidation.net/en/latest/di.html) (Accessed 2026-07-27)

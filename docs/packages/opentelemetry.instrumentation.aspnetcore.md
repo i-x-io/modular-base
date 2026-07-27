@@ -12,6 +12,14 @@ Enable this package once to produce server spans and ASP.NET Core HTTP metrics f
 
 ## Recommended registration and use
 
+With central package management, add a versionless application reference:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+</ItemGroup>
+```
+
 ```csharp
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracing => tracing.AddAspNetCoreInstrumentation())
@@ -20,11 +28,29 @@ builder.Services.AddOpenTelemetry()
 
 Configure it at application startup through [OpenTelemetry.Extensions.Hosting](opentelemetry.extensions.hosting.md), before the host starts. Use framework route templates rather than raw request paths in telemetry; avoid collecting query strings or request/response bodies.
 
+Filtering is a trace-instrumentation workflow, not a metrics filter or sampler. A common policy suppresses a dedicated high-volume liveness route while retaining failure evidence through health-check logs/metrics or a separately observed readiness route; document the resulting observability gap.
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddAspNetCoreInstrumentation(options =>
+    {
+        options.Filter = context =>
+            !context.Request.Path.StartsWithSegments("/health/live");
+        options.EnrichWithHttpResponse = (activity, response) =>
+            activity.SetTag("app.endpoint.group", response.StatusCode >= 500
+                ? "server-error"
+                : "normal");
+    }));
+```
+
+Keep enrichment values to an approved finite set. The trace filter runs after sampling has been invoked, so use SDK sampling for trace-volume policy rather than treating `Filter` as a replacement sampler.
+
 ## Enterprise implementation guidance
 
 - Ensure reverse-proxy forwarding and trusted-proxy configuration are correct before relying on client/network attributes. Do not trust arbitrary forwarded headers from the public internet.
 - Filter health, metrics, readiness, liveness, static-content, and other high-volume endpoints deliberately when their telemetry is not useful. Document exclusions because they affect SLO denominator calculations.
 - Use route-level attributes and application-owned low-cardinality tags. Redact user-controlled route values and headers.
+- Unhandled exceptions already set span status to error. Enable `RecordException` only when the additional exception event is required and its message/stack data has passed the telemetry data review.
 - Correlate incoming server spans to application logs through the standard logging pipeline; do not hand-copy trace IDs into every message.
 
 ## Integration with the catalog
@@ -43,6 +69,7 @@ Incoming URLs and headers are attacker-controlled. Never enable capture of sensi
 - Do not tag spans with raw URLs, query strings, authorization headers, session cookies, user IDs, or request bodies.
 - Do not treat it as outgoing dependency instrumentation; use the HTTP package for that.
 - Do not filter failures just because the endpoint is noisy.
+- Do not use `EnrichWithHttpRequest`/`EnrichWithHttpResponse` to copy arbitrary headers or route values into spans.
 
 ## Verification checklist
 
@@ -51,12 +78,14 @@ Incoming URLs and headers are attacker-controlled. Never enable capture of sensi
 - [ ] Routes are low-cardinality templates, not raw parameterized paths.
 - [ ] Reverse-proxy and forwarded-header trust settings are reviewed.
 - [ ] No duplicate server spans appear in a trace.
+- [ ] Enrichment and exception-event settings have bounded attributes and an explicit data-classification decision.
 
 ## Sources
 
 Accessed 2026-07-27:
 
-- https://www.nuget.org/packages/OpenTelemetry.Instrumentation.AspNetCore/1.17.0
-- https://github.com/open-telemetry/opentelemetry-dotnet-contrib/tree/main/src/OpenTelemetry.Instrumentation.AspNetCore
-- https://github.com/open-telemetry/opentelemetry-dotnet-contrib/blob/main/src/OpenTelemetry.Instrumentation.AspNetCore/README.md
-- https://opentelemetry.io/docs/languages/dotnet/instrumentation/
+- [OpenTelemetry ASP.NET Core instrumentation 1.17.0 on NuGet](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.AspNetCore/1.17.0)
+- [ASP.NET Core instrumentation source](https://github.com/open-telemetry/opentelemetry-dotnet-contrib/tree/main/src/OpenTelemetry.Instrumentation.AspNetCore)
+- [ASP.NET Core instrumentation setup and options](https://github.com/open-telemetry/opentelemetry-dotnet-contrib/blob/main/src/OpenTelemetry.Instrumentation.AspNetCore/README.md)
+- [Using instrumentation libraries with OpenTelemetry .NET](https://opentelemetry.io/docs/languages/dotnet/libraries/)
+- [Manual instrumentation for OpenTelemetry .NET](https://opentelemetry.io/docs/languages/dotnet/instrumentation/)

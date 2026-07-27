@@ -15,6 +15,14 @@ Use this package for a selected Google Cloud Storage bucket. Object names are op
 
 ## Recommended registration and use
 
+Reference the provider without a version; the central catalog supplies `8.0.14`:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="FluentStorage.GCP" />
+</ItemGroup>
+```
+
 Use Application Default Credentials (ADC) and the environment-based factory for hosted and local development:
 
 ```csharp
@@ -26,6 +34,8 @@ IStore store = GoogleCloudStorage.FromEnvironmentVariable(
 ```
 
 ADC is resolved by the Google client libraries from their documented credential locations. In production use an attached service account or workload identity federation with least privilege. `FromJsonFile` and `FromJson` exist for controlled compatibility cases, but service-account key material must not be committed, copied into standard configuration, or logged. If your platform must configure retry, transport, encryption key behavior, or preconditions directly, use the native GCS client in an application-owned adapter.
+
+For local development, establish ADC with the Google Cloud CLI under the developer identity rather than placing a service-account JSON key in the repository. In deployment, bind a service account/workload identity and grant only required bucket/object permissions. Provision the bucket, region, uniform bucket-level access, retention, and lifecycle separately. After construction, use the shared upload/download/list/delete workflow in [FluentStorage](fluentstorage.md); keep listings prefix-bounded and never interpret a prefix delete as atomic. Use native generation preconditions for create-only, compare-and-swap, and generation-specific deletes.
 
 Stream large content and dispose all returned streams. Do not use `GetBytes`/`GetText` on unbounded objects. FluentStorage normalizes separator characters but does not sanitize semantic path segments.
 
@@ -67,6 +77,7 @@ Accessed 2026-07-27.
 
 - [FluentStorage GCP factory/source](https://github.com/robinrodricks/FluentStorage/tree/develop/FluentStorage.GCP)
 - [FluentStorage.GCP 8.0.14 on NuGet](https://www.nuget.org/packages/FluentStorage.GCP/8.0.14)
+- [Google Cloud Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
 - [Google Cloud Storage authentication](https://cloud.google.com/storage/docs/authentication)
 - [Cloud Storage retry strategy](https://cloud.google.com/storage/docs/retry-strategy)
 - [Cloud Storage encryption](https://cloud.google.com/storage/docs/encryption)

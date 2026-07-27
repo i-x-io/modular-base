@@ -2,39 +2,75 @@
 
 ## Catalog entry
 
-`xunit.runner.visualstudio` **3.1.5** — test-only catalog package; xUnit v3 adapter for Visual Studio and VSTest discovery/execution.
+| Field | Value |
+| --- | --- |
+| Package | `xunit.runner.visualstudio` |
+| Pinned version | `3.1.5` |
+| Status | Approved test-only dependency for the VSTest alternative |
+| Role | Visual Studio/VSTest adapter for xUnit v3 discovery and execution |
 
 ## Decision and scope
 
-Use only when a future project deliberately selects the VSTest xUnit v3 path. The pinned `xunit.v3` package installs `xunit.v3.mtp-v1`, so the preferred catalog configuration is MTP; VSTest requires the xUnit VSTest-compatible `mtp-off` package variant before this adapter is usable.
+Use only when a future configuration deliberately selects the VSTest xUnit v3 path. The cataloged `xunit.v3` package installs native MTP support, but xUnit documents VSTest adapter support as a separate capability that does not interfere with MTP. The active platform selected for `dotnet test` determines which runner path is used; the adapter does not override that selection.
 
 ## Recommended registration and use
 
-In a project with `IXModularityProjectRole=Test` or `ArchitectureTest` and `IsTestProject=true`, pair this package with `Microsoft.NET.Test.Sdk` and the xUnit VSTest-compatible `mtp-off` package variant. Run `dotnet test` and use VSTest options such as the coverlet collector. That compatible package is not currently a catalog entry; add it centrally before authoring a VSTest test project.
+Configure only an allowed test-role project and keep all references versionless:
+
+```xml
+<PackageReference Include="Microsoft.NET.Test.Sdk" />
+<PackageReference Include="xunit.v3" />
+<PackageReference Include="xunit.runner.visualstudio">
+  <PrivateAssets>all</PrivateAssets>
+  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+</PackageReference>
+```
+
+The adapter is build/test tooling and should not flow transitively to consumers. The repository's current `global.json` selects MTP, so using this alternative first requires an architecture-approved VSTest repository/run configuration (`test.runner` set to `VSTest`, or the MTP selection removed). Then validate CLI and IDE discovery with the same minimal test:
+
+```csharp
+public sealed class DiscoveryTests
+{
+    [Fact]
+    public void Adapter_discovers_xunit_v3_tests() => Assert.True(true);
+}
+```
+
+Run it with VSTest-compatible `dotnet test` options; add `coverlet.collector` only if this VSTest path also needs coverage.
 
 ## Enterprise implementation guidance
 
-Upgrade the adapter, test SDK, and framework as a compatible set. Validate both CLI and IDE discovery, produce standard CI result artifacts, and retain runner diagnostics only when needed for a failing pipeline.
+Upgrade the framework variant, adapter, and `Microsoft.NET.Test.Sdk` as one compatibility set. Check test counts in CLI and each supported IDE so a missing adapter cannot silently turn a green job into zero discovered tests. Produce TRX artifacts in CI and enable diagnostic logs only for discovery failures.
+
+Keep VSTest and MTP projects in separate run configurations. Their extension points and CLI arguments differ, even though both can be launched through `dotnet test`.
 
 ## Integration with the catalog
 
-This is the VSTest alternative, not a companion to the preferred MTP `xunit-v3.md` package. Its SDK and coverage dependencies are documented in `microsoft-net-test-sdk.md` and `coverlet-collector.md`.
+Pair with [Microsoft.NET.Test.Sdk](microsoft-net-test-sdk.md), `xunit.v3`, and optionally [coverlet.collector](coverlet-collector.md) in a run configuration whose active platform is VSTest. It is an alternative run path to the preferred [xunit.v3](xunit-v3.md) MTP setup; do not put both platform modes in one run configuration.
 
 ## Security, performance, AOT, trimming, and operations
 
-The adapter loads test assemblies and extensions, so approved restore sources and lock files matter. It is build/test infrastructure only, with no production AOT/trimming scope.
+The adapter loads test assemblies inside test infrastructure. Restore from approved feeds, preserve lock-file review, and protect logs that expose test names, paths, or failure values. Keep the adapter private to the test project. It has no production trimming or NativeAOT role.
 
 ## Avoid
 
-Do not place it in production projects, use it without a test SDK and the `mtp-off` xUnit variant, or assume it is interchangeable with the Microsoft Testing Platform runner mode.
+- Do not add it to production projects or let it flow to package consumers.
+- Do not use it without `Microsoft.NET.Test.Sdk` and the xUnit v3 framework.
+- Do not assume the adapter changes the runner selected by `global.json`.
+- Do not accept a successful build as proof that tests were discovered.
 
 ## Verification checklist
 
-- Confirm `dotnet test` discovers a `[Fact]` only in a future project using the explicitly selected VSTest-compatible package set.
-- Confirm the IDE displays the same tests.
-- Run the coverlet collector and a test result logger through the selected VSTest path.
+- [ ] The project has an allowed test role, `IsTestProject=true`, and versionless private adapter assets.
+- [ ] The xUnit v3 framework and test SDK are present, and the repository/run configuration explicitly selects VSTest.
+- [ ] CLI and supported IDEs discover the same expected test count.
+- [ ] CI fails on zero/unexpected discovery and retains bounded TRX diagnostics.
 
 ## Sources
 
-- https://www.nuget.org/packages/xunit.runner.visualstudio/3.1.5 (Accessed 2026-07-27)
-- https://xunit.net/docs/getting-started/v3/getting-started (Accessed 2026-07-27; Context7 consulted first)
+- [xUnit v3 getting started](https://xunit.net/docs/getting-started/v3/getting-started)
+- [xUnit v3 Microsoft Testing Platform package variants](https://xunit.net/docs/getting-started/v3/microsoft-testing-platform)
+- [`dotnet test` with VSTest](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test-vstest)
+- [xunit.runner.visualstudio 3.1.5 on NuGet](https://www.nuget.org/packages/xunit.runner.visualstudio/3.1.5)
+
+Accessed 2026-07-27. Context7 was consulted first.

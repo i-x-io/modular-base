@@ -12,12 +12,36 @@ Select one database naming convention before the first production migration. Thi
 
 ## Recommended registration and use
 
-- Configure the convention once while building the DbContext model/options.
-- Generate and review a migration to verify table, column, key, foreign-key, index, and join-table names.
+Reference the centrally pinned package and configure the convention on the same options builder as Npgsql:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="EFCore.NamingConventions" />
+</ItemGroup>
+```
+
+```csharp
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("AppDatabase"))
+        .UseSnakeCaseNamingConvention());
+```
+
+The package also exposes lower-case, upper-case, camel-case, and upper-snake-case conventions. Choose exactly one project-wide convention before the first migration; explicit Fluent API names remain appropriate where a legacy or externally managed schema requires them.
+
+After configuring it, generate and inspect a migration:
+
+```bash
+dotnet ef migrations add ApplySnakeCase --project src/Infrastructure --startup-project src/Api
+dotnet ef migrations script 0 ApplySnakeCase --project src/Infrastructure --startup-project src/Api
+```
+
+Review table, column, primary/foreign key, index, sequence, and join-table identifiers in both the migration and generated SQL.
 
 ## Enterprise implementation guidance
 
-Treat conversion of an established schema as a reviewed data-migration program: inventory dependent views/functions/extensions, schedule locks, test rename SQL and recovery, and use deployment DDL permissions rather than application credentials.
+Treat conversion of an established schema as a reviewed data-migration program. The upstream project warns that enabling a convention on an existing database can generate renames for every object and may drop/recreate primary keys.
+
+Inventory dependent views, functions, triggers, policies, quoted SQL, reporting jobs, and external consumers. Test rename SQL and rollback/recovery from a production-like copy, estimate locks, and deploy with a DDL identity rather than the application identity. For a new database, capture the convention in the initial model snapshot so every environment starts consistently.
 
 ## Integration with the catalog
 
@@ -25,7 +49,9 @@ Use with [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md), [Mic
 
 ## Security, performance, AOT, trimming, and operations
 
-Naming does not change authorization or parameterization requirements. A production rollout can lock or rename large objects; capture generated SQL, backup/recovery evidence, and provider behavior. AOT/trimming compatibility is unverified.
+Naming does not change authorization, row-level security, or parameterization requirements. Identifier renames can break security policies and operational SQL even when EF-generated queries work. A production rollout can lock or rebuild objects; capture reviewed SQL, dependency inventory, duration, backup/restore evidence, and schema-drift checks.
+
+The convention participates in model construction, so compiled models and migration snapshots must be regenerated after a change. AOT/trimming compatibility remains unverified until the exact provider/convention combination is published and exercised.
 
 ## Avoid
 
@@ -37,6 +63,7 @@ Naming does not change authorization or parameterization requirements. A product
 
 - [ ] Compile a consuming EF Core/Npgsql project with the exact 10.0.1 pin.
 - [ ] Generate a throwaway migration and review every identifier/schema operation.
+- [ ] Search application SQL, views, functions, policies, dashboards, and jobs for old quoted identifiers.
 - [ ] Test upgrade, downgrade/recovery, views/functions, and PostgreSQL integration.
 
 ## Sources
@@ -46,4 +73,6 @@ Accessed 2026-07-27.
 - [Central package catalog](../../Directory.Packages.props)
 - [EFCore.NamingConventions 10.0.1 on NuGet](https://www.nuget.org/packages/EFCore.NamingConventions/10.0.1)
 - [EFCore.NamingConventions repository](https://github.com/efcore/EFCore.NamingConventions)
+- [EFCore.NamingConventions setup and existing-database warning](https://github.com/efcore/EFCore.NamingConventions#usage)
 - [Npgsql naming guidance](https://www.npgsql.org/efcore/modeling/tables.html)
+- [EF Core migration management](https://learn.microsoft.com/ef/core/managing-schemas/migrations/managing)

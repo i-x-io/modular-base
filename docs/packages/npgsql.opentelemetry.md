@@ -15,6 +15,26 @@ Use this package to subscribe an OpenTelemetry tracer provider to Npgsql activit
 
 ## Recommended registration and use
 
+- Reference the centrally pinned instrumentation package. The application must also reference its chosen OpenTelemetry hosting and exporter packages:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="Npgsql.OpenTelemetry" />
+</ItemGroup>
+```
+
+In a hosted service, let dependency injection own the tracer-provider lifecycle and send telemetry through the deployment's approved exporter:
+
+```csharp
+services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("catalog-api"))
+    .WithTracing(tracing => tracing
+        .AddNpgsql()
+        .AddOtlpExporter());
+```
+
+For a short-lived local diagnostic program, an explicitly owned provider is also valid:
+
 ```csharp
 using var tracerProvider = Sdk.CreateTracerProviderBuilder()
     .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("catalog-api"))
@@ -25,7 +45,9 @@ using var tracerProvider = Sdk.CreateTracerProviderBuilder()
 
 ## Enterprise implementation guidance
 
-Use the same tracer provider for the service’s application and HTTP instrumentation. Replace the console exporter with the deployment’s approved exporter. Npgsql tracing was introduced in Npgsql 9 and is documented as experimental, so validate emitted detail and dashboard queries after driver upgrades.
+Use the same tracer provider for the service’s application and HTTP instrumentation so database spans become children of incoming request spans. Replace the console exporter with the deployment’s approved exporter, configure batching and sampling for expected command volume, and flush on graceful shutdown. Npgsql tracing was introduced in Npgsql 9; Npgsql 10 aligned command tracing and metrics with OpenTelemetry semantic conventions, so dashboard queries and alert rules must be reviewed during a 9-to-10 upgrade.
+
+Instrument a representative workflow end to end: incoming HTTP request, application activity, Npgsql command, and exporter delivery. Confirm error status and duration behavior with a deliberately failed command in a non-production environment. Telemetry is diagnostic evidence, not a retry or auditing mechanism.
 
 ## Integration with the catalog
 
@@ -33,7 +55,7 @@ Use [Npgsql](npgsql.md) for data-source configuration and the catalog’s `OpenT
 
 ## Security, performance, AOT, trimming, and operations
 
-`NpgsqlDataSourceBuilder.ConfigureTracing` can filter command spans, customize names, add tags, and disable time-to-first-read or physical-connection-open spans.
+`NpgsqlDataSourceBuilder.ConfigureTracing` can filter command spans, customize names, add tags, and disable time-to-first-read or physical-connection-open spans. Apply this configuration before building the same long-lived data source used by the application:
 
 ```csharp
 dataSourceBuilder.ConfigureTracing(options => options
@@ -43,21 +65,29 @@ dataSourceBuilder.ConfigureTracing(options => options
 
 Do not set span names to raw SQL in production unless SQL content is classified safe: SQL can contain sensitive literals and creates high-cardinality telemetry. Prefer stable operation names, approved tags, and sampling appropriate to database volume.
 
+Exporters can add latency, memory pressure, and network traffic. Monitor dropped spans and exporter failures, keep attributes bounded, and never attach parameter values, connection strings, tokens, tenant secrets, or full result data. Treat database names, server addresses, SQL text, and exception messages according to the organization's telemetry data classification and retention policy.
+
 ## Avoid
 
 - Do not rely on the console exporter beyond local diagnosis.
 - Do not add sensitive values or raw unclassified SQL to span names or tags.
 - Do not assume experimental trace detail is a stable external contract.
+- Do not create a tracer provider or exporter for every request.
+- Do not use head sampling rules that accidentally discard all error or high-latency evidence without an explicit policy.
 
 ## Verification checklist
 
 - [ ] An Npgsql span is visible under an application request trace.
 - [ ] Production exporter, sampling, service name, and resource attributes are configured.
 - [ ] Span names and tags pass the data-classification and cardinality review.
+- [ ] Graceful shutdown flushes telemetry and exporter failures/dropped spans are monitored.
+- [ ] Dashboards and alerts use the Npgsql 10 semantic-convention names and tags.
 
 ## Sources
 
 - [Npgsql tracing with OpenTelemetry](https://www.npgsql.org/doc/diagnostics/tracing.html)
+- [Npgsql 10 tracing and metrics changes](https://www.npgsql.org/doc/release-notes/10.0.html#tracing-and-metrics-have-been-changed-to-align-with-the-opentelemetry-standard)
+- [OpenTelemetry .NET ASP.NET Core setup](https://opentelemetry.io/docs/languages/dotnet/getting-started/)
 - [Npgsql.OpenTelemetry package on NuGet](https://www.nuget.org/packages/Npgsql.OpenTelemetry/10.0.3)
 
 Accessed 2026-07-27.

@@ -12,6 +12,14 @@ Use Scalar as the interactive UI over the FastEndpoints-generated OpenAPI docume
 
 ## Recommended registration and use
 
+Add the centrally versioned package to the consuming web project:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="Scalar.AspNetCore" />
+</ItemGroup>
+```
+
 Map Scalar after mapping the OpenAPI document(s), passing the exact FastEndpoints document names. Gate both routes to development unless production exposure has an explicit protected authorization policy:
 
 ```csharp
@@ -28,12 +36,26 @@ if (app.Environment.IsDevelopment())
 
 This syntax was compilation-verified in the package pipeline described in [FastEndpoints](fastendpoints.md). Add all intended named documents explicitly; `AddDocuments("v1", "v2")` is appropriate only when both documents are registered.
 
+For an approved non-development deployment, protect both the UI and its source document with the same documentation policy:
+
+```csharp
+app.MapOpenApi("/openapi/{documentName}.json")
+    .RequireAuthorization("ApiDocs");
+
+app.MapScalarApiReference("/docs", options =>
+    options.AddDocument("v1", routePattern: "/openapi/{documentName}.json"))
+    .RequireAuthorization("ApiDocs");
+```
+
+`MapScalarApiReference()` returns an endpoint convention builder, so normal ASP.NET Core endpoint authorization applies. The document name and case must match the producer. Scalar can preconfigure an OpenAPI security scheme for development convenience, but any prefilled token, client secret, or API key is delivered to the browser; never configure real credentials this way.
+
 ## Enterprise implementation guidance
 
 - Treat the Scalar route as a public application surface: choose a route, hosting environment, access policy, and change-control owner.
 - Keep document titles, server URLs, authorization descriptions, and examples accurate; Scalar faithfully exposes whatever the OpenAPI document declares.
 - Use a single OpenAPI document source of truth. Do not configure Scalar against a stale copied file in development while clients use a different live contract.
 - In Native AOT production, serve FastEndpoints-exported static documents and point Scalar at those names/paths; keep live document generation for approved development workflows.
+- Make the explorer workflow reproducible: select the intended named document, authenticate through its declared OAuth/OIDC flow, exercise a safe read operation, and confirm the generated request uses the expected server URL and security scheme.
 
 ## Integration with the catalog
 
@@ -60,9 +82,12 @@ This syntax was compilation-verified in the package pipeline described in [FastE
 - [ ] The UI is exposed only in approved environments or protected by the approved policy.
 - [ ] Document titles/operation names and auth schemes match the published API contract.
 - [ ] Production AOT deployments serve exported document files successfully.
+- [ ] No production credential or confidential OAuth client secret is embedded in Scalar options or generated HTML.
 
 ## Sources
 
 - [FastEndpoints OpenAPI documents: Scalar integration](https://fast-endpoints.com/docs/openapi-documents) — Accessed 2026-07-27.
-- [Scalar ASP.NET Core package repository](https://github.com/scalar/scalar/tree/main/integrations/aspnetcore) — Accessed 2026-07-27.
+- [Scalar ASP.NET Core package repository](https://github.com/scalar/scalar/tree/main/integrations/dotnet/aspnetcore) — Accessed 2026-07-27.
+- [Scalar: ASP.NET Core API Reference integration](https://scalar.com/products/api-references/integrations/aspnetcore/integration) — Accessed 2026-07-27.
+- [Scalar: multiple OpenAPI documents](https://github.com/scalar/scalar/blob/main/integrations/dotnet/aspnetcore/docs/multiple-openapi-documents.md) — Accessed 2026-07-27.
 - [NuGet: Scalar.AspNetCore 2.16.16](https://www.nuget.org/packages/Scalar.AspNetCore/2.16.16) — Accessed 2026-07-27.

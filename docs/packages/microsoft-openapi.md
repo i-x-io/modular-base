@@ -19,12 +19,34 @@ Do not add application startup calls for this package. Let the OpenAPI pipeline 
 
 Add a direct reference only when application code must use OpenAPI.NET types and only at the catalog’s compatible `2.11.0` pin.
 
+```xml
+<ItemGroup>
+  <PackageReference Include="Microsoft.OpenApi" />
+</ItemGroup>
+```
+
+Keep direct model customization small and pipeline-owned. For example, a document transformer may call a helper that only stamps approved contract metadata:
+
+```csharp
+using Microsoft.OpenApi;
+
+static void ApplyReleaseMetadata(OpenApiDocument document)
+{
+    document.Info.Title = "Orders API";
+    document.Info.Version = "v2";
+    document.Info.Description = "Supported production contract.";
+}
+```
+
+When importing an external JSON or YAML description, treat parsing diagnostics and validation errors as release failures before re-serializing or publishing it. Pin the target OpenAPI specification version in the export workflow so toolchain defaults cannot silently change the artifact.
+
 ## Enterprise implementation guidance
 
 - Treat the central `2.11.0` pin as a compatibility boundary, not a floating convenience version.
 - Keep custom OpenAPI model manipulation in a small, tested document-customization boundary.
 - Upgrade ASP.NET Core OpenAPI, FastEndpoints.OpenApi, and Microsoft.OpenApi together after a compatibility review.
 - Capture the resolved dependency graph in CI so a transitive change cannot silently reintroduce an incompatible major.
+- Prefer output-based tests: generate the document, parse it with OpenAPI.NET, validate it, and assert stable paths, operations, security schemes, and release metadata.
 
 ## Integration with the catalog
 
@@ -51,10 +73,12 @@ Add a direct reference only when application code must use OpenAPI.NET types and
 - [ ] `dotnet build` succeeds with FastEndpoints.OpenApi and Microsoft.AspNetCore.OpenApi present.
 - [ ] Dependency/audit checks confirm no 3.x OpenAPI.NET package is selected.
 - [ ] Any custom OpenAPI.NET model code is covered by document-output tests.
+- [ ] Imported descriptions fail the release check on parser diagnostics or validation errors.
 
 ## Sources
 
 - [OpenAPI.NET repository](https://github.com/microsoft/OpenAPI.NET) — Accessed 2026-07-27.
+- [OpenAPI.NET read and write guidance](https://github.com/microsoft/OpenAPI.NET/blob/main/README.md#read-and-write-openapi-descriptions) — Accessed 2026-07-27.
 - [OpenAPI.NET 3.x upgrade guide](https://github.com/microsoft/OpenAPI.NET/blob/main/docs/upgrade-guide-3.md) — Accessed 2026-07-27.
 - [Microsoft: generate OpenAPI documents](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/aspnetcore-openapi?view=aspnetcore-10.0) — Accessed 2026-07-27.
 - [NuGet: Microsoft.OpenApi 2.11.0](https://www.nuget.org/packages/Microsoft.OpenApi/2.11.0) — Accessed 2026-07-27.

@@ -15,6 +15,14 @@ Use Azure Files when the workload requires an Azure file share and directory/fil
 
 ## Recommended registration and use
 
+Reference the provider through the centrally managed catalog:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="FluentStorage.Azure.Files" />
+</ItemGroup>
+```
+
 Prefer an existing `ShareServiceClient` built with `DefaultAzureCredential`, then wrap it:
 
 ```csharp
@@ -31,6 +39,8 @@ IStore store = AzureFilesStorage.FromClient(client);
 ```
 
 Use Entra workload identity or managed identity in production. The provider also supports token, managed identity, shared key, and existing-client factories. Prefer `FromClient` when SDK retry, transport, observability, and identity configuration must be explicit. A share is selected through the storage path/workload configuration; validate and scope that selection rather than taking it from an untrusted request.
+
+Provision the share and its quota separately and verify that the selected REST authentication model supports the intended operations; SMB/NFS mount identity is a different boundary from REST client authorization. Use the shared upload/download/list/delete pattern from [FluentStorage](fluentstorage.md), but treat the first path segment as an authorized share name and later segments as directories/files. Prefer `DeleteObject` for a file. Use `DeleteDirectory` only when directory semantics are intended, and require an explicit `recursive` choice because a non-empty directory cannot be treated like an object-store prefix.
 
 Dispose streams returned by the store. Azure Files may need a seekable stream for some operations; test the actual upload stream shape and size. Use `GetBytes` only for explicitly bounded files.
 
@@ -75,5 +85,6 @@ Accessed 2026-07-27.
 - [FluentStorage Azure Files factory/source](https://github.com/robinrodricks/FluentStorage/tree/develop/FluentStorage.Azure.Files)
 - [FluentStorage.Azure.Files 8.0.10 on NuGet](https://www.nuget.org/packages/FluentStorage.Azure.Files/8.0.10)
 - [Azure Files .NET client library](https://learn.microsoft.com/azure/storage/files/storage-dotnet-how-to-use-files)
+- [Authorize Azure Files access with Microsoft Entra ID over REST](https://learn.microsoft.com/azure/storage/files/authorize-oauth-rest)
 - [Azure Files identity-based authorization](https://learn.microsoft.com/azure/storage/files/storage-files-identity-auth-domain-services-enable)
 - [Azure Storage encryption at rest](https://learn.microsoft.com/azure/storage/common/storage-service-encryption)

@@ -2,39 +2,78 @@
 
 ## Catalog entry
 
-`Enums.NET` **5.0.0** — direct catalog package; high-performance enum utilities, including parsing, formatting, metadata, and flag operations.
+`Enums.NET` **5.0.0** — direct catalog package; high-performance enum utilities, including parsing, formatting, cached metadata, validation, and flag operations. The catalog owns the version for `net10.0` projects using C# 14.
 
 ## Decision and scope
 
-Use for enum-specific operations where the standard library lacks the required API or measured throughput matters. Keep public contracts expressed as the enum type, not library-specific metadata wrappers.
+Use for enum-specific operations where the standard library lacks the required API, attribute-backed formats are intentional, or measured throughput justifies its cached metadata. Keep public contracts expressed as the enum type or an explicitly documented wire string, not library-specific metadata wrappers.
 
 ## Recommended registration and use
 
-Use the package's typed extension APIs at domain boundaries and keep parsing culture/format requirements explicit. Cache application-level derived display values when they are repeatedly used.
+With Central Package Management already enabled, add a versionless reference to the consuming project:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="Enums.NET" />
+</ItemGroup>
+```
+
+For the common input-validation workflow, define the accepted format, use non-throwing parsing, and validate the result before entering the domain:
+
+```csharp
+using EnumsNET;
+
+const string input = "in-progress";
+
+if (!Enums.TryParse<JobState>(
+        input, ignoreCase: true, out var state, EnumFormat.EnumMemberValue) ||
+    !state.IsValid())
+{
+    throw new ArgumentException("Unsupported job state.", nameof(input));
+}
+
+var wireValue = state.AsString(EnumFormat.EnumMemberValue);
+
+public enum JobState
+{
+    [System.Runtime.Serialization.EnumMember(Value = "queued")]
+    Queued,
+    [System.Runtime.Serialization.EnumMember(Value = "in-progress")]
+    InProgress,
+    [System.Runtime.Serialization.EnumMember(Value = "complete")]
+    Complete
+}
+```
+
+For `[Flags]` enums, use `IsValid()` to reject unknown bits and use `HasAllFlags` or `HasAnyFlags` to state the intended condition explicitly. Register custom `EnumFormat` instances once during startup and keep the same format precedence for parsing and formatting.
 
 ## Enterprise implementation guidance
 
-Centralize external-string-to-enum conversion, reject undefined values unless the contract allows them, and test every serialized value during enum changes. Document flags combinations independently from display text.
+Centralize external-string conversion and return a domain-level error rather than letting `Parse` exceptions escape normal validation paths. Decide whether names, numeric values, `EnumMemberAttribute`, descriptions, or another registered format are accepted; accepting multiple formats can create ambiguous contracts. During an enum change, test every supported wire value, aliases/duplicate values, the zero value, and all permitted flag combinations. Cache only derived presentation data whose culture and invalidation rules are explicit.
 
 ## Integration with the catalog
 
-`humanizer-core.md` can provide presentation text; it must not define wire-format names. Use `fluentvalidation.md` to validate request values before domain conversion.
+`humanizer-core.md` can produce presentation text after validation; it must not define wire-format names. Use `fluentvalidation.md` to reject request values before domain conversion, and keep serializer configuration aligned with the same canonical names.
 
 ## Security, performance, AOT, trimming, and operations
 
-Metadata and enum discovery can depend on runtime reflection. Enums.NET does not publish a package-level NativeAOT/trimming guarantee in its primary documentation; treat NativeAOT as a release gate and exercise metadata, parsing, and formatting paths in the published artifact.
+Never trust a successful numeric conversion alone: the CLR can represent undefined enum values, and flags can contain unknown bits. Attribute-backed formats and metadata discovery rely on reflection and cached metadata. Enums.NET does not publish a package-level NativeAOT/trimming guarantee in its primary documentation; exercise `TryParse`, `AsString`, attributes, and flag validation in the published artifact. Benchmark against `System.Enum` on the actual hot path before adopting the dependency for performance alone.
 
 ## Avoid
 
-Do not use display descriptions as stable API identifiers. Do not assume every numeric value of an enum is defined or valid for a flags contract.
+Do not use descriptions or humanized text as stable API identifiers, accept numeric values accidentally, assume every numeric enum value is defined, treat `Enum.IsDefined` as flags-combination validation, or register process-wide custom formats per request.
 
 ## Verification checklist
 
-- Test defined, undefined, composite-flags, and case/culture-specific parsing cases.
-- Assert serialized names remain stable for all supported enum members.
-- Run a trimmed/NativeAOT smoke test when the application uses enum metadata.
+- [ ] The consuming project has a versionless `PackageReference`, and the resolved version is `5.0.0` from the central catalog.
+- [ ] Defined, undefined, numeric, duplicate, zero, case-sensitive, and case-insensitive inputs follow the documented contract.
+- [ ] Flags tests cover valid composites, unknown bits, `HasAllFlags`, and `HasAnyFlags` semantics.
+- [ ] Serialized names and accepted parse formats remain stable for every supported member during enum changes.
+- [ ] Trimmed/NativeAOT smoke tests cover metadata, attributes, parsing, formatting, and flags where those publish modes are used.
 
 ## Sources
 
-- https://www.nuget.org/packages/Enums.NET/5.0.0 (Accessed 2026-07-27)
-- https://github.com/TylerBrinkley/Enums.NET (Accessed 2026-07-27)
+- [Enums.NET 5.0.0 on NuGet](https://www.nuget.org/packages/Enums.NET/5.0.0) (Accessed 2026-07-27)
+- [Enums.NET official repository and v5 API examples](https://github.com/TylerBrinkley/Enums.NET) (Accessed 2026-07-27)
+- [Enums.NET v5 changes and API examples](https://github.com/TylerBrinkley/Enums.NET/blob/master/README.md#v50-changes) (Accessed 2026-07-27)
+- [Microsoft guidance for C# enum types](https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/enum) (Accessed 2026-07-27)

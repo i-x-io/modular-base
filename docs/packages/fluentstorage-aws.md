@@ -17,6 +17,14 @@ Prefer the native AWS SDK boundary when the workload needs Object Lock, legal ho
 
 ## Recommended registration and use
 
+Reference the provider without a version because the catalog pins `8.0.10` centrally:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="FluentStorage.AWS" />
+</ItemGroup>
+```
+
 For workloads running on AWS, prefer the identity-based role constructor rather than static access keys:
 
 ```csharp
@@ -29,6 +37,8 @@ IStore store = AwsS3Storage.FromRole(
 ```
 
 `FromRole` is suitable when the AWS SDK can obtain role credentials from the workload environment. For local development, use a named profile or an explicitly supplied short-lived credential through a secret-managed configuration boundary—never literals. Do not use a connection string for credential-bearing production configuration.
+
+Before startup, provision the bucket and region, attach an IAM role, and grant only the required `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`, and `s3:ListBucket` actions (plus KMS permissions when applicable). Fail startup when the bucket or region is missing; do not silently switch buckets. After construction, use the upload/download/list/delete workflow in [FluentStorage](fluentstorage.md). For S3 specifically, keep listings prefix-bounded and set `MaxResults`; deleting a “directory” means listing and deleting every matching key, not removing one atomic resource.
 
 Use stable keys and stream data through `SetObject`/`OpenRead`; the AWS SDK may buffer non-seekable input for upload. Keep upload size, buffering, cancellation, and multipart behavior under load test. Dispose returned read/write streams and the store when its host lifetime ends.
 
@@ -48,6 +58,8 @@ Use stable keys and stream data through `SetObject`/`OpenRead`; the AWS SDK may 
 ## Security, performance, AOT, trimming, and operations
 
 S3 object versioning, tags, and storage tiers are bucket/object capabilities that must be enabled and tested in the account; `IStore` capability methods report support but do not configure them. Listing is prefix-based and paginated, can be expensive at scale, and is not a directory transaction. Lifecycle, replication, retention, Object Lock, inventory, and server-side encryption belong in bucket provisioning.
+
+For objects around 100 MB or larger, AWS recommends considering multipart upload. Validate FluentStorage's transfer behavior for the pinned provider; when explicit part size, concurrency, checksum, abort, or resume control is required, use the native S3 transfer APIs behind a provider-specific adapter. Configure a lifecycle rule to abort incomplete multipart uploads so abandoned parts do not accumulate charges.
 
 Do not implement “create only if absent” with `ObjectExists` then write. It races. For write-once or version-sensitive workflows, use a native S3 conditional/version-aware operation behind an application-owned interface. A retry after a network timeout may leave the write outcome unknown; deterministic keys and reconciliation are required.
 
@@ -76,4 +88,5 @@ Accessed 2026-07-27.
 - [FluentStorage.AWS 8.0.10 on NuGet](https://www.nuget.org/packages/FluentStorage.AWS/8.0.10)
 - [AWS SDK for .NET retries and timeouts](https://docs.aws.amazon.com/sdk-for-net/v4/developer-guide/retries-timeouts.html)
 - [AWS SDK credential and profile resolution](https://docs.aws.amazon.com/sdk-for-net/v4/developer-guide/creds-assign.html)
+- [Amazon S3 multipart upload overview](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html)
 - [Amazon S3 server-side encryption](https://docs.aws.amazon.com/AmazonS3/latest/userguide/serv-side-encryption.html)

@@ -17,6 +17,14 @@ Use `IStore` when an application needs to isolate business code from a selected 
 
 ## Recommended registration and use
 
+With central package management, the project file contains a versionless reference; the catalog keeps `8.0.16` authoritative:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="FluentStorage" />
+</ItemGroup>
+```
+
 Register a long-lived `IStore` at the composition root and dispose it when the application host stops. Use a provider factory only at that boundary; application services should receive `IStore` or a narrow application-owned interface.
 
 ```csharp
@@ -29,9 +37,48 @@ await store.SetText("invoices/2026-07-27.json", "{\"status\":\"accepted\"}");
 using Stream content = await store.OpenRead("invoices/2026-07-27.json");
 ```
 
+A typical bounded workflow uses a caller-owned upload stream, a disposed download stream, an explicitly bounded listing, and an explicit delete:
+
+```csharp
+using FluentStorage.Model;
+using FluentStorage.Storage;
+
+const string key = "tenant/acme/document/42.pdf";
+
+await store.SetObject(
+    key,
+    uploadStream,
+    contentType: "application/pdf",
+    cancellationToken: cancellationToken);
+
+using (Stream download = await store.OpenRead(key, cancellationToken))
+{
+    await download.CopyToAsync(destinationStream, cancellationToken);
+}
+
+List<StoreObject> documents = await store.ListObjects(
+    new StorageListOptions
+    {
+        FolderPath = "tenant/acme/document",
+        Recurse = true,
+        MaxResults = 100,
+        IncludeAttributes = true
+    },
+    cancellationToken);
+
+if (await store.ObjectExists(key, cancellationToken))
+{
+    await store.DeleteObject(key, cancellationToken);
+}
+```
+
+`ObjectExists` before delete is useful for user-facing reporting, but it is not required for correctness and introduces another request. Deleting a missing object and listing behavior remain provider-specific. `ListObjects` returns a materialized `List<StoreObject>`; use `FolderPath`, `MaxResults`, and provider-appropriate recursion to prevent an accidental full-store scan. `DeleteObject` deletes one object, while `DeleteDirectory(path, recursive: true)` is a separate, potentially expensive operation and should require an authorized, narrowly scoped prefix.
+
 Treat the path as a provider-neutral *object identifier*, not an OS file path. FluentStorage normalizes separators to `/` and strips leading/trailing separators, but it preserves `.` and `..` segments. Build keys from validated logical segments; never accept an unvalidated client path as a key. Use a stable prefix such as `tenant/{tenantId}/document/{documentId}` and retain the provider's canonical identifier in audit data.
 
-Use `OpenRead`, `OpenWrite`, `OpenRange`, or `GetObject` for potentially large content. The caller owns every stream returned by `OpenRead`, `OpenRange`, `OpenSeekable`, and `OpenWrite`; disposing an `OpenWrite` stream commits its content. `GetBytes` and `GetText` materialize the full object and are only appropriate for bounded payloads. Do not dispose a caller-supplied input stream until `SetObject` has completed.
+Use `SetObject`, `OpenRead`, `OpenWrite`, `OpenRange`, or `OpenSeekable` for potentially large content. The caller owns every stream returned by `OpenRead`, `OpenRange`, `OpenSeekable`, and `OpenWrite`; disposing an `OpenWrite` stream commits its content. `GetBytes` and `GetText` materialize the full object and are only appropriate for bounded payloads. Do not dispose a caller-supplied input stream until `SetObject` has completed.
+
+For local development, create the disk root before startup and grant the process identity access only to that directory. Use `StorageFactory.InMemory()` in unit tests, recreate it per test, and never infer production durability, concurrency, or listing semantics from the in-memory provider. At shutdown, stop accepting work, await in-flight transfers, dispose their streams, and finally dispose the singleton store.
 
 ## Enterprise implementation guidance
 
@@ -74,4 +121,5 @@ Accessed 2026-07-27.
 
 - [FluentStorage upstream README](https://github.com/robinrodricks/FluentStorage)
 - [FluentStorage `IStore` contract](https://github.com/robinrodricks/FluentStorage/blob/develop/FluentStorage/Storage/IStore.cs)
+- [FluentStorage listing options](https://github.com/robinrodricks/FluentStorage/blob/develop/FluentStorage/Model/StorageListOptions.cs)
 - [FluentStorage 8.0.16 on NuGet](https://www.nuget.org/packages/FluentStorage/8.0.16)

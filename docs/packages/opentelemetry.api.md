@@ -12,6 +12,14 @@
 
 ## Recommended registration and use
 
+With central package management, reusable libraries add a versionless reference:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="OpenTelemetry.Api" />
+</ItemGroup>
+```
+
 Use one static `ActivitySource` and `Meter` per logical library/component and guard expensive tag construction with `activity?.IsAllDataRequested`.
 
 ```csharp
@@ -31,10 +39,28 @@ if (activity?.IsAllDataRequested == true)
 
 The consuming application must call `.AddSource("ModularBase.Orders")` on its tracer provider. `StartActivity` may return `null` when no listener requests data; this is intentional and the example handles it.
 
+Use the same stable instrumentation name for metrics when it represents the same component, while keeping instrument names specific and units explicit:
+
+```csharp
+using System.Diagnostics.Metrics;
+
+internal static class OrderMetrics
+{
+    internal static readonly Meter Meter = new("ModularBase.Orders");
+    internal static readonly Counter<long> Accepted =
+        Meter.CreateCounter<long>("orders.accepted", unit: "{order}");
+}
+
+OrderMetrics.Accepted.Add(1, new("orders.channel", "api"));
+```
+
+The application must register `.AddMeter("ModularBase.Orders")`. Keep `orders.channel` to a documented finite set; never substitute an order or customer identifier.
+
 ## Enterprise implementation guidance
 
 - Publish source/meter names and low-cardinality tag keys as compatibility contracts; changing either can break dashboards and alerts.
 - Prefer OpenTelemetry semantic conventions where they apply. Use namespaced custom attributes for domain-specific data.
+- Dispose dynamically created `ActivitySource`/`Meter` instances, but prefer process-lifetime static instances for stable library instrumentation. Do not create either object per operation.
 - Record meaningful operation boundaries, not every method call. Keep tag values finite and sanitized at the emission point when possible.
 - Use baggage only for small, propagated, approved correlation values; it crosses process boundaries and is not a secure storage channel.
 
@@ -67,7 +93,8 @@ API emission should remain cheap when no provider listens. Avoid eagerly allocat
 
 Accessed 2026-07-27:
 
-- https://www.nuget.org/packages/OpenTelemetry.Api/1.17.0
-- https://github.com/open-telemetry/opentelemetry-dotnet/tree/main/src/OpenTelemetry.Api
-- https://opentelemetry.io/docs/languages/dotnet/instrumentation/
-- https://opentelemetry.io/docs/specs/semconv/general/recording-errors/
+- [OpenTelemetry.Api 1.17.0 on NuGet](https://www.nuget.org/packages/OpenTelemetry.Api/1.17.0)
+- [OpenTelemetry.Api source](https://github.com/open-telemetry/opentelemetry-dotnet/tree/main/src/OpenTelemetry.Api)
+- [Manual instrumentation for OpenTelemetry .NET](https://opentelemetry.io/docs/languages/dotnet/instrumentation/)
+- [OpenTelemetry .NET tracing API guidance](https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/docs/trace/README.md)
+- [OpenTelemetry error-recording semantic conventions](https://opentelemetry.io/docs/specs/semconv/general/recording-errors/)

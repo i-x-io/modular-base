@@ -15,7 +15,15 @@ Use this provider for an SFTP server where file/directory semantics and SSH tran
 
 ## Recommended registration and use
 
-Prefer private-key authentication and an explicitly configured SSH.NET `ConnectionInfo` when the integration requires pinned host-key verification or custom authentication:
+Reference the provider without a version; the central catalog supplies `8.0.16` and its SSH.NET dependency:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="FluentStorage.SFTP" />
+</ItemGroup>
+```
+
+Prefer private-key authentication. This factory example configures authentication only; host-key verification is a separate requirement discussed below:
 
 ```csharp
 using FluentStorage;
@@ -30,7 +38,9 @@ IStore store = SftpStorage.FromPrivateKey(
     keyFiles: key);
 ```
 
-The simple password factory is a compatibility option only; retrieve any password through a secret manager. Verify the server host key/fingerprint according to SSH.NET’s connection configuration before transferring sensitive data. Dispose the store at host shutdown and each returned input/read stream after the operation.
+The simple password factory is a compatibility option only; retrieve any password through a secret manager. Dispose the store at host shutdown and each returned input/read stream after the operation.
+
+Production setup must validate host identity. Obtain the expected SHA-256 host-key fingerprint over a separately trusted channel and treat a mismatch as a hard failure. SSH.NET exposes `HostKeyReceived`, but the pinned FluentStorage provider's `FromClient` factory also constructs a second `SshClient` from the same `ConnectionInfo` for command operations without exposing that client for a host-key handler. Do not claim complete host-key pinning through the public provider factory without an integration test of every used operation; use a reviewed native SSH.NET adapter or an upstream fix when this is a hard security requirement. Provision a restricted server account/root directory and test permissions for list, create, rename, read, and delete. Use the shared `SetObject`, `OpenRead`, `ListObjects`, and `DeleteObject` workflow from [FluentStorage](fluentstorage.md); for partner exchange, upload to a unique staging name and call `MoveObject(staging, final, overwrite: false, cancellationToken)` only after the upload stream is closed and any required checksum is verified.
 
 ## Enterprise implementation guidance
 
@@ -50,6 +60,8 @@ The simple password factory is a compatibility option only; retrieve any passwor
 SFTP has real remote directories. The provider ensures directories for relevant writes, but directory operations and permissions are server behavior. It is inappropriate to treat SFTP as an S3 bucket: no object versions, tags, storage tiers, lifecycle, or cloud-native encryption policy follows from the shared interface.
 
 For reliable partner delivery, write to a unique staging name, close/dispose the stream to complete the upload, then use an agreed server-side atomic rename/publish step where supported. Do not use `ObjectExists` then write as a concurrency control. Validate seek/range behavior, large file limits, timeout handling, and retry effects against the specific server. No trimming/Native-AOT guarantee is documented.
+
+SFTP servers vary in whether rename-without-overwrite is atomic and how they expose fsync/durability. Confirm the actual server behavior and partner pickup convention; do not promise atomic publication solely because `MoveObject` returned successfully. Keep recursive listings bounded because this provider walks directory trees client-side.
 
 ## Avoid
 
@@ -73,4 +85,5 @@ Accessed 2026-07-27.
 - [FluentStorage SFTP factory/source](https://github.com/robinrodricks/FluentStorage/tree/develop/FluentStorage.SFTP)
 - [FluentStorage.SFTP 8.0.16 on NuGet](https://www.nuget.org/packages/FluentStorage.SFTP/8.0.16)
 - [SSH.NET project documentation](https://github.com/sshnet/SSH.NET)
+- [SSH.NET getting started and supported host-key algorithms](https://sshnet.github.io/SSH.NET/)
 - [SSH.NET `SftpClient` API](https://sshnet.github.io/SSH.NET/api/Renci.SshNet.SftpClient.html)

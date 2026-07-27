@@ -15,6 +15,14 @@ Use this provider for MinIO endpoints and buckets, including deployments that ne
 
 ## Recommended registration and use
 
+Reference the provider without a version because the catalog pins `8.0.10` centrally:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="FluentStorage.Minio" />
+</ItemGroup>
+```
+
 For static credentials only when a secret manager injects them at the composition root:
 
 ```csharp
@@ -30,6 +38,8 @@ IStore store = MinioStorage.FromCredentials(
 ```
 
 Prefer `FromIamRole`, `FromSts`, `FromAssumeRole`, or `FromClient` when the deployment supports temporary/federated credentials or the MinIO client must carry explicit transport and observability configuration. Do not store access/secret keys in checked-in settings, connection strings, or logs. Dispose returned streams and keep large transfers streaming.
+
+Provision the bucket, TLS certificate trust, DNS endpoint, IAM policy, lifecycle, versioning, and quotas before application startup. Health checks should distinguish DNS/TLS reachability from authorization and bucket access without uploading a new probe object on every check. After construction, use the shared upload/download/list/delete workflow from [FluentStorage](fluentstorage.md). Set a narrow `FolderPath`, `MaxResults`, and a deliberate recursion mode; deleting a prefix requires enumeration and multiple object deletes. Use the native MinIO client behind an application adapter for conditional/version-specific writes, multipart controls, presigned URLs, retention, or object lock.
 
 ## Enterprise implementation guidance
 
@@ -71,6 +81,6 @@ Accessed 2026-07-27.
 
 - [FluentStorage MinIO factory/source](https://github.com/robinrodricks/FluentStorage/tree/develop/FluentStorage.Minio)
 - [FluentStorage.Minio 8.0.10 on NuGet](https://www.nuget.org/packages/FluentStorage.Minio/8.0.10)
-- [MinIO .NET SDK documentation](https://min.io/docs/minio/linux/developers/dotnet/API.html)
-- [MinIO server-side encryption](https://min.io/docs/minio/linux/administration/server-side-encryption.html)
-- [MinIO IAM policy documentation](https://min.io/docs/minio/linux/administration/identity-access-management/policies.html)
+- [MinIO .NET SDK documentation](https://docs.min.io/enterprise/aistor-object-store/developers/sdk/dotnet/api/)
+- [MinIO server-side encryption](https://docs.min.io/enterprise/aistor-object-store/installation/kubernetes/server-side-encryption/)
+- [MinIO IAM policy documentation](https://docs.min.io/enterprise/aistor-object-store/administration/iam/access/)

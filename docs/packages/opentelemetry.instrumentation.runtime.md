@@ -12,6 +12,14 @@ Use this package for runtime metrics, not trace spans. It exposes runtime health
 
 ## Recommended registration and use
 
+With central package management, add a versionless application reference:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+</ItemGroup>
+```
+
 ```csharp
 builder.Services.AddOpenTelemetry()
     .WithMetrics(metrics => metrics.AddRuntimeInstrumentation());
@@ -19,11 +27,19 @@ builder.Services.AddOpenTelemetry()
 
 Export the metrics through the same governed pipeline as application metrics. Establish a dashboard and alert policy before enabling broad runtime signal collection so teams know which measurements drive action.
 
+On .NET 9 and later, the package registers the runtime’s built-in `System.Runtime` meter rather than recreating those measurements. Available metric names and attributes therefore depend on the target runtime as well as the package version. A useful investigation workflow is:
+
+1. Confirm the metric exists for the deployed .NET version and has been observed after startup (some GC measurements require a collection first).
+2. Correlate allocation/heap/GC pause signals with request throughput and latency.
+3. Correlate thread-pool queueing and worker counts with CPU/container throttling.
+4. Use a profiler, trace, dump, or load test to validate the hypothesis before changing GC or thread-pool settings.
+
 ## Enterprise implementation guidance
 
 - Use runtime metrics with request rate/latency, container limits, and infrastructure metrics to diagnose saturation. A single GC or thread-pool number is not a root-cause diagnosis.
 - Retain dimensions supplied by the instrumentation only when they are bounded and useful; do not add per-process, per-request, or per-tenant metric labels.
 - Set alert thresholds from observed baselines and service objectives, not generic absolute values copied across workloads.
+- Use SDK views to drop metrics that have no operational consumer or to set intentional histogram aggregation; keep the export interval aligned with alert latency needs and backend cost.
 - Version dashboards and alert rules alongside service operational ownership.
 
 ## Integration with the catalog
@@ -42,6 +58,7 @@ Runtime metrics reveal process behavior and can expose deployment topology throu
 - Do not use GC counters as a substitute for heap dumps, profiles, or a memory-leak investigation.
 - Do not make per-instance ephemeral identifiers metric dimensions.
 - Do not enable metrics without retention, dashboard, and alert ownership.
+- Do not assume a missing GC metric is an instrumentation failure before the process has performed a collection or before checking runtime-version availability.
 
 ## Verification checklist
 
@@ -50,12 +67,14 @@ Runtime metrics reveal process behavior and can expose deployment topology throu
 - [ ] Labels are bounded and the backend shows no unexpected series growth.
 - [ ] Load testing quantified collection/export overhead.
 - [ ] Alert thresholds and escalation ownership are documented.
+- [ ] Metric availability and names were verified on the production target framework/runtime, not inferred from a different .NET version.
 
 ## Sources
 
 Accessed 2026-07-27:
 
-- https://www.nuget.org/packages/OpenTelemetry.Instrumentation.Runtime/1.17.0
-- https://github.com/open-telemetry/opentelemetry-dotnet-contrib/tree/main/src/OpenTelemetry.Instrumentation.Runtime
-- https://github.com/open-telemetry/opentelemetry-dotnet-contrib/blob/main/src/OpenTelemetry.Instrumentation.Runtime/README.md
-- https://opentelemetry.io/docs/languages/dotnet/metrics/
+- [OpenTelemetry runtime instrumentation 1.17.0 on NuGet](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.Runtime/1.17.0)
+- [Runtime instrumentation source](https://github.com/open-telemetry/opentelemetry-dotnet-contrib/tree/main/src/OpenTelemetry.Instrumentation.Runtime)
+- [Runtime instrumentation setup and metric availability](https://github.com/open-telemetry/opentelemetry-dotnet-contrib/blob/main/src/OpenTelemetry.Instrumentation.Runtime/README.md)
+- [.NET built-in runtime metrics](https://learn.microsoft.com/dotnet/core/diagnostics/built-in-metrics-runtime)
+- [OpenTelemetry .NET metrics](https://opentelemetry.io/docs/languages/dotnet/metrics/)

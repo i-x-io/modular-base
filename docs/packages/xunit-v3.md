@@ -2,41 +2,87 @@
 
 ## Catalog entry
 
-`xunit.v3` **3.2.2** — test-only catalog package; preferred xUnit v3 framework and Microsoft Testing Platform (MTP) runner stack for new tests. Its package metadata installs `xunit.v3.mtp-v1`.
+| Field | Value |
+| --- | --- |
+| Package | `xunit.v3` |
+| Pinned version | `3.2.2` |
+| Status | Preferred approved test-only dependency |
+| Role | xUnit v3 framework with Microsoft Testing Platform v1 runner integration |
 
 ## Decision and scope
 
-Use for all new unit and integration tests. xUnit v3 is the preferred replacement for catalog-only SpecsFor. Keep tests deterministic, isolated, and focused on externally meaningful behavior.
+Use for all new unit, integration, and architecture tests. Version 3.2.2's `xunit.v3` metadata selects `xunit.v3.mtp-v1`, matching this repository's .NET 10 `global.json` runner selection. It is the preferred replacement for catalog-only SpecsFor.
 
 ## Recommended registration and use
 
-Create a project with `IXModularityProjectRole=Test` or `ArchitectureTest` and `IsTestProject=true`, reference the catalog's `xunit.v3`, and run it through the MTP-compatible `dotnet test` path. On .NET SDK 10 and later, the root `global.json` must select `Microsoft.Testing.Platform` through `test.runner`; this repository does so centrally. Mark parameterless tests with `[Fact]`; use asynchronous APIs and fixtures for external resources rather than blocking calls. Do not add the cataloged VSTest SDK/adapter/collector packages to this MTP configuration.
+In a project with `IXModularityProjectRole=Test` or `ArchitectureTest`, set `IsTestProject=true` and add a versionless direct reference:
+
+```xml
+<PropertyGroup>
+  <IsTestProject>true</IsTestProject>
+  <IXModularityProjectRole>Test</IXModularityProjectRole>
+</PropertyGroup>
+<ItemGroup>
+  <PackageReference Include="xunit.v3" />
+</ItemGroup>
+```
+
+Use `[Fact]` for one fixed case and `[Theory]` for data-driven behavior. Await asynchronous work and keep each case independent:
+
+```csharp
+public sealed class SlugTests
+{
+    [Theory]
+    [InlineData("Hello World", "hello-world")]
+    [InlineData(" already-clean ", "already-clean")]
+    public async Task NormalizeAsync_returns_a_stable_slug(
+        string input,
+        string expected)
+    {
+        var actual = await Slug.NormalizeAsync(input);
+
+        Assert.Equal(expected, actual);
+    }
+}
+```
+
+Run the preferred stack with `dotnet test`. For MTP/xUnit query filters, pass runner arguments after `--`, for example `dotnet test -- --filter-query /[category=fast]`, after assigning the corresponding trait/category in the suite.
 
 ## Enterprise implementation guidance
 
-Keep unit tests free of time, random, filesystem, and network nondeterminism through injected abstractions. Use collection/fixture sharing only with a clear lifecycle and reset contract. Partition Docker-backed integration tests from fast unit tests and keep test names behavior-oriented.
+Inject clocks, randomness, environment, filesystem, and network boundaries so unit tests are repeatable. Use `IAsyncLifetime` for asynchronous external-resource setup/cleanup and collection fixtures only when sharing is explicit and reset is guaranteed. Never depend on execution order. Partition Docker-backed integration tests from fast unit tests by project or an explicit trait/filter contract.
+
+Keep runner configuration repository-owned. On .NET 10+, `global.json` selects `Microsoft.Testing.Platform`; CI and local commands must use MTP options consistently. Record expected test counts or other discovery evidence so a zero-test run cannot appear successful.
 
 ## Integration with the catalog
 
-The cataloged VSTest alternative and its required central package addition are documented in `xunit-runner-visualstudio.md` and `microsoft-net-test-sdk.md`; do not mix them with this package. Assertions and containers are covered by `awesomeassertions.md` and the Testcontainers documents. The cataloged `coverlet.collector` is VSTest-only, so MTP coverage needs a separately approved MTP-native package.
+Use [AwesomeAssertions](awesomeassertions.md) for richer diagnostics, Testcontainers for real PostgreSQL/Redis tests, and `TngTech.ArchUnitNET.xUnitV3` only in the architecture-test project. Do not add [Microsoft.NET.Test.Sdk](microsoft-net-test-sdk.md), [xunit.runner.visualstudio](xunit-runner-visualstudio.md), or [coverlet.collector](coverlet-collector.md) to this MTP stack. MTP coverage requires a separately approved `coverlet.MTP` entry.
 
 ## Security, performance, AOT, trimming, and operations
 
-Test code can execute arbitrary fixtures and external calls. Never put production secrets in test configuration or assertion messages. Test frameworks have no production AOT/trimming role; published-artifact testing must be designed separately when needed.
+Test and fixture code can execute arbitrary processes and external calls. Use synthetic data and least-privilege test credentials, never production secrets, and keep failure output safe. Bound fixture setup, teardown, and retry/polling deadlines so CI cannot hang. The framework is test-only and does not validate production trimming or NativeAOT publication; exercise published artifacts separately where required.
 
 ## Avoid
 
-Do not use SpecsFor for new tests, mix VSTest adapter/collector packages into this MTP stack, hide dependencies in shared mutable fixtures, block on asynchronous work, or make tests rely on execution order.
+- Do not mix VSTest SDK, adapter, or collector packages into this MTP project.
+- Do not block asynchronous calls with `.Wait()` or `.Result`.
+- Do not share mutable state without an explicit lifecycle and reset contract.
+- Do not use sleep-based timing, execution order, local timezone, or ambient culture as hidden inputs.
 
 ## Verification checklist
 
-- Run a `[Fact]` test through the MTP-compatible `dotnet test` path.
-- Run unit and Docker-backed integration categories independently.
-- Confirm failing tests expose useful diagnostics without secrets and pass repeatedly in a clean environment.
+- [ ] The test project has an allowed role, `IsTestProject=true`, and a direct versionless `xunit.v3` reference.
+- [ ] `dotnet test` runs the expected `[Fact]` and `[Theory]` cases through the repository's MTP selection.
+- [ ] Unit and Docker-backed integration suites can run independently and repeatedly.
+- [ ] Failure diagnostics contain no secrets, and CI detects zero or unexpectedly missing tests.
+- [ ] The project contains no VSTest SDK, adapter, or collector packages.
 
 ## Sources
 
-- https://www.nuget.org/packages/xunit.v3/3.2.2 (Accessed 2026-07-27)
-- https://xunit.net/docs/getting-started/v3/getting-started (Accessed 2026-07-27; Context7 consulted first)
-- https://xunit.net/docs/getting-started/v3/microsoft-testing-platform (Accessed 2026-07-27; Context7 consulted first)
-- https://github.com/xunit/xunit (Accessed 2026-07-27)
+- [xUnit v3 getting started](https://xunit.net/docs/getting-started/v3/getting-started)
+- [xUnit v3 Microsoft Testing Platform guidance](https://xunit.net/docs/getting-started/v3/microsoft-testing-platform)
+- [xUnit v3 query filter language](https://xunit.net/docs/query-filter-language)
+- [`dotnet test` runner selection](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test)
+- [xunit.v3 3.2.2 on NuGet](https://www.nuget.org/packages/xunit.v3/3.2.2)
+
+Accessed 2026-07-27. Context7 was consulted first.

@@ -6,37 +6,71 @@
 
 ## Decision and scope
 
-Use as the repository's compile-time Sonar rule set for future C# code. It is not SonarQube/SonarCloud server analysis, does not upload data by itself, and does not replace code review or security testing.
+Use as the repository's compile-time Sonar rule set for future C# code. It supplies `Sxxxx` diagnostics for bugs, vulnerabilities, security hotspots, and code smells. This NuGet package is not SonarQube Server, SonarQube Cloud, SonarQube for IDE, or SonarScanner analysis; it does not upload source or diagnostics by itself and does not replace code review, dependency scanning, penetration testing, or threat modeling.
 
 ## Recommended registration and use
 
-Retain the existing global package reference and configure diagnostic severity in `.editorconfig` or `ModularBase.globalconfig`. Treat rule activation and upgrades as policy changes; keep local overrides narrowly scoped and documented. Do not create a custom analyzer for an existing Sonar or SDK rule.
+The repository already owns the global registration in `Directory.Packages.props`:
+
+```xml
+<GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.30.0.144632"
+                        PrivateAssets="all"
+                        IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+```
+
+Do not duplicate it in projects. In a separate centrally managed repository that requires project scope, omit `Version` and retain private assets:
+
+```xml
+<PackageReference Include="SonarAnalyzer.CSharp"
+                  PrivateAssets="all"
+                  IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+```
+
+Configure standalone NuGet analysis with normal Roslyn severity entries. For example, S2245 flags pseudorandom values used in security-sensitive contexts:
+
+```editorconfig
+[*.cs]
+dotnet_diagnostic.S2245.severity = error
+
+[test/**/*.cs]
+dotnet_diagnostic.S2245.severity = warning
+```
+
+Use `ModularBase.globalconfig` for repository defaults and `.editorconfig` only for justified file/path-specific policy. If the organization later introduces Sonar connected mode or scanner analysis, reconcile its quality profile and exclusions with this build-time policy deliberately; those products have separate configuration and data-flow considerations.
 
 ## Enterprise implementation guidance
 
-Align build-time rule severities with the organization's quality profile where one exists, then resolve differences intentionally. Review security findings with threat context, use suppression only with a durable rationale, and preserve CI diagnostics as review evidence without publishing sensitive source details.
+Start with a full representative build and inventory new `Sxxxx` diagnostics by defect class, security relevance, and overlap with other analyzers. Fix high-confidence bugs and vulnerabilities first. For existing debt, baseline only specific diagnostic IDs and paths with an owner and removal condition; do not turn off the complete Sonar rule family.
+
+Review security hotspots with system context: determine whether input is attacker-controlled, identify the trust boundary, verify the proposed mitigation, and add a regression test. A false-positive decision needs a durable rationale. CI should run the same committed analyzer configuration as developer builds and retain normal build diagnostics as evidence. Treat changes to the NuGet analyzer version, Sonar quality profile, or connected-mode binding as separate policy changes that require diagnostic-diff review.
 
 ## Integration with the catalog
 
-This shares the global analyzer mechanism with `meziantou-analyzer.md`, `roslynator-analyzers.md`, and the other universal analyzers. Repository-wide defaults are in `ModularBase.globalconfig`; path/file overrides live in `.editorconfig` and take precedence.
+This package shares the global analyzer mechanism with `meziantou-analyzer.md`, `roslynator-analyzers.md`, and the other universal analyzers. Repository-wide defaults are in `ModularBase.globalconfig`; matching `.editorconfig` entries take precedence. Central package management owns exact version `10.30.0.144632`, and `PrivateAssets=all` prevents analyzer assets from flowing to package consumers. Scanner or connected-mode tooling is not installed by this catalog entry.
 
 ## Security, performance, AOT, trimming, and operations
 
-Sonar diagnostics can identify maintainability and security risks, but they are neither a penetration test nor a runtime protection control. Analyzer work affects IDE/build time only; private analyzer assets keep it out of produced packages and it has no NativeAOT/trimming effect.
+Sonar diagnostics can identify security defects and review hotspots, but a clean build is not security approval and cannot establish exploitability or absence of vulnerabilities. Never place credentials or sensitive source excerpts in public suppression discussions or unprotected artifacts. Before adding connected services, review authentication, source upload, retention, and access controls separately.
+
+The NuGet analyzer runs in compiler and IDE processes, increasing build CPU and memory but adding no application runtime dependency. On large or generated files, capture clean-build timing and diagnostic evidence before applying a narrow rule/path exclusion; do not broadly disable analysis. The analyzer itself has no trimming or NativeAOT effect, although fixes can change runtime behavior and still need publish testing. Restore only from approved feeds.
 
 ## Avoid
 
-Do not equate a clean analyzer build with security approval, suppress an issue without a threat-model reason, duplicate the package per project, or expect this package alone to perform server-side Sonar reporting.
+Do not equate a clean analyzer build with security approval, suppress a security issue without threat-model evidence, duplicate or version the package in project files, assume this package uploads results or enforces a server quality gate, install scanner/connected-mode tooling implicitly, or publish diagnostics containing sensitive implementation details.
 
 ## Verification checklist
 
-- Build a representative C# project and record expected Sonar diagnostic IDs.
-- Verify global and `.editorconfig` severity precedence for one scoped rule.
-- Review security-rule findings with the owning security process.
-- Test central-version upgrades before enforcement changes reach CI.
+- [ ] Confirm central version `10.30.0.144632`, `PrivateAssets=all`, and no project-local duplicates.
+- [ ] Build a representative C# project and record expected `Sxxxx` diagnostics locally and in CI.
+- [ ] Verify global and scoped `.editorconfig` precedence for one rule.
+- [ ] Review security findings through the owning threat-model and security process, with regression tests for accepted fixes.
+- [ ] Compare diagnostic counts and clean-build performance before version or quality-policy changes.
+- [ ] Inspect a packed library and confirm Sonar analyzer assets do not flow to consumers.
 
 ## Sources
 
-- https://www.nuget.org/packages/SonarAnalyzer.CSharp/10.30.0.144632 (Accessed 2026-07-27)
-- https://github.com/SonarSource/sonar-dotnet (Accessed 2026-07-27)
-- https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/configuration-files (Accessed 2026-07-27)
+- [SonarAnalyzer.CSharp 10.30.0.144632 on NuGet](https://www.nuget.org/packages/SonarAnalyzer.CSharp/10.30.0.144632) (Accessed 2026-07-27)
+- [SonarSource sonar-dotnet analyzer repository](https://github.com/SonarSource/sonar-dotnet) (Accessed 2026-07-27)
+- [SonarQube for Visual Studio: C# and VB.NET rule configuration](https://docs.sonarsource.com/visual-studio/using/rules) (Accessed 2026-07-27)
+- [SonarQube for Visual Studio: connected mode behavior](https://docs.sonarsource.com/sonarqube-for-visual-studio/team-features/connected-mode) (Accessed 2026-07-27)
+- [Microsoft: Configuration files for .NET code-analysis rules](https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/configuration-files) (Accessed 2026-07-27)

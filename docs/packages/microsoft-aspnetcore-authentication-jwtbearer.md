@@ -12,21 +12,39 @@ Use this as the production bearer-token validation handler. It authenticates a r
 
 ## Recommended registration and use
 
-Configure a default bearer scheme, bind only trusted configuration, and place `UseAuthentication()` before middleware that needs `HttpContext.User`:
+Add the centrally versioned package to the consuming web project:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+</ItemGroup>
+```
+
+Configure a default bearer scheme from trusted issuer metadata, define authorization separately, and place `UseAuthentication()` before middleware that needs `HttpContext.User`:
 
 ```csharp
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
-        builder.Configuration.Bind("JwtSettings", options));
+    .AddJwtBearer(options =>
+    {
+        options.Authority = builder.Configuration["Authentication:Authority"];
+        options.Audience = builder.Configuration["Authentication:Audience"];
+        options.MapInboundClaims = false;
+    });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("orders.read", policy =>
+        policy.RequireClaim("permission", "orders.read"));
 
 app.UseAuthentication();
 app.UseAuthorization();
 ```
 
-This syntax follows Microsoft’s current ASP.NET Core 10 documentation. The consuming application must provide validation settings appropriate for its identity provider.
+This syntax follows Microsoft’s current ASP.NET Core 10 documentation. `Authority` enables discovery of the issuer metadata and signing keys; `Audience` identifies this API. The consuming application must use values issued for its identity provider and deployment environment. If a provider requires a nonstandard metadata address or multiple issuers/audiences, configure explicit `TokenValidationParameters` and test every accepted trust boundary.
+
+A normal client workflow is: acquire an OAuth/OIDC **access token**, send it in `Authorization: Bearer ...`, receive `401` when authentication fails, and receive `403` when the authenticated principal lacks the required policy. The API must not redirect clients to obtain a token.
 
 ## Enterprise implementation guidance
 
@@ -34,6 +52,7 @@ This syntax follows Microsoft’s current ASP.NET Core 10 documentation. The con
 - Validate the token signature, issuer, audience, and expiration. Use the provider’s metadata/JWKS and asymmetric keys where possible.
 - Define authorization policies around stable claims/scopes rather than scattered ad-hoc claim checks.
 - Treat authentication configuration, authority availability, clock skew, key rollover, and metadata refresh as production operational concerns.
+- Prefer a fallback policy requiring authenticated users when the API is private-by-default; mark the small set of genuinely public endpoints explicitly.
 
 ## Integration with the catalog
 
@@ -48,6 +67,7 @@ This syntax follows Microsoft’s current ASP.NET Core 10 documentation. The con
 - Use HTTPS and restrict CORS. Token validation does not make an unsafe browser token-storage pattern safe.
 - Monitor authentication failures and key/metadata refresh health without recording credential material.
 - Cache identity-provider metadata according to the handler/provider model; do not hand-roll per-request key discovery.
+- Keep detailed `JwtBearerEvents` diagnostics server-side and sanitized. Return standards-appropriate challenges, not validation internals that reveal issuer or key-selection details.
 
 ## Avoid
 
@@ -61,8 +81,11 @@ This syntax follows Microsoft’s current ASP.NET Core 10 documentation. The con
 - [ ] Authentication executes before authorization and FastEndpoints middleware.
 - [ ] Token configuration is sourced from an approved secret/configuration system.
 - [ ] Production logs and traces redact authorization headers.
+- [ ] Key rollover and temporary identity-provider metadata failures have an operational runbook.
 
 ## Sources
 
 - [Microsoft: configure JWT bearer authentication](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/configure-jwt-bearer-authentication?view=aspnetcore-10.0) — Accessed 2026-07-27.
 - [Microsoft: authentication overview](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/?view=aspnetcore-10.0) — Accessed 2026-07-27.
+- [Microsoft: authentication and authorization in Minimal APIs](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis/security?view=aspnetcore-10.0) — Accessed 2026-07-27.
+- [NuGet: Microsoft.AspNetCore.Authentication.JwtBearer 10.0.10](https://www.nuget.org/packages/Microsoft.AspNetCore.Authentication.JwtBearer/10.0.10) — Accessed 2026-07-27.

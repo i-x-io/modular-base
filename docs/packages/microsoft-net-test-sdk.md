@@ -2,39 +2,73 @@
 
 ## Catalog entry
 
-`Microsoft.NET.Test.Sdk` **18.8.1** — test-only catalog package; SDK integration that lets VSTest discover and run .NET test projects.
+| Field | Value |
+| --- | --- |
+| Package | `Microsoft.NET.Test.Sdk` |
+| Pinned version | `18.8.1` |
+| Status | Approved test-only dependency for the VSTest alternative |
+| Role | VSTest host integration for test discovery and execution |
 
 ## Decision and scope
 
-Use only in a future project that deliberately selects the cataloged VSTest alternative. The pinned `xunit.v3` package installs the MTP runner, so it is not the preferred xUnit v3 configuration as currently cataloged. This package is runner infrastructure, not a test framework and not a production dependency.
+Use only when a future configuration deliberately selects the VSTest alternative. This package supplies VSTest runner infrastructure; it is not a test framework, assertion library, or production dependency. xUnit v3's native MTP support and VSTest adapter support are separate and do not inherently interfere; the active platform selected for `dotnet test` determines which path runs.
 
 ## Recommended registration and use
 
-Use only a project with `IXModularityProjectRole=Test` or `ArchitectureTest`, set `<IsTestProject>true</IsTestProject>`, and, after selecting a VSTest-compatible xUnit package variant, reference this package with `xunit.runner.visualstudio`. Run the project with `dotnet test`; use VSTest-compatible collector and logger options only.
+Configure a `Test` or `ArchitectureTest` project with `IsTestProject=true` and versionless references:
+
+```xml
+<PropertyGroup>
+  <IsTestProject>true</IsTestProject>
+  <IXModularityProjectRole>Test</IXModularityProjectRole>
+</PropertyGroup>
+<ItemGroup>
+  <PackageReference Include="Microsoft.NET.Test.Sdk" />
+  <PackageReference Include="xunit.v3" />
+  <PackageReference Include="xunit.runner.visualstudio" />
+</ItemGroup>
+```
+
+The root `global.json` currently selects MTP. Before using this alternative, obtain architecture approval for a coherent VSTest repository/run configuration and select `VSTest` through .NET 10's `test.runner` setting (or remove the MTP selection). Then use VSTest syntax consistently:
+
+```bash
+dotnet test --logger "trx;LogFileName=tests.trx" \
+  --results-directory artifacts/test-results
+```
 
 ## Enterprise implementation guidance
 
-Standardize test results, filtering, and diagnostic-log collection in CI. Keep the test SDK version catalog-managed with the adapter; upgrade and validate that pair together across local IDE and CI agents.
+Keep the test SDK, xUnit framework variant, adapter, and collectors on a tested compatibility set. Standardize TRX output, filters, result paths, and diagnostic-log retention in CI. Verify discovery both from `dotnet test` and supported IDEs after upgrades; a successful compile does not prove adapter discovery.
+
+Use repository-relative result locations, avoid machine-specific paths, and separate VSTest jobs from MTP jobs because their options and extension models differ.
 
 ## Integration with the catalog
 
-Required by the VSTest alternative in `xunit-runner-visualstudio.md`; coverage guidance is in `coverlet-collector.md`. The preferred MTP package is `xunit-v3.md`. Test-only package enforcement is owned by `Directory.Build.targets`.
+This SDK is required by the VSTest alternative described in [xunit.runner.visualstudio](xunit-runner-visualstudio.md), with optional VSTest coverage from [coverlet.collector](coverlet-collector.md). It is not needed by the preferred MTP run in [xunit.v3](xunit-v3.md). The repository-wide .NET 10 `global.json` selects MTP, so a VSTest alternative requires an intentional runner-selection change and a separately validated run configuration rather than package references alone.
 
 ## Security, performance, AOT, trimming, and operations
 
-It executes test code and adapters, so restore only from approved feeds and retain diagnostic logs as potentially sensitive build artifacts. It has no production runtime, trimming, or NativeAOT role.
+The SDK starts test hosts and loads test assemblies and adapters. Restore only from approved feeds; treat TRX and diagnostic logs as potentially sensitive because they can include paths, test names, arguments, and failure output. Keep detailed diagnostics off by default. This package has no production trimming or NativeAOT role.
 
 ## Avoid
 
-Do not add it to libraries, combine it with the default MTP `xunit.v3` package, combine it with a different test adapter for the same framework, or treat a test SDK upgrade as isolated from its runner adapter.
+- Do not reference it from production projects.
+- Do not assume package references override the repository's active MTP runner selection.
+- Do not mix VSTest and MTP options in one invocation.
+- Do not upgrade the SDK independently of framework, adapter, and collector validation.
 
 ## Verification checklist
 
-- Confirm `dotnet test` discovers the expected tests only after the VSTest-compatible framework/adapter combination is selected.
-- Run the selected VSTest collector and result logger in CI.
-- Verify the project role is `Test` or `ArchitectureTest`, it is marked `IsTestProject=true`, and it has no package-local version.
+- [ ] The project is marked as a test project, has an allowed test role, and uses only versionless package references.
+- [ ] The xUnit v3 framework and adapter are present, and the repository/run configuration explicitly selects VSTest.
+- [ ] CLI and supported IDEs discover the same focused `[Fact]` test.
+- [ ] CI produces bounded TRX output and optional diagnostics without sensitive values.
 
 ## Sources
 
-- https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/18.8.1 (Accessed 2026-07-27)
-- https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test-vstest (Accessed 2026-07-27)
+- [`dotnet test` runner selection and MTP/VSTest behavior](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test)
+- [`dotnet test` with VSTest](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test-vstest)
+- [.NET test platform comparison](https://learn.microsoft.com/en-us/dotnet/core/testing/test-platforms-overview)
+- [Microsoft.NET.Test.Sdk 18.8.1 on NuGet](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/18.8.1)
+
+Accessed 2026-07-27.

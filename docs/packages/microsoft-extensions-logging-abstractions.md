@@ -12,11 +12,51 @@ Reference this package when application or library code needs structured logging
 
 ## Recommended registration and use
 
-Inject `ILogger<TCategoryName>` into services and log structured properties with stable names. Use source-generated logging with `LoggerMessage` for hot paths or high-volume messages. Log at the boundary where an actionable event occurs, preserving exception objects rather than formatting exception text yourself.
+With Central Package Management, a library references the abstractions without selecting a provider:
+
+```xml
+<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+```
+
+Inject `ILogger<TCategoryName>` and use stable structured-property names. For hot or high-volume paths, define source-generated logging methods in a partial type:
+
+```csharp
+using Microsoft.Extensions.Logging;
+
+internal static partial class OrderLog
+{
+    [LoggerMessage(
+        EventId = 1001,
+        Level = LogLevel.Information,
+        Message = "Order {OrderId} completed in {ElapsedMs} ms")]
+    internal static partial void Completed(
+        ILogger logger, Guid orderId, long elapsedMs);
+
+    [LoggerMessage(
+        EventId = 1002,
+        Level = LogLevel.Error,
+        Message = "Order {OrderId} failed")]
+    internal static partial void Failed(
+        ILogger logger, Guid orderId, Exception exception);
+}
+
+public sealed class OrderProcessor(ILogger<OrderProcessor> logger)
+{
+    public void RecordSuccess(Guid orderId, long elapsedMs) =>
+        OrderLog.Completed(logger, orderId, elapsedMs);
+
+    public void RecordFailure(Guid orderId, Exception exception) =>
+        OrderLog.Failed(logger, orderId, exception);
+}
+```
+
+The first `Exception` parameter is handled specially by the generator and should not also appear as a message-template placeholder. Log at the boundary where an actionable event occurs, preserving the exception object rather than formatting its text yourself. Application composition, not this package, selects providers and filtering.
 
 ## Enterprise implementation guidance
 
-Define event categories, property naming, correlation identifiers, retention, redaction, and alert ownership. Treat logs as an operational interface: include enough context to diagnose failure without putting customer data, tokens, credentials, or raw request bodies into telemetry.
+Define event IDs, categories, property naming, correlation identifiers, retention, redaction, and alert ownership. Treat logs as an operational interface: include enough context to diagnose failure without putting customer data, tokens, credentials, or raw request bodies into telemetry.
+
+A common workflow is to emit one completion event at an owned boundary, attach stable business-safe identifiers, and let distributed tracing carry request correlation. Use `BeginScope` only for values that genuinely apply to all nested events and always dispose the returned scope. Choose levels by operator action: `Information` for meaningful state transitions, `Warning` for recoverable abnormal conditions, and `Error` for failed operations. Avoid logging the same exception at every layer.
 
 ## Integration with the catalog
 
@@ -24,7 +64,7 @@ Define event categories, property naming, correlation identifiers, retention, re
 
 ## Security, performance, AOT, trimming, and operations
 
-Use structured logging rather than interpolation to preserve queryable fields and avoid formatting when disabled. Source-generated logging reduces boxing/parsing overhead and is trimming/AOT-friendly. Validate log filtering and redaction in the deployed provider, because abstractions cannot enforce sink policy.
+Use structured templates rather than interpolation to preserve queryable fields and avoid unnecessary formatting. Source-generated logging parses templates at compile time, reduces boxing/temporary allocations, and is trimming/AOT-friendly. Guard expensive argument construction with `logger.IsEnabled(level)`; source generation cannot avoid evaluating a method argument before the call. Keep property cardinality bounded, especially user-controlled IDs and error text. Validate filtering, sampling, scope inclusion, redaction, and retention in the deployed provider because abstractions cannot enforce sink policy.
 
 ## Avoid
 
@@ -34,12 +74,15 @@ Use structured logging rather than interpolation to preserve queryable fields an
 
 ## Verification checklist
 
-- Important success/failure events include stable, sanitized structured properties.
-- Redaction and filtering are verified with the production-equivalent sink.
-- High-volume messages use appropriate log levels and source generation where warranted.
+- [ ] The library has a versionless abstractions reference and restores catalog version `10.0.10` without selecting a provider.
+- [ ] Important success/failure events use stable event IDs and sanitized structured properties.
+- [ ] Exceptions are preserved as exception parameters and are not duplicated across layers.
+- [ ] Redaction, filtering, scopes, and retention are verified with the production-equivalent sink.
+- [ ] High-volume messages use appropriate levels, bounded-cardinality fields, and source generation; expensive arguments are guarded.
 
 ## Sources
 
-- [NuGet package](https://www.nuget.org/packages/Microsoft.Extensions.Logging.Abstractions) (Accessed 2026-07-27)
+- [NuGet: Microsoft.Extensions.Logging.Abstractions 10.0.10](https://www.nuget.org/packages/Microsoft.Extensions.Logging.Abstractions/10.0.10) (Accessed 2026-07-27)
 - [Logging in .NET](https://learn.microsoft.com/en-us/dotnet/core/extensions/logging) (Accessed 2026-07-27)
 - [Compile-time logging source generation](https://learn.microsoft.com/en-us/dotnet/core/extensions/logger-message-generator) (Accessed 2026-07-27)
+- [Logging guidance for .NET library authors](https://learn.microsoft.com/en-us/dotnet/core/extensions/logging-library-authors) (Accessed 2026-07-27)

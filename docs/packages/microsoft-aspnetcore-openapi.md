@@ -12,6 +12,14 @@ This is the first-party ASP.NET Core OpenAPI implementation. In a FastEndpoints 
 
 ## Recommended registration and use
 
+Add the centrally versioned package only to a project that owns an OpenAPI pipeline:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+</ItemGroup>
+```
+
 For the FastEndpoints document pipeline, use:
 
 ```csharp
@@ -28,12 +36,32 @@ if (app.Environment.IsDevelopment())
 
 For a raw Minimal API-only pipeline, Microsoft documents `builder.Services.AddOpenApi()` followed by `app.MapOpenApi()`; gate the mapped route to development or require an explicit protected authorization policy in production. Do not combine that service registration with a FastEndpoints document for the same contract.
 
+A separate raw Minimal API pipeline can name and customize a document at registration time:
+
+```csharp
+builder.Services.AddOpenApi("internal", options =>
+{
+    options.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Title = "Internal Operations API";
+        document.Info.Version = "internal";
+        return Task.CompletedTask;
+    });
+});
+
+app.MapOpenApi("/openapi/{documentName}.json")
+    .RequireAuthorization("ApiDocs");
+```
+
+Document transformers run once per generated document, operation transformers run once per operation, and schema transformers run once per schema. Keep transformations deterministic and use endpoint metadata when security requirements or visibility vary by endpoint. The authorization on `MapOpenApi()` protects document retrieval; it does not protect the API operations described by the document.
+
 ## Enterprise implementation guidance
 
 - Register and expose only intentional named documents.
 - Use the package transformer APIs only when they complement the FastEndpoints transformer path; otherwise document and test precedence carefully.
 - Keep runtime documents limited to approved environments. Publish static artifacts where the production contract must be available without runtime generation.
 - Treat document generation as build/deployment contract verification, not merely an explorer feature.
+- For a contract workflow, generate the document in CI, lint or diff the artifact, review intentional breaking changes, and publish the approved immutable artifact with the release.
 
 ## Integration with the catalog
 
@@ -61,9 +89,13 @@ For a raw Minimal API-only pipeline, Microsoft documents `builder.Services.AddOp
 - [ ] The resolved dependency graph contains `Microsoft.OpenApi` `2.11.0` (or a documented compatible 2.x update), never 3.x.
 - [ ] Document endpoints/static artifacts contain only approved public contract data.
 - [ ] The chosen runtime/AOT document generation path is tested in CI.
+- [ ] Named-document routes, transformer output, and endpoint authorization are covered by integration tests.
 
 ## Sources
 
 - [Microsoft: OpenAPI support overview](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/overview?view=aspnetcore-10.0) — Accessed 2026-07-27.
 - [Microsoft: generate OpenAPI documents](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/aspnetcore-openapi?view=aspnetcore-10.0) — Accessed 2026-07-27.
+- [Microsoft: customize an OpenAPI document](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/customize-openapi?view=aspnetcore-10.0) — Accessed 2026-07-27.
+- [Microsoft: use generated OpenAPI documents](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/using-openapi-documents?view=aspnetcore-10.0) — Accessed 2026-07-27.
 - [FastEndpoints OpenAPI documents](https://fast-endpoints.com/docs/openapi-documents) — Accessed 2026-07-27.
+- [NuGet: Microsoft.AspNetCore.OpenApi 10.0.10](https://www.nuget.org/packages/Microsoft.AspNetCore.OpenApi/10.0.10) — Accessed 2026-07-27.
