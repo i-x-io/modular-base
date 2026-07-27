@@ -49,6 +49,13 @@ public sealed class RepositoryArchitectureTests
                 Assert.True(File.Exists(Path.Combine(project.DirectoryPath, "PublicAPI.Unshipped.txt")));
             }
 
+            foreach (ProjectReferenceDefinition reference in project.ProjectReferences.Where(ProjectGraph.IsCompilerToolReference))
+            {
+                Assert.True(ProjectGraph.HasValidCompilerToolMetadata(reference), $"{project.RelativePath} has incomplete compiler-tool reference metadata.");
+                Assert.All(reference.ReferencedProjects, static referencedProject => Assert.True(ProjectGraph.IsCompilerToolTargetRole(referencedProject.Role)));
+                Assert.DoesNotContain(reference.ReferencedProjects, referencedProject => project.References.Contains(referencedProject));
+            }
+
             foreach (ProjectDefinition referencedProject in project.References)
             {
                 Assert.True(ProjectGraph.IsReferenceAllowed(project.Role, referencedProject.Role), $"{project.RelativePath} ({project.Role}) may not reference {referencedProject.RelativePath} ({referencedProject.Role}).");
@@ -56,6 +63,32 @@ public sealed class RepositoryArchitectureTests
         }
 
         Assert.False(graph.HasCycle());
+    }
+
+    [Fact]
+    public void Compiler_tool_reference_contract_rejects_partial_metadata_and_non_compiler_roles()
+    {
+        ProjectReferenceDefinition valid = new()
+        {
+            Include = "../IX.Modularity.Analyzers/IX.Modularity.Analyzers.csproj",
+            Kind = "CompilerTool",
+            OutputItemType = "Analyzer",
+            ReferenceOutputAssembly = "false",
+        };
+        ProjectReferenceDefinition partial = new()
+        {
+            Include = valid.Include,
+            Kind = valid.Kind,
+            OutputItemType = valid.OutputItemType,
+            ReferenceOutputAssembly = string.Empty,
+        };
+
+        Assert.True(ProjectGraph.IsCompilerToolReference(valid));
+        Assert.True(ProjectGraph.HasValidCompilerToolMetadata(valid));
+        Assert.False(ProjectGraph.HasValidCompilerToolMetadata(partial));
+        Assert.True(ProjectGraph.IsCompilerToolTargetRole("Analyzer"));
+        Assert.True(ProjectGraph.IsCompilerToolTargetRole("SourceGenerator"));
+        Assert.False(ProjectGraph.IsCompilerToolTargetRole("Library"));
     }
 
     /// <summary>Proves a permitted fixture dependency satisfies an ArchUnitNET rule.</summary>

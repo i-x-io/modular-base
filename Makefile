@@ -8,7 +8,7 @@ BUILD_PROJECT := eng/Build.proj
 
 .DEFAULT_GOAL := all
 
-.PHONY: all validate tool-restore restore format build test audit outdated sbom help
+.PHONY: all validate tool-restore restore format build test pack audit outdated sbom ci help
 
 all:
 	@dotnet msbuild "$(BUILD_PROJECT)" -property:Configuration=$(CONFIGURATION)
@@ -31,6 +31,9 @@ build:
 test:
 	@dotnet msbuild "$(BUILD_PROJECT)" -target:Test -property:Configuration=$(CONFIGURATION)
 
+pack:
+	@dotnet msbuild "$(BUILD_PROJECT)" -target:Pack -property:Configuration=$(CONFIGURATION)
+
 audit:
 	@dotnet msbuild "$(BUILD_PROJECT)" -target:Audit -property:Configuration=$(CONFIGURATION)
 
@@ -40,5 +43,8 @@ outdated:
 sbom:
 	@dotnet msbuild "$(BUILD_PROJECT)" -target:Sbom -property:Configuration=$(CONFIGURATION)
 
+ci:
+	@dotnet msbuild "$(BUILD_PROJECT)" -target:Ci -property:Configuration=$(CONFIGURATION) -property:CI=true
+
 help:
-	@echo "Usage: make [all|validate|tool-restore|restore|format|build|test|audit|outdated|sbom] [CONFIGURATION=Debug|Release]"
+	@echo "Usage: make [all|validate|tool-restore|restore|format|build|test|pack|audit|outdated|sbom|ci] [CONFIGURATION=Debug|Release]"

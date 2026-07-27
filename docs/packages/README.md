@@ -22,6 +22,22 @@ This index is maintained manually from [`Directory.Packages.props`](../../Direct
 | [`Scrutor`](scrutor.md) | `7.0.0` | PackageVersion — centrally pinned |
 | [`YamlDotNet`](yamldotnet.md) | `18.1.0` | PackageVersion — centrally pinned |
 
+## Documentation, benchmarking, and compiler-tooling development.
+
+| Package | Pinned version | Status |
+| --- | ---: | --- |
+| [`BenchmarkDotNet`](benchmarkdotnet.md) | `0.15.8` | PackageVersion — centrally pinned; benchmark-project-only |
+| [`Markdig`](markdig.md) | `1.3.2` | PackageVersion — centrally pinned; documentation-processing-only |
+| [`Microsoft.CodeAnalysis.Analyzers`](microsoft-codeanalysis-analyzers.md) | `5.6.0` | PackageVersion — centrally pinned; analyzer-project-only |
+| [`Microsoft.CodeAnalysis.Common`](microsoft-codeanalysis-common.md) | `5.6.0` | PackageVersion — centrally pinned; analyzer/source-generator-project-only |
+| [`Microsoft.CodeAnalysis.CSharp`](microsoft-codeanalysis-csharp.md) | `5.6.0` | PackageVersion — centrally pinned; C# analyzer/source-generator-project-only |
+
+## Produced package.
+
+| Package | Version | Status |
+| --- | ---: | --- |
+| [`IX.Modularity.Analyzers`](ix-modularity-analyzers.md) | repository release version | Produced analyzer package — consumers opt in deliberately |
+
 ## Microsoft.Extensions foundation.
 
 | Package | Pinned version | Status |

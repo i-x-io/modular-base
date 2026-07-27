@@ -6,6 +6,8 @@ The root [`Makefile`](../../Makefile) is the public build interface. It delegate
 
 Common invocations are `make`, `make validate`, `make tool-restore`, `make build CONFIGURATION=Debug`, and `make test CONFIGURATION=Debug`.
 
+The Makefile is the only public build interface. Documentation must not direct consumers to invoke `eng/Build.proj` or a shared target directly; those are internal implementation details.
+
 The target contract is:
 
 | Target | Behavior for the current solution |

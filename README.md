@@ -1,14 +1,16 @@
 # ModularBase
 
-ModularBase centralizes the SDK, package, analyzer, source, build, and architecture policies for future `IX.Modularity.*` libraries. `IX.Modularity.slnx` contains one non-packable `ArchitectureTest` project, [`test/IX.Modularity.Architecture.Tests`](test/IX.Modularity.Architecture.Tests); `src/` contains no production projects.
+ModularBase centralizes the SDK, package, analyzer, source, build, and architecture policies for future `IX.Modularity.*` libraries. `IX.Modularity.slnx` currently contains three projects: the packable compiler-tooling package [`src/IX.Modularity.Analyzers`](src/IX.Modularity.Analyzers/IX.Modularity.Analyzers.csproj), its non-packable analyzer test project [`test/IX.Modularity.Analyzers.Tests`](test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj), and the non-packable architecture test project [`test/IX.Modularity.Architecture.Tests`](test/IX.Modularity.Architecture.Tests/IX.Modularity.Architecture.Tests.csproj). It contains no runtime or application library.
+
+Start with the [architecture policy index](docs/architecture/README.md), the [package catalog](docs/packages/README.md), and the [analyzer index](docs/architecture/analyzer-index.md). The repository documents library policy only; it deliberately does not include application examples.
 
 ## Current repository state
 
 The repository pins the .NET SDK to `10.0.302` in [`global.json`](global.json), with roll-forward disabled and prerelease SDKs disallowed. Its shared C# policy targets `net10.0`, uses C# `14.0`, enables nullable reference types and implicit usings, and treats warnings as errors.
 
-The architecture-test project validates repository architectural rules without creating a production package. Build, restore, test, audit, outdated-package scanning, and SBOM generation operate on the populated solution. Add production projects only when a package is ready to be implemented; do not add placeholder projects merely to make build commands appear green.
+The `Analyzer` project produces packable compiler tooling; the `Test` project verifies that analyzer; and the `ArchitectureTest` project validates repository architecture and documentation rules. Build, restore, test, audit, outdated-package scanning, and SBOM generation operate on this populated solution. No project is a runtime or application library.
 
-Each project declares one direct `IXModularityProjectRole` metadata value. The current project declares `ArchitectureTest`; the role controls its allowed dependency direction and non-packable status. See [architecture terminology](docs/architecture/terminology.md), [architectural rules](docs/architecture/architectural-rules.md), and [project structure](docs/architecture/project-structure.md) for the definitions and requirements.
+Each project declares one direct `IXModularityProjectRole` metadata value: `Analyzer`, `Test`, or `ArchitectureTest`. The role controls its allowed dependency direction and packability. See [architecture terminology](docs/architecture/terminology.md), [architectural rules](docs/architecture/architectural-rules.md), and [project structure](docs/architecture/project-structure.md) for the definitions and requirements.
 
 ## Repository commands
 
@@ -38,3 +40,5 @@ See the architecture policies for the operational contract:
 - [Architectural rules](docs/architecture/architectural-rules.md)
 - [Project structure](docs/architecture/project-structure.md)
 - [Package documentation schema](docs/architecture/package-documentation-schema.md)
+- [Architecture policy index](docs/architecture/README.md)
+- [Analyzer policy and diagnostics](docs/architecture/analyzer-index.md)

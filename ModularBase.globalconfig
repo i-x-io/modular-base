@@ -16,6 +16,23 @@ dotnet_analyzer_diagnostic.category-Security.severity = warning
 dotnet_analyzer_diagnostic.category-Style.severity = warning
 dotnet_analyzer_diagnostic.category-Usage.severity = warning
 
+# Repository diagnostic contract. Local source policies use the IXM prefix;
+# selected Microsoft and third-party quality rules are build-blocking.
+dotnet_diagnostic.CS1591.severity = none
+dotnet_diagnostic.IXM1001.severity = error
+dotnet_diagnostic.IXM1002.severity = error
+dotnet_diagnostic.IXM1003.severity = error
+dotnet_diagnostic.IXM1004.severity = error
+dotnet_diagnostic.IXM1005.severity = error
+dotnet_diagnostic.IXM2001.severity = suggestion
+dotnet_diagnostic.CA1200.severity = error
+dotnet_diagnostic.CA1845.severity = error
+dotnet_diagnostic.CA1846.severity = error
+dotnet_diagnostic.CA1848.severity = error
+dotnet_diagnostic.CA1873.severity = error
+dotnet_diagnostic.CA2254.severity = error
+dotnet_diagnostic.MA0109.severity = suggestion
+
 # BannedApiAnalyzers must not report SDK/source-generator output. Repository
 # source is still checked by RS0030 and the source-policy task.
 dotnet_banned_api_analyzer.exclude_generated_code = true

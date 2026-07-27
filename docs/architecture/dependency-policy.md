@@ -17,6 +17,8 @@ This repository is the dependency catalog for future .NET packages. `IX.Modulari
 - `CentralPackageVersionOverrideEnabled` is `false`; do not use `VersionOverride`.
 - Project files must reference packages without a `Version` attribute. `Directory.Build.targets` rejects both per-project `Version` and `VersionOverride` before package references are collected.
 - Universal analyzers use `GlobalPackageReference` with `PrivateAssets="all"`; they apply to every project without flowing to consumers. `Microsoft.CodeAnalysis.PublicApiAnalyzers` is a centrally-versioned `PackageVersion`, referenced only by packable projects through the shared targets.
+- `Microsoft.CodeAnalysis.Common`, `Microsoft.CodeAnalysis.CSharp`, and `Microsoft.CodeAnalysis.Analyzers` are compiler-tool-only catalog entries. They are allowed only for `Analyzer`, `SourceGenerator`, and their focused test projects; they must not become runtime library dependencies.
+- `Markdig` is approved for structural documentation processing. `BenchmarkDotNet` is approved only for dedicated non-packable benchmark projects; neither entry authorizes application examples or a general runtime dependency.
 
 For a future package project, use this form:
 

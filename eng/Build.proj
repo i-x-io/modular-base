@@ -120,6 +120,13 @@
     <Exec Command="dotnet test &quot;%(RepositoryBuildEntry.FullPath)&quot; --configuration Release --no-build --no-restore" WorkingDirectory="$(RepositoryRoot)" />
   </Target>
 
+  <Target Name="Pack" DependsOnTargets="Build">
+    <CallTarget Targets="SkipPack" Condition="'@(RepositoryBuildEntry)' == ''" />
+    <Exec Command="dotnet pack &quot;%(RepositoryBuildEntry.FullPath)&quot; --configuration $(Configuration) --no-build --no-restore"
+          WorkingDirectory="$(RepositoryRoot)"
+          Condition="'@(RepositoryBuildEntry)' != ''" />
+  </Target>
+
   <Target Name="Audit" DependsOnTargets="Restore">
     <CallTarget Targets="SkipAudit" Condition="'@(RepositoryProject)' == ''" />
     <Exec Command="dotnet package list --project &quot;%(RepositoryProject.FullPath)&quot; --include-transitive --vulnerable --format json --output-version 1 --no-restore" WorkingDirectory="$(RepositoryRoot)" Condition="'@(RepositoryProject)' != ''" />
@@ -136,6 +143,10 @@
     <Exec Command="dotnet tool run dotnet-CycloneDX -- &quot;%(RepositoryBuildEntry.FullPath)&quot; --output &quot;$(MSBuildThisFileDirectory)../artifacts/sbom/%(RepositoryBuildEntry.SbomOutputSubdirectory)&quot; --filename bom.cdx.json --output-format Json" WorkingDirectory="$(RepositoryRoot)" Condition="'@(RepositoryBuildEntry)' != ''" />
   </Target>
 
+  <Target Name="Ci" DependsOnTargets="Validate;Format;Test;Pack;Audit;Outdated;Sbom">
+    <Message Importance="high" Text="Repository CI validation passed for $(Configuration)." />
+  </Target>
+
   <Target Name="SkipRestore" Condition="'@(RepositoryBuildEntry)' == ''">
     <Message Importance="high" Text="Restore skipped: no solution containing projects or standalone project exists in this configuration-only repository." />
   </Target>
@@ -147,6 +158,9 @@
   </Target>
   <Target Name="SkipTest" Condition="'@(RepositoryBuildEntry)' == ''">
     <Message Importance="high" Text="Test skipped: the solution contains no projects." />
+  </Target>
+  <Target Name="SkipPack" Condition="'@(RepositoryBuildEntry)' == ''">
+    <Message Importance="high" Text="Pack skipped: the solution contains no packable projects." />
   </Target>
   <Target Name="SkipAudit" Condition="'@(RepositoryProject)' == ''">
     <Message Importance="high" Text="Audit skipped: no supported project exists; restore will apply the configured NuGet audit policy when projects are added." />

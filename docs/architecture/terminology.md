@@ -89,6 +89,147 @@ DDD terms describe a domain model; they do not require that every library contai
 | **Package validation** | SDK/API-compatibility validation of a package or assembly against compatible target frameworks or a baseline package. | Enforceable when enabled for a package project. |
 | **Public API baseline** | A checked-in record of intentional shipped and pending public API surface, used by public API analyzers. | Normative for packable projects under the existing code-quality policy. |
 
+## A–Z linked glossary
+
+The following stable anchors are the preferred cross-document links for terms used by the deep taxonomy. They complement the canonical vocabulary above; they do not create additional project roles or application architecture requirements.
+
+## A
+
+[Adapter](boundaries-and-dependencies.md#boundary-and-dependency) translates technology at a policy boundary.
+
+## B
+
+Boundary separates concerns that change for different reasons.
+
+## C
+
+Contract is a consumer-visible API, behavior, or dependency commitment.
+
+## D
+
+[Domain model](domain-modeling.md#domain-model) gives library terms their stable meaning.
+
+## E
+
+Entity is a domain object defined by continuity of identity.
+
+## F
+
+Framework detail is implementation technology, not a neutral public contract.
+
+## G
+
+Generated code is compiler-produced output and outside user-authored documentation diagnostics.
+
+## H
+
+Heuristic is a review aid rather than an automatically rejecting rule.
+
+## I
+
+Immutable means state cannot change after construction.
+
+## J
+
+Justification records why a narrow policy exception is necessary.
+
+## K
+
+KISS prefers the smallest understandable design that meets the current need.
+
+## L
+
+[Library public API](library-public-api-and-evolution.md#library-public-api) is the released consumer contract.
+
+## M
+
+Magic string is a repeated semantic literal lacking one authoritative named or typed representation.
+
+## N
+
+[Nullability](type-system-and-data-modeling.md#type-system-and-data-model) is a public promise about absent values.
+
+## O
+
+[Observability](observability-and-operability.md#observability-and-operability) provides bounded, structured operational signals.
+
+## P
+
+[Performance](performance-and-resource-management.md#performance-and-resource-management) is a measured workload property, not an intuition.
+
+## Q
+
+Query observes state and returns information without a meaningful domain-state mutation.
+
+## R
+
+Record is a C# type with value-oriented generated members.
+
+## S
+
+[Single responsibility](design-principles.md#design-principles) means one primary reason for a type or package to change.
+
+## T
+
+Trace correlates one operation across component boundaries.
+
+## U
+
+Ubiquitous language is the shared, context-specific language used for stable domain names.
+
+## V
+
+Value object is defined by attributes/value equality rather than continuity of identity.
+
+## W
+
+Warning is a diagnostic severity; repository policy can promote it to a build error.
+
+## X
+
+[XML documentation](documentation-testing-and-quality.md#documentation-testing-and-quality) is the consumer-facing C# API contract emitted from documentation comments.
+
+## Y
+
+YAGNI rejects speculative public capability and premature project splits.
+
+## Z
+
+Zero-cost abstraction is a performance claim that requires measurement, not a default assumption.
+
+| Term | Definition and policy link |
+| --- | --- |
+| <a id="adapter"></a>**Adapter** | Technology-specific translation at a boundary; see [boundaries and dependencies](boundaries-and-dependencies.md). |
+| <a id="analyzer"></a>**Analyzer** | Compiler-time diagnostic tooling; see [analyzer policy](analyzer-policy.md). |
+| <a id="api-compatibility"></a>**API compatibility** | Source, binary, and behavioral preservation for released contracts; see [library public API and evolution](library-public-api-and-evolution.md). |
+| <a id="bounded-context"></a>**Bounded context** | Boundary within which a model has one meaning; see [domain modeling](domain-modeling.md). |
+| <a id="composition-root"></a>**Composition root** | Application/integration boundary that selects implementations; see [boundaries and dependencies](boundaries-and-dependencies.md). |
+| <a id="contract"></a>**Contract** | Consumer-visible API, behavior, or dependency commitment; see [library public API and evolution](library-public-api-and-evolution.md). |
+| <a id="data-object"></a>**Data object** | Public value/data carrier with documented semantics; see [type system and data modeling](type-system-and-data-modeling.md). |
+| <a id="dependency"></a>**Dependency** | Compile-time, package, or runtime commitment; see [boundaries and dependencies](boundaries-and-dependencies.md). |
+| <a id="documentation-contract"></a>**Documentation contract** | Complete XML documentation required by `IXM1001`–`IXM1005`; see [analyzer taxonomy](analyzer-taxonomy.md). |
+| <a id="domain-service"></a>**Domain service** | Stateless domain behavior not owned by an entity/value object; see [domain modeling](domain-modeling.md). |
+| <a id="entity"></a>**Entity** | Domain object defined by continuity of identity; see [domain modeling](domain-modeling.md). |
+| <a id="immutable"></a>**Immutable** | State cannot change after construction; see [type system and data modeling](type-system-and-data-modeling.md). |
+| <a id="interface"></a>**Interface** | Public capability shape owned by the policy requiring it; see [boundaries and dependencies](boundaries-and-dependencies.md). |
+| <a id="logging"></a>**Logging** | Structured operational events, not an application configuration mechanism; see [observability and operability](observability-and-operability.md). |
+| <a id="magic-string"></a>**Magic string** | Repeated semantic literal lacking one named/typed authority; see [design principles](design-principles.md). |
+| <a id="memory"></a>**Memory** | Heap-storable buffer view for async/retained boundaries; see [performance and resource management](performance-and-resource-management.md). |
+| <a id="nullability"></a>**Nullability** | Static promise about null values in a public contract; see [type system and data modeling](type-system-and-data-modeling.md). |
+| <a id="ownership"></a>**Ownership** | Responsibility to dispose, return, or refrain from mutating a resource; see [performance and resource management](performance-and-resource-management.md). |
+| <a id="package"></a>**Package** | NuGet distribution and version-selection unit; see [library public API and evolution](library-public-api-and-evolution.md). |
+| <a id="port"></a>**Port** | Capability interface owned by the policy that needs it; see [boundaries and dependencies](boundaries-and-dependencies.md). |
+| <a id="public-api"></a>**Public API** | Public/protected compile-time and documented consumer contract; see [library public API and evolution](library-public-api-and-evolution.md). |
+| <a id="record"></a>**Record** | C# type with value-oriented generated members; see [type system and data modeling](type-system-and-data-modeling.md). |
+| <a id="resource-lifetime"></a>**Resource lifetime** | Period in which a resource/buffer may safely be used; see [performance and resource management](performance-and-resource-management.md). |
+| <a id="service"></a>**Service** | Public behavior coordinator with one primary responsibility; see [design principles](design-principles.md). |
+| <a id="source-generated-logging"></a>**Source-generated logging** | `LoggerMessage`-generated static structured logging method; see [observability and operability](observability-and-operability.md). |
+| <a id="span"></a>**Span** | Stack-only contiguous-memory view for synchronous work; see [performance and resource management](performance-and-resource-management.md). |
+| <a id="srp"></a>**Single responsibility principle (SRP)** | One primary reason for a type/package to change; see [design principles](design-principles.md). |
+| <a id="suppression"></a>**Suppression** | Narrow, justified, owned, reviewed exception to a diagnostic; see [documentation, testing, and quality](documentation-testing-and-quality.md). |
+| <a id="value-object"></a>**Value object** | Domain object defined by attributes/value equality; see [domain modeling](domain-modeling.md). |
+| <a id="xml-documentation"></a>**XML documentation** | C# API documentation emitted from `///` comments; see [analyzer taxonomy](analyzer-taxonomy.md). |
+
 ## Sources
 
 - [Microsoft, CQRS pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs) — Accessed 2026-07-27.

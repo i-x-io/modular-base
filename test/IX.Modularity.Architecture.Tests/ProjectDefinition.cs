@@ -58,7 +58,7 @@ internal sealed class ProjectDefinition
         get; init;
     }
 
-    public required IReadOnlyList<string> ProjectReferenceIncludes
+    public required IReadOnlyList<ProjectReferenceDefinition> ProjectReferences
     {
         get; init;
     }
@@ -89,8 +89,23 @@ internal sealed class ProjectDefinition
             HasPackageVersionMetadata = document.Descendants("PackageReference").Any(static element => element.Attribute("Version") is not null || element.Attribute("VersionOverride") is not null),
             HasCanonicalIdentityMetadata = IsCanonicalIdentityMetadata(document, path),
             PackageReferences = packageReferences,
-            ProjectReferenceIncludes = document.Descendants("ProjectReference").Select(static element => element.Attribute("Include")?.Value ?? string.Empty).Where(static include => include.Length > 0).ToArray(),
+            ProjectReferences = [.. document.Descendants("ProjectReference")
+                .Select(static element => new ProjectReferenceDefinition
+                {
+                    Include = element.Attribute("Include")?.Value ?? string.Empty,
+                    OutputItemType = GetMetadata(element, "OutputItemType"),
+                    ReferenceOutputAssembly = GetMetadata(element, "ReferenceOutputAssembly"),
+                    Kind = GetMetadata(element, "IXModularityProjectReferenceKind"),
+                })
+                .Where(static reference => reference.Include.Length > 0)],
         };
+    }
+
+    private static string GetMetadata(XElement element, string name)
+    {
+        return element.Elements().SingleOrDefault(child => string.Equals(child.Name.LocalName, name, StringComparison.Ordinal))?.Value.Trim()
+            ?? element.Attribute(name)?.Value.Trim()
+            ?? string.Empty;
     }
 
     private static bool IsTrue(XDocument document, string propertyName)

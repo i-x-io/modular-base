@@ -16,6 +16,7 @@
         {
             var success = true;
             var allowArchitectureMetadataInspection = IsArchitectureTestProject(ProjectPath, RepositoryRoot);
+            var allowAnalyzerTestGeneratedRunner = IsAnalyzerTestProject(ProjectPath, RepositoryRoot);
 
             foreach (var item in Files)
             {
@@ -70,7 +71,10 @@
                         continue;
                     }
 
-                    if (diagnosticId == "MB0003" && allowArchitectureMetadataInspection)
+                    if (diagnosticId == "MB0003"
+                        && (allowArchitectureMetadataInspection
+                            || (allowAnalyzerTestGeneratedRunner
+                                && string.Equals(fileName, "DefaultRunnerReporters.cs", StringComparison.Ordinal))))
                     {
                         continue;
                     }
@@ -102,6 +106,19 @@
                 "test",
                 "IX.Modularity.Architecture.Tests",
                 "IX.Modularity.Architecture.Tests.csproj"));
+            return string.Equals(
+                Path.GetFullPath(projectPath),
+                expectedProjectPath,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsAnalyzerTestProject(string projectPath, string repositoryRoot)
+        {
+            var expectedProjectPath = Path.GetFullPath(Path.Combine(
+                repositoryRoot,
+                "test",
+                "IX.Modularity.Analyzers.Tests",
+                "IX.Modularity.Analyzers.Tests.csproj"));
             return string.Equals(
                 Path.GetFullPath(projectPath),
                 expectedProjectPath,
@@ -750,6 +767,17 @@
             foreach (var reference in ProjectReferences)
             {
                 var referencePath = reference.GetMetadata("FullPath");
+                var outputItemType = reference.GetMetadata("OutputItemType");
+                var referenceOutputAssembly = reference.GetMetadata("ReferenceOutputAssembly");
+                var referenceKind = reference.GetMetadata("IXModularityProjectReferenceKind");
+                var isCompilerToolReference = IsCompilerToolReference(referenceKind, outputItemType, referenceOutputAssembly);
+
+                if (isCompilerToolReference)
+                {
+                    ValidateCompilerToolReference(reference, referencePath, outputItemType, referenceOutputAssembly, referenceKind, ref success);
+                    continue;
+                }
+
                 if (string.IsNullOrEmpty(referencePath) || !File.Exists(referencePath))
                 {
                     Error("IXARCH007", "Referenced project '" + reference.ItemSpec + "' does not resolve to an existing project file.");
@@ -790,6 +818,59 @@
                     success = false;
                 }
             }
+        }
+
+        private void ValidateCompilerToolReference(
+            ITaskItem reference,
+            string referencePath,
+            string outputItemType,
+            string referenceOutputAssembly,
+            string referenceKind,
+            ref bool success)
+        {
+            if (referenceKind != "CompilerTool"
+                || outputItemType != "Analyzer"
+                || !string.Equals(referenceOutputAssembly, "false", StringComparison.OrdinalIgnoreCase))
+            {
+                Error("IXARCH008", "Compiler-tool project references must set IXModularityProjectReferenceKind=CompilerTool, OutputItemType=Analyzer, and ReferenceOutputAssembly=false (" + reference.ItemSpec + ").");
+                success = false;
+                return;
+            }
+
+            if (string.IsNullOrEmpty(referencePath) || !File.Exists(referencePath))
+            {
+                Error("IXARCH008", "Compiler-tool project reference '" + reference.ItemSpec + "' does not resolve to an existing project file.");
+                success = false;
+                return;
+            }
+
+            var repositoryRoot = Path.GetFullPath(RepositoryRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            var fullReferencePath = Path.GetFullPath(referencePath);
+            if (string.Equals(fullReferencePath, Path.GetFullPath(ProjectPath), StringComparison.OrdinalIgnoreCase)
+                || !StartsWithPath(fullReferencePath, repositoryRoot)
+                || ContainsReparsePoint(fullReferencePath))
+            {
+                Error("IXARCH008", "Compiler-tool project reference '" + referencePath + "' must target a different project within the repository and must not traverse a symbolic link or junction.");
+                success = false;
+                return;
+            }
+
+            List<string> referencedRoles;
+            string readError;
+            if (!TryReadDeclaredRoles(fullReferencePath, out referencedRoles, out readError)
+                || referencedRoles.Count != 1
+                || (referencedRoles[0] != "Analyzer" && referencedRoles[0] != "SourceGenerator"))
+            {
+                Error("IXARCH008", "Compiler-tool project reference '" + referencePath + "' must target a project declaring exactly one IXModularityProjectRole of Analyzer or SourceGenerator.");
+                success = false;
+            }
+        }
+
+        private static bool IsCompilerToolReference(string referenceKind, string outputItemType, string referenceOutputAssembly)
+        {
+            return !string.IsNullOrEmpty(referenceKind)
+                || string.Equals(outputItemType, "Analyzer", StringComparison.Ordinal)
+                || string.Equals(referenceOutputAssembly, "false", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsReferenceAllowed(string role, string referencedRole)
@@ -949,6 +1030,19 @@
     </Task>
   </UsingTask>
 
+  <PropertyGroup>
+    <IXModularityCompilerToolProjectPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)src/IX.Modularity.Analyzers/IX.Modularity.Analyzers.csproj'))</IXModularityCompilerToolProjectPath>
+    <IXModularityAnalyzerTestProjectPath>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj'))</IXModularityAnalyzerTestProjectPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectFullPath)' != '$(IXModularityCompilerToolProjectPath)' And '$(MSBuildProjectFullPath)' != '$(IXModularityAnalyzerTestProjectPath)'">
+    <ProjectReference Include="$(IXModularityCompilerToolProjectPath)"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      IXModularityProjectReferenceKind="CompilerTool" />
+    <CompilerVisibleProperty Include="IXModularityProjectRole" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers"
                       PrivateAssets="all"
@@ -974,7 +1068,7 @@
           DependsOnTargets="ValidateModularityProjectRole">
     <ItemGroup>
       <_PackageReferenceWithVersion Include="@(PackageReference)"
-                                    Condition="'%(PackageReference.Version)' != ''" />
+                                    Condition="'%(PackageReference.Version)' != '' And '%(PackageReference.IsImplicitlyDefined)' != 'true'" />
       <_PackageReferenceWithOverride Include="@(PackageReference)"
                                      Condition="'%(PackageReference.VersionOverride)' != ''" />
       <_TestOnlyPackageReference Include="@(PackageReference)"

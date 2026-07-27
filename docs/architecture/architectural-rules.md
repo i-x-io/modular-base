@@ -18,6 +18,8 @@ The repository currently has no `src/` production projects. It intentionally con
 8. **Release compatible changes deliberately.** For a released package, preserve source, binary, and behavioral compatibility unless the release intentionally communicates a breaking change. Package IDs, dependencies, target-framework assemblies, public API baselines, and documentation are part of the release contract. Use the package version as the public release identifier. **Enforceable in part.**
 9. **Use a baseline where compatibility matters.** Packable projects follow the existing public API baseline policy. When a released package enables package/API compatibility validation, compare it with the previous compatible version and investigate every difference. Do not suppress a difference without a documented compatibility decision. **Enforceable when tooling is configured.**
 10. **Avoid speculative boundaries.** Do not create a project, package, interface, adapter, generic extension point, or CQRS split without a current consumer, dependency direction, independent release cadence, or testability need. **Review-required.**
+11. **Keep types cohesive.** A public service, data object, interface, and package must have one primary responsibility. A type that cannot be summarized clearly is reviewed for an SRP split; do not split merely to satisfy a count-based rule. **Review-required.**
+12. **Keep raw values out of shared contracts.** Repeated strings and other semantic literals have one authoritative named or typed representation. Public configuration, message templates, and protocol values must not be duplicated as magic strings. **Enforceable in `src/**` where `S1192` applies.**
 
 ## Package and API rules
 
@@ -30,6 +32,9 @@ The repository currently has no `src/` production projects. It intentionally con
 | Public API additions | Additions need XML documentation, tests, and a public API baseline update when the package policy applies. Consider whether a capability can remain internal until a consumer needs it. |
 | Breaking changes | Removing or changing public types, members, signatures, constraints, inheritance, behavior, or package dependencies requires explicit compatibility review and release-version decision. A major version does not make an undocumented break harmless. |
 | Dependency flow | A public package dependency is a transitive consumer commitment. Keep it minimal, deliberate, centrally catalogued, and versionless in project files as required by the dependency policy. |
+| Data semantics | Public data types declare nullability, ownership, mutability, and equality deliberately. Use records only where value semantics are intended; see [type-system and data modeling](type-system-and-data-modeling.md). |
+| Resource semantics | Public buffer and stream APIs state ownership and lifetime. A span does not cross async/retained boundaries; use memory abstractions deliberately. |
+| Logging semantics | A reusable library emits static, structured logs through abstractions and does not configure providers. Source-generated logging is required where the configured rules apply. |
 
 ## CQS, CQRS, and DDD usage
 

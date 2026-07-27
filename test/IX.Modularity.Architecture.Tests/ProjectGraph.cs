@@ -26,11 +26,13 @@ internal sealed class ProjectGraph
 
     public static ProjectGraph Load(string repositoryRoot)
     {
-        ProjectDefinition[] projects = [.. Directory.EnumerateFiles(repositoryRoot, "*.csproj", SearchOption.AllDirectories)
-            .Where(static path => !IsBuildOutput(path))
+        EnsureRepositoryPathIsSafe(repositoryRoot, repositoryRoot, "repository root");
+        ProjectDefinition[] projects = [.. EnumerateProjectFiles(repositoryRoot)
             .Select(path => ProjectDefinition.Load(repositoryRoot, path))
             .OrderBy(static project => project.RelativePath, StringComparer.Ordinal)];
-        XDocument solution = ProjectXmlDocumentLoader.Load(Path.Combine(repositoryRoot, "IX.Modularity.slnx"));
+        string solutionPath = Path.Combine(repositoryRoot, "IX.Modularity.slnx");
+        EnsureRepositoryPathIsSafe(repositoryRoot, solutionPath, "solution file");
+        XDocument solution = ProjectXmlDocumentLoader.Load(solutionPath);
         string[] solutionProjectPaths = [.. solution.Descendants("Project")
             .Select(static project => project.Attribute("Path")?.Value)
             .OfType<string>()
@@ -38,8 +40,14 @@ internal sealed class ProjectGraph
 
         foreach (ProjectDefinition project in projects)
         {
-            project.References = project.ProjectReferenceIncludes
-                .SelectMany(include => ResolveProjectReferences(repositoryRoot, project, include, projects))
+            foreach (ProjectReferenceDefinition reference in project.ProjectReferences)
+            {
+                reference.ReferencedProjects = ResolveProjectReferences(repositoryRoot, project, reference.Include, projects);
+            }
+
+            project.References = project.ProjectReferences
+                .Where(static reference => !IsCompilerToolReference(reference))
+                .SelectMany(static reference => reference.ReferencedProjects)
                 .DistinctBy(static referencedProject => referencedProject.FullPath, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
         }
@@ -65,6 +73,26 @@ internal sealed class ProjectGraph
             "Test" or "ArchitectureTest" => true,
             _ => false,
         };
+    }
+
+    public static bool IsCompilerToolReference(ProjectReferenceDefinition reference)
+    {
+        return reference.Kind.Length > 0
+            || string.Equals(reference.OutputItemType, "Analyzer", StringComparison.Ordinal)
+            || string.Equals(reference.ReferenceOutputAssembly, "false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool HasValidCompilerToolMetadata(ProjectReferenceDefinition reference)
+    {
+        return string.Equals(reference.Kind, "CompilerTool", StringComparison.Ordinal)
+            && string.Equals(reference.OutputItemType, "Analyzer", StringComparison.Ordinal)
+            && string.Equals(reference.ReferenceOutputAssembly, "false", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsCompilerToolTargetRole(string role)
+    {
+        return string.Equals(role, "Analyzer", StringComparison.Ordinal)
+            || string.Equals(role, "SourceGenerator", StringComparison.Ordinal);
     }
 
     public static bool IsTestRole(string role)
@@ -133,6 +161,55 @@ internal sealed class ProjectGraph
         || path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal);
     }
 
+    private static IEnumerable<string> EnumerateProjectFiles(string repositoryRoot)
+    {
+        Stack<string> directories = new();
+        directories.Push(repositoryRoot);
+
+        while (directories.Count > 0)
+        {
+            string directory = directories.Pop();
+            IEnumerable<string> entries;
+            try
+            {
+                entries = Directory.EnumerateFileSystemEntries(directory).ToArray();
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                throw new InvalidOperationException($"Unable to enumerate repository directory '{directory}'.", exception);
+            }
+
+            foreach (string entry in entries)
+            {
+                FileAttributes attributes = GetFileAttributesOrReject(repositoryRoot, entry, "project discovery");
+                if (attributes.HasFlag(FileAttributes.ReparsePoint))
+                {
+                    if (attributes.HasFlag(FileAttributes.Directory) || entry.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException($"Project discovery rejects reparse point '{entry}'.");
+                    }
+
+                    continue;
+                }
+
+                if (attributes.HasFlag(FileAttributes.Directory))
+                {
+                    if (!IsBuildOutput(entry))
+                    {
+                        directories.Push(entry);
+                    }
+
+                    continue;
+                }
+
+                if (entry.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase) && !IsBuildOutput(entry))
+                {
+                    yield return entry;
+                }
+            }
+        }
+    }
+
     private static ProjectDefinition[] ResolveProjectReferences(string repositoryRoot, ProjectDefinition project, string include, IEnumerable<ProjectDefinition> candidates)
     {
         string absolutePattern = Path.GetFullPath(Path.Combine(project.DirectoryPath, include)).Replace('\\', '/');
@@ -141,7 +218,18 @@ internal sealed class ProjectGraph
             throw new InvalidOperationException($"Project reference '{include}' from '{project.RelativePath}' resolves outside the repository.");
         }
 
+        EnsureRepositoryPatternPrefixIsSafe(repositoryRoot, absolutePattern, $"project reference '{include}' from '{project.RelativePath}'");
         ProjectDefinition[] resolvedProjects = [.. candidates.Where(candidate => GlobMatches(absolutePattern, candidate.FullPath.Replace('\\', '/')))];
+        foreach (ProjectDefinition resolvedProject in resolvedProjects)
+        {
+            EnsureRepositoryPathIsSafe(repositoryRoot, resolvedProject.FullPath, $"project reference '{include}' from '{project.RelativePath}'");
+        }
+
+        if (!include.Contains('*', StringComparison.Ordinal))
+        {
+            EnsureRepositoryPathIsSafe(repositoryRoot, absolutePattern, $"project reference '{include}' from '{project.RelativePath}'");
+        }
+
         return resolvedProjects.Length == 0 && !include.Contains('*', StringComparison.Ordinal)
             ? throw new InvalidOperationException($"Project reference '{include}' from '{project.RelativePath}' does not resolve to a repository project.")
             : resolvedProjects;
@@ -154,6 +242,71 @@ internal sealed class ProjectGraph
             && !string.Equals(relativePath, "..", StringComparison.Ordinal)
             && !relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
             && !relativePath.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal);
+    }
+
+    private static void EnsureRepositoryPathIsSafe(string repositoryRoot, string path, string description)
+    {
+        string normalizedRoot = Path.GetFullPath(repositoryRoot);
+        string normalizedPath = Path.GetFullPath(path);
+        if (!IsRepositoryPath(normalizedRoot, normalizedPath) && !string.Equals(normalizedRoot, normalizedPath, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"{description} resolves outside the repository.");
+        }
+
+        FileAttributes rootAttributes = GetFileAttributesOrReject(normalizedRoot, normalizedRoot, description);
+        if (rootAttributes.HasFlag(FileAttributes.ReparsePoint))
+        {
+            throw new InvalidOperationException($"{description} repository root is a reparse point.");
+        }
+        string relativePath = Path.GetRelativePath(normalizedRoot, normalizedPath);
+        if (string.Equals(relativePath, ".", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        string currentPath = normalizedRoot;
+        foreach (string segment in relativePath.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+        {
+            currentPath = Path.Combine(currentPath, segment);
+            FileAttributes attributes = GetFileAttributesOrReject(normalizedRoot, currentPath, description);
+            if (attributes.HasFlag(FileAttributes.ReparsePoint))
+            {
+                throw new InvalidOperationException($"{description} traverses reparse point '{currentPath}'.");
+            }
+        }
+    }
+
+    private static void EnsureRepositoryPatternPrefixIsSafe(string repositoryRoot, string pattern, string description)
+    {
+        string normalizedRoot = Path.GetFullPath(repositoryRoot);
+        string relativePattern = Path.GetRelativePath(normalizedRoot, Path.GetFullPath(pattern));
+        string currentPath = normalizedRoot;
+        foreach (string segment in relativePattern.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (segment.Contains('*', StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            currentPath = Path.Combine(currentPath, segment);
+            FileAttributes attributes = GetFileAttributesOrReject(normalizedRoot, currentPath, description);
+            if (attributes.HasFlag(FileAttributes.ReparsePoint))
+            {
+                throw new InvalidOperationException($"{description} traverses reparse point '{currentPath}'.");
+            }
+        }
+    }
+
+    private static FileAttributes GetFileAttributesOrReject(string repositoryRoot, string path, string description)
+    {
+        try
+        {
+            return File.GetAttributes(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            throw new InvalidOperationException($"Unable to inspect {description} path '{path}' within repository '{repositoryRoot}'.", exception);
+        }
     }
 
     private static bool GlobMatches(string pattern, string path)
