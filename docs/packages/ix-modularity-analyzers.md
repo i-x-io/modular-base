@@ -2,7 +2,7 @@
 
 ## Catalog entry
 
-`IX.Modularity.Analyzers` **0.1.0** — produced analyzer-only package that enforces complete XML documentation for public data objects, interfaces, interface members, service types, and service members, and suggests records for eligible class-shaped data objects.
+`IX.Modularity.Analyzers` **0.1.0** — produced analyzer-only package that enforces complete XML documentation, FluentResults service return contracts, coded business failures, stack-preserving broad catches, and suggests records for eligible class-shaped data objects.
 
 ## Decision and scope
 
@@ -19,7 +19,7 @@ Consumers add it as a private analyzer reference, with no runtime asset flow:
                   IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
 ```
 
-Configure `IXM1001` through `IXM1005` as errors where the consumer adopts this repository’s public-library documentation policy. `IXM2001` remains nonblocking because changing a public class to a record can change equality and compatibility semantics.
+Configure `IXM1001` through `IXM1005` and `IXM3001` through `IXM3003` as errors where the consumer adopts this repository’s public-library policy. `IXM2001` remains nonblocking because changing a public class to a record can change equality and compatibility semantics. `IXM3001` accepts only `Result`, `Result<T>`, and their `Task`/`ValueTask` wrappers for externally visible service operations. `IXM3002` rejects direct string-only, base-`Error`, and uncoded failures, including `Result.Try`. `IXM3003` requires an untyped or exact `Exception` catch to finish every reachable path with bare `throw;`.
 
 ## Enterprise implementation guidance
 
@@ -40,7 +40,7 @@ Do not reference the package as a runtime assembly, package it under `lib/` or `
 ## Verification checklist
 
 - [ ] Confirm the package contains the DLL under `analyzers/dotnet/cs/` and no `lib/` or `ref/` assets.
-- [ ] Compile a minimal consumer and confirm `IXM1001`–`IXM1005` load at the configured severity.
+- [ ] Compile a minimal consumer and confirm `IXM1001`–`IXM1005` and `IXM3001`–`IXM3003` load at the configured severity.
 - [ ] Confirm `IXM2001` remains an info/suggestion diagnostic.
 - [ ] Verify generated, inherited, implicit, and non-user-authored symbols do not produce the documentation diagnostics.
 

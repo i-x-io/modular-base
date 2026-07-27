@@ -21,6 +21,9 @@ This directory is the normative design and delivery policy for future `IX.Modula
 - [IXM1004 diagnostic](diagnostics/ixm1004.md) — service-type documentation.
 - [IXM1005 diagnostic](diagnostics/ixm1005.md) — service-member documentation.
 - [IXM2001 diagnostic](diagnostics/ixm2001.md) — record suggestion.
+- [IXM3001 diagnostic](diagnostics/ixm3001.md) — FluentResults service-operation contract.
+- [IXM3002 diagnostic](diagnostics/ixm3002.md) — coded business failure.
+- [IXM3003 diagnostic](diagnostics/ixm3003.md) — broad-catch rethrow.
 - [Library public API and evolution](library-public-api-and-evolution.md) — compatibility and baselines.
 - [Observability and operability](observability-and-operability.md) — structured signals and source-generated logging.
 - [Package documentation schema](package-documentation-schema.md) — required guide structure for catalogued packages.

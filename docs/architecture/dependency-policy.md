@@ -19,6 +19,7 @@ This repository is the dependency catalog for future .NET packages. `IX.Modulari
 - Universal analyzers use `GlobalPackageReference` with `PrivateAssets="all"`; they apply to every project without flowing to consumers. `Microsoft.CodeAnalysis.PublicApiAnalyzers` is a centrally-versioned `PackageVersion`, referenced only by packable projects through the shared targets.
 - `Microsoft.CodeAnalysis.Common`, `Microsoft.CodeAnalysis.CSharp`, and `Microsoft.CodeAnalysis.Analyzers` are compiler-tool-only catalog entries. They are allowed only for `Analyzer`, `SourceGenerator`, and their focused test projects; they must not become runtime library dependencies.
 - `Markdig` is approved for structural documentation processing. `BenchmarkDotNet` is approved only for dedicated non-packable benchmark projects; neither entry authorizes application examples or a general runtime dependency.
+- `FluentResults` is an intentional public dependency only for `Library`, `Contracts`, `Abstractions`, `Adapter`, and `Integration`. It is allowed in `Contracts` and `Abstractions` solely because a service result is part of the public contract; it does not permit infrastructure, hosting, transport, persistence, or logging dependencies in those roles.
 
 For a future package project, use this form:
 

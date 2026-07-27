@@ -165,6 +165,8 @@ Query observes state and returns information without a meaningful domain-state m
 
 Record is a C# type with value-oriented generated members.
 
+[Result](#result) represents an expected service outcome without using an exception as ordinary control flow.
+
 ## S
 
 [Single responsibility](design-principles.md#design-principles) means one primary reason for a type or package to change.
@@ -221,6 +223,11 @@ Zero-cost abstraction is a performance claim that requires measurement, not a de
 | <a id="port"></a>**Port** | Capability interface owned by the policy that needs it; see [boundaries and dependencies](boundaries-and-dependencies.md). |
 | <a id="public-api"></a>**Public API** | Public/protected compile-time and documented consumer contract; see [library public API and evolution](library-public-api-and-evolution.md). |
 | <a id="record"></a>**Record** | C# type with value-oriented generated members; see [type system and data modeling](type-system-and-data-modeling.md). |
+| <a id="result"></a>**Result** | `FluentResults.Result` or `Result<T>` that represents an expected service outcome; see [FluentResults](../packages/fluentresults.md). |
+| <a id="expected-failure"></a>**Expected failure** | Caller-actionable business or application outcome returned as a coded result; see [domain modeling](domain-modeling.md). |
+| <a id="exceptional-failure"></a>**Exceptional failure** | Cancellation, programming fault, broken invariant, corrupt state, or unexpected technical failure that propagates as an exception; see [boundaries and dependencies](boundaries-and-dependencies.md). |
+| <a id="error-code"></a>**Error code** | Immutable lowercase snake-case `public const string Code` owned by a concrete business error type; see [IXM3002](diagnostics/ixm3002.md). |
+| <a id="failure-atomicity"></a>**Failure atomicity** | A failure leaves no undocumented partial state or false appearance of success; see [documentation, testing, and quality](documentation-testing-and-quality.md). |
 | <a id="resource-lifetime"></a>**Resource lifetime** | Period in which a resource/buffer may safely be used; see [performance and resource management](performance-and-resource-management.md). |
 | <a id="service"></a>**Service** | Public behavior coordinator with one primary responsibility; see [design principles](design-principles.md). |
 | <a id="source-generated-logging"></a>**Source-generated logging** | `LoggerMessage`-generated static structured logging method; see [observability and operability](observability-and-operability.md). |

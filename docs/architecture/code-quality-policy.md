@@ -39,6 +39,7 @@ Public library code also follows these explicit quality rules:
 
 - A public data object, interface, interface member, service type, and service member must meet the complete XML documentation contract in [analyzer taxonomy](analyzer-taxonomy.md). `CS1591` is intentionally disabled because it is broader and less precise than the `IXM1001`–`IXM1005` contract.
 - A syntactically eligible class-shaped data object should be reviewed for a record. `IXM2001` does not infer immutability; mutable lifecycle, identity, EF/proxy/framework/interop, and compatibility are valid reviewed reasons to retain and locally suppress a class. It is never a reason to change public equality or compatibility semantics without review.
+- Service operations use approved FluentResults shapes under `IXM3001`. Direct failures use coded concrete errors under `IXM3002`; `Result.Try` is prohibited because its broad internal catch cannot prove a documented expected translation. Broad catches must preserve the original exception with bare `throw;` under `IXM3003`.
 - Repeated source strings are contract debt. `S1192` is an error in `src/**/*.cs` and nonblocking in tests; use a named constant, typed option, or semantic value where one authoritative value exists.
 - Public library APIs document nullability, ownership, mutation, and lifetime. Use spans only for synchronous contiguous-memory work; use memory abstractions across asynchronous or retained boundaries. See [performance and resource management](performance-and-resource-management.md).
 - Use source-generated logging for reusable parameterized logging paths. Keep templates static and structured; do not configure logging providers or build service providers in reusable libraries.
@@ -49,7 +50,7 @@ The following analyzers are configured as centrally-versioned `GlobalPackageRefe
 
 For packable projects only, shared targets add `Microsoft.CodeAnalysis.PublicApiAnalyzers` and include `PublicAPI.Shipped.txt` and `PublicAPI.Unshipped.txt` when present. Before packing, the policy requires both files, a `PackageId`, and `PackageVersion` or `Version`. This keeps API-compatibility tracking a package concern rather than a catalog-wide requirement.
 
-The produced `IX.Modularity.Analyzers` package is consumer opt-in compiler tooling, never a runtime dependency. `IXM1001` through `IXM1005` default to warning and are repository errors; `IXM2001` defaults to info and is a repository suggestion. `CA1200`, `CA1845`, `CA1846`, `CA1848`, `CA1873`, and `CA2254` are errors; `MA0109` is a suggestion. The exact settings are intentionally duplicated in `ModularBase.globalconfig` and `.editorconfig` for repository-wide and editor-visible enforcement.
+The produced `IX.Modularity.Analyzers` package is consumer opt-in compiler tooling, never a runtime dependency. `IXM1001` through `IXM1005` and `IXM3001` through `IXM3003` default to warning and are repository errors; `IXM2001` defaults to info and is a repository suggestion. `CA1200`, `CA1845`, `CA1846`, `CA1848`, `CA1873`, and `CA2254` are errors; `MA0109` is a suggestion. The exact settings are intentionally duplicated in `ModularBase.globalconfig` and `.editorconfig` for repository-wide and editor-visible enforcement.
 
 ## Sources
 

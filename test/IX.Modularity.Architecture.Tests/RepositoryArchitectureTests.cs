@@ -38,10 +38,10 @@ public sealed class RepositoryArchitectureTests
                 Assert.False(project.IsPackable, "Test and ArchitectureTest projects must not be package assets.");
             }
 
-            if (ProjectGraph.IsNeutralRole(project.Role))
-            {
-                Assert.Empty(project.PackageReferences);
-            }
+            Assert.All(project.PackageReferences, packageReference =>
+                Assert.True(
+                    ProjectGraph.IsPackageReferenceAllowed(project.RelativePath, project.Role, packageReference),
+                    $"{project.RelativePath} ({project.Role}) may not reference package '{packageReference.Id}'."));
 
             if (project.IsPackable)
             {
@@ -89,6 +89,107 @@ public sealed class RepositoryArchitectureTests
         Assert.True(ProjectGraph.IsCompilerToolTargetRole("Analyzer"));
         Assert.True(ProjectGraph.IsCompilerToolTargetRole("SourceGenerator"));
         Assert.False(ProjectGraph.IsCompilerToolTargetRole("Library"));
+    }
+
+    [Theory]
+    [InlineData("Library")]
+    [InlineData("Contracts")]
+    [InlineData("Abstractions")]
+    [InlineData("Adapter")]
+    [InlineData("Integration")]
+    public void FluentResults_is_allowed_for_the_approved_production_roles(string role)
+    {
+        Assert.True(ProjectGraph.IsFluentResultsAllowedForProductionRole(role));
+    }
+
+    [Theory]
+    [InlineData("Testing")]
+    [InlineData("Analyzer")]
+    [InlineData("SourceGenerator")]
+    [InlineData("Test")]
+    [InlineData("ArchitectureTest")]
+    public void FluentResults_is_rejected_for_non_production_roles(string role)
+    {
+        Assert.False(ProjectGraph.IsFluentResultsAllowedForProductionRole(role));
+    }
+
+    [Fact]
+    public void FluentResults_analyzer_test_fixture_is_exact_and_private()
+    {
+        Assert.True(ProjectGraph.IsFluentResultsAnalyzerTestFixture(
+            "test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj",
+            "Test",
+            "all"));
+        Assert.False(ProjectGraph.IsFluentResultsAnalyzerTestFixture(
+            "test/Other.Tests/Other.Tests.csproj",
+            "Test",
+            "all"));
+        Assert.False(ProjectGraph.IsFluentResultsAnalyzerTestFixture(
+            "test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj",
+            "ArchitectureTest",
+            "all"));
+        Assert.False(ProjectGraph.IsFluentResultsAnalyzerTestFixture(
+            "test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj",
+            "Test",
+            "compile"));
+    }
+
+    [Theory]
+    [InlineData("Library")]
+    [InlineData("Contracts")]
+    [InlineData("Abstractions")]
+    [InlineData("Adapter")]
+    [InlineData("Integration")]
+    public void Package_reference_policy_allows_FluentResults_for_each_approved_role(string role)
+    {
+        Assert.True(ProjectGraph.IsPackageReferenceAllowed(
+            "src/IX.Modularity.Sample/IX.Modularity.Sample.csproj",
+            role,
+            new PackageReferenceDefinition("FluentResults", string.Empty)));
+    }
+
+    [Theory]
+    [InlineData("Testing")]
+    [InlineData("Analyzer")]
+    [InlineData("SourceGenerator")]
+    [InlineData("Test")]
+    [InlineData("ArchitectureTest")]
+    public void Package_reference_policy_rejects_FluentResults_for_each_unapproved_role(string role)
+    {
+        Assert.False(ProjectGraph.IsPackageReferenceAllowed(
+            "src/IX.Modularity.Sample/IX.Modularity.Sample.csproj",
+            role,
+            new PackageReferenceDefinition("FluentResults", string.Empty)));
+    }
+
+    [Fact]
+    public void Package_reference_policy_allows_only_the_private_analyzer_test_fixture()
+    {
+        const string analyzerTestProject = "test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj";
+
+        Assert.True(ProjectGraph.IsPackageReferenceAllowed(
+            analyzerTestProject,
+            "Test",
+            new PackageReferenceDefinition("FluentResults", "all")));
+        Assert.False(ProjectGraph.IsPackageReferenceAllowed(
+            analyzerTestProject,
+            "Test",
+            new PackageReferenceDefinition("FluentResults", string.Empty)));
+        Assert.False(ProjectGraph.IsPackageReferenceAllowed(
+            analyzerTestProject,
+            "Test",
+            new PackageReferenceDefinition("FluentResults", "compile")));
+    }
+
+    [Theory]
+    [InlineData("Contracts")]
+    [InlineData("Abstractions")]
+    public void Package_reference_policy_retains_neutral_role_package_restrictions(string role)
+    {
+        Assert.False(ProjectGraph.IsPackageReferenceAllowed(
+            "src/IX.Modularity.Sample/IX.Modularity.Sample.csproj",
+            role,
+            new PackageReferenceDefinition("Example.Package", string.Empty)));
     }
 
     /// <summary>Proves a permitted fixture dependency satisfies an ArchUnitNET rule.</summary>

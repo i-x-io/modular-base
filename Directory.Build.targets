@@ -1086,7 +1086,13 @@
                                          Or '%(PackageReference.Identity)' == 'xunit.runner.visualstudio'" />
       <_ArchitectureTestOnlyPackageReference Include="@(PackageReference)"
                                              Condition="'%(PackageReference.Identity)' == 'TngTech.ArchUnitNET.xUnitV3'" />
+      <_FluentResultsPackageReference Include="@(PackageReference)"
+                                      Condition="'%(PackageReference.Identity)' == 'FluentResults'" />
     </ItemGroup>
+
+    <PropertyGroup>
+      <_FluentResultsAnalyzerTestProject>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj'))</_FluentResultsAnalyzerTestProject>
+    </PropertyGroup>
 
     <Error Condition="'@(_PackageReferenceWithVersion)' != ''"
            Text="PackageReference versions must be declared in Directory.Packages.props. Remove Version from: @(_PackageReferenceWithVersion, ', ')." />
@@ -1096,6 +1102,18 @@
            Text="Test-only packages may only be referenced by projects with IXModularityProjectRole=Test or ArchitectureTest. Invalid references: @(_TestOnlyPackageReference, ', ')." />
     <Error Condition="'$(IXModularityProjectRole)' != 'ArchitectureTest' And '@(_ArchitectureTestOnlyPackageReference)' != ''"
            Text="Architecture-test-only packages may only be referenced by the project with IXModularityProjectRole=ArchitectureTest. Invalid references: @(_ArchitectureTestOnlyPackageReference, ', ')." />
+    <Error Condition="'@(_FluentResultsPackageReference)' != ''
+                      And '$(IXModularityProjectRole)' != 'Library'
+                      And '$(IXModularityProjectRole)' != 'Contracts'
+                      And '$(IXModularityProjectRole)' != 'Abstractions'
+                      And '$(IXModularityProjectRole)' != 'Adapter'
+                      And '$(IXModularityProjectRole)' != 'Integration'
+                      And '$(MSBuildProjectFullPath)' != '$(_FluentResultsAnalyzerTestProject)'"
+           Text="FluentResults may only be referenced by Library, Contracts, Abstractions, Adapter, or Integration projects. The sole test exception is test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj with PrivateAssets=all." />
+    <Error Condition="'$(MSBuildProjectFullPath)' == '$(_FluentResultsAnalyzerTestProject)'
+                      And '@(_FluentResultsPackageReference)' != ''
+                      And '%(_FluentResultsPackageReference.PrivateAssets)' != 'all'"
+           Text="The FluentResults analyzer-test fixture must set PrivateAssets=all." />
   </Target>
 
   <Target Name="ValidatePackableProjectPolicy"

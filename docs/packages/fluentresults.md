@@ -6,7 +6,7 @@
 
 ## Decision and scope
 
-Use for expected, caller-actionable outcomes across application boundaries. Do not use it to conceal programming faults, cancellation, or infrastructure failures that need normal exception/telemetry handling.
+Use FluentResults for expected, caller-actionable outcomes from externally visible service operations. `Library`, `Contracts`, `Abstractions`, `Adapter`, and `Integration` may intentionally expose this public dependency because the result shape is part of their service contract. This narrow exception does not authorize hosting, transport, persistence, or logging implementation dependencies in neutral roles. Do not use results to conceal programming faults, cancellation, corrupt state, broken invariants, or unexpected infrastructure failures.
 
 ## Recommended registration and use
 
@@ -23,32 +23,50 @@ No dependency-injection registration is required. Return `Result` for no-value o
 ```csharp
 using FluentResults;
 
-static Result<Guid> CreateOrder(string customerId)
+public sealed class CustomerRequiredError : Error
 {
-    if (string.IsNullOrWhiteSpace(customerId))
+    public const string Code = "customer_required";
+
+    public CustomerRequiredError()
+        : base("A customer is required.")
     {
-        return Result.Fail<Guid>(
-            new Error("A customer is required.")
-                .WithMetadata("code", "customer_required"));
+    }
+}
+
+public static class Example
+{
+    public static void Main()
+    {
+        Result<Guid> result = CreateOrder("customer-42");
+        if (result.IsFailed)
+        {
+            if (result.Errors[0] is CustomerRequiredError)
+            {
+                Console.WriteLine($"Rejected: {CustomerRequiredError.Code}");
+            }
+            return;
+        }
+
+        Console.WriteLine($"Created: {result.Value}");
     }
 
-    return Result.Ok(Guid.NewGuid());
-}
+    private static Result<Guid> CreateOrder(string customerId)
+    {
+        if (string.IsNullOrWhiteSpace(customerId))
+        {
+            return Result.Fail<Guid>(new CustomerRequiredError());
+        }
 
-var result = CreateOrder("customer-42");
-if (result.IsFailed)
-{
-    var code = result.Errors[0].Metadata["code"];
-    Console.WriteLine($"Rejected: {code}");
-    return;
+        return Result.Ok(Guid.NewGuid());
+    }
 }
-
-Console.WriteLine($"Created: {result.Value}");
 ```
 
 ## Enterprise implementation guidance
 
-Keep error messages safe for clients and retain diagnostic detail in structured logs. A common workflow is: create a typed domain error, compose operations with `Bind`/`Map`, branch once at the application boundary, then map the application-owned metadata code to HTTP problem details, a message rejection, or a retry decision. Preserve stable codes rather than making callers parse `Error.Message`; treat missing or unknown codes as an explicit server-side mapping defect.
+Each concrete business error derives from `Error` and declares its own `public const string Code` using lowercase snake case. The code is the stable machine-readable contract; the message is explanatory text only. Callers branch on the concrete error type or code, never on `Error.Message`. Keep error messages safe for clients and protected diagnostic detail in structured telemetry or the preserved exception chain. A boundary may map its own errors to HTTP, messaging, or UI states; reusable services must not introduce transport envelopes or status codes.
+
+Compose operations with `Bind`/`Map` and preserve all meaningful `Result.Errors`. Do not use string-only `Result.Fail`, directly instantiate the unclassified `Error` for a business failure, or call `Result.Try`: its broad internal catch cannot prove that every translated exception is a documented expected outcome. The analyzer verifies direct, statically visible construction; factories, exception translation, message safety, and state changes still need review.
 
 When several failures are useful to the caller, preserve `Errors` instead of collapsing them into one string. Use `CausedBy` for internal causal detail only if the resulting error will not cross a trust boundary.
 
@@ -62,12 +80,13 @@ Avoid recording secrets, exception text, or customer data in errors and metadata
 
 ## Avoid
 
-Do not wrap every exception as a generic failure, return successful results with error payloads, or use `ValueOrDefault` when a missing value would be ambiguous.
+Do not wrap every exception as a generic failure, translate cancellation, use `Result.Try`, return successful results with error payloads, or use `ValueOrDefault` when a missing value would be ambiguous. Catch a specific exception only when it is a fully understood, documented, caller-actionable outcome and return a coded error; otherwise propagate it. A broad `catch (Exception)` or untyped catch may log or clean up only before a bare `throw;`.
 
 ## Verification checklist
 
 - [ ] Test success, expected failure, and unexpected exception paths.
-- [ ] Assert every public error code maps to a stable, safe transport response.
+- [ ] Assert every concrete public business error has an own `public const string Code` in lowercase snake case.
+- [ ] Assert expected failures preserve all meaningful errors and unexpected exceptions, including cancellation, propagate.
 - [ ] Verify failed `Result<T>` paths never access `Value`.
 - [ ] Confirm logs and serialized errors contain no secrets or personal data.
 

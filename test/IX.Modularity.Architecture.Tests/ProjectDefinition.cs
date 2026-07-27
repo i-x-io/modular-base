@@ -53,7 +53,7 @@ internal sealed class ProjectDefinition
         get; init;
     }
 
-    public required IReadOnlyList<string> PackageReferences
+    public required IReadOnlyList<PackageReferenceDefinition> PackageReferences
     {
         get; init;
     }
@@ -74,7 +74,10 @@ internal sealed class ProjectDefinition
     {
         XDocument document = ProjectXmlDocumentLoader.Load(path);
         string[] roles = [.. document.Descendants("IXModularityProjectRole").Select(static element => element.Value.Trim())];
-        string[] packageReferences = [.. document.Descendants("PackageReference").Select(static element => element.Attribute("Include")?.Value ?? element.Attribute("Update")?.Value ?? string.Empty)];
+        PackageReferenceDefinition[] packageReferences = [.. document.Descendants("PackageReference")
+            .Select(static element => new PackageReferenceDefinition(
+                element.Attribute("Include")?.Value ?? element.Attribute("Update")?.Value ?? string.Empty,
+                GetMetadata(element, "PrivateAssets")))];
 
         return new ProjectDefinition
         {

@@ -105,6 +105,30 @@ internal sealed class ProjectGraph
         return string.Equals(role, "Contracts", StringComparison.Ordinal) || string.Equals(role, "Abstractions", StringComparison.Ordinal);
     }
 
+    public static bool IsPackageReferenceAllowed(string relativePath, string role, PackageReferenceDefinition packageReference)
+    {
+        return !string.Equals(packageReference.Id, "FluentResults", StringComparison.Ordinal)
+            ? !IsNeutralRole(role)
+            : IsFluentResultsAllowedForProductionRole(role)
+                || IsFluentResultsAnalyzerTestFixture(relativePath, role, packageReference.PrivateAssets);
+    }
+
+    public static bool IsFluentResultsAllowedForProductionRole(string role)
+    {
+        return string.Equals(role, "Library", StringComparison.Ordinal)
+            || string.Equals(role, "Contracts", StringComparison.Ordinal)
+            || string.Equals(role, "Abstractions", StringComparison.Ordinal)
+            || string.Equals(role, "Adapter", StringComparison.Ordinal)
+            || string.Equals(role, "Integration", StringComparison.Ordinal);
+    }
+
+    public static bool IsFluentResultsAnalyzerTestFixture(string relativePath, string role, string privateAssets)
+    {
+        return string.Equals(relativePath, "test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj", StringComparison.Ordinal)
+            && string.Equals(role, "Test", StringComparison.Ordinal)
+            && string.Equals(privateAssets, "all", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static bool IsCanonicalLocation(ProjectDefinition project)
     {
         return IsTestRole(project.Role)
@@ -174,7 +198,11 @@ internal sealed class ProjectGraph
             {
                 entries = Directory.EnumerateFileSystemEntries(directory).ToArray();
             }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            catch (IOException exception)
+            {
+                throw new InvalidOperationException($"Unable to enumerate repository directory '{directory}'.", exception);
+            }
+            catch (UnauthorizedAccessException exception)
             {
                 throw new InvalidOperationException($"Unable to enumerate repository directory '{directory}'.", exception);
             }
@@ -303,7 +331,11 @@ internal sealed class ProjectGraph
         {
             return File.GetAttributes(path);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (IOException exception)
+        {
+            throw new InvalidOperationException($"Unable to inspect {description} path '{path}' within repository '{repositoryRoot}'.", exception);
+        }
+        catch (UnauthorizedAccessException exception)
         {
             throw new InvalidOperationException($"Unable to inspect {description} path '{path}' within repository '{repositoryRoot}'.", exception);
         }

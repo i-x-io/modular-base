@@ -16,5 +16,6 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="FluentResults" PrivateAssets="all" />
   </ItemGroup>
 </Project>

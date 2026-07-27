@@ -17,6 +17,7 @@ XML documentation is API guidance; package guides describe dependency decisions;
 ## Normative rules
 
 - Every public data object, interface, interface member, service type, and service member has complete XML documentation under the `IXM100x` contract.
+- Service operations use approved FluentResults shapes; direct failures use typed coded errors; and broad catches rethrow under `IXM3001`–`IXM3003`.
 - Package catalog entries have exactly one guide following the [package documentation schema](package-documentation-schema.md).
 - Tests cover public behavior, failure modes, and regressions; architecture tests cover role, package, and dependency invariants.
 - Use the root Makefile as the only public build interface. Do not document direct `eng/Build.proj` invocation as a public command.
@@ -29,6 +30,8 @@ A package guide explains why `Markdig` is allowed and where it may be used. An a
 
 Copying application examples into policy docs, declaring a package “tested” because formatting passes, broad analyzer suppression, and linking a catalog entry to no guide are rejected.
 
+The result diagnostics verify shapes and direct static patterns. Code review must verify expected-versus-exceptional classification, the honesty of specific exception translation, message safety, state consistency, and failure atomicity. Documentation and tests must state those behavioral contracts explicitly.
+
 ## Review questions
 
 - Can a consumer understand and use this public contract from XML docs and the package guide?
@@ -37,7 +40,7 @@ Copying application examples into policy docs, declaring a package “tested” 
 
 ## Analyzer and build enforcement
 
-`IXM1001`–`IXM1005` are errors; `IXM2001` and `MA0109` are suggestions. `CS1591` is intentionally none. `make validate`, `make build`, `make test`, and `make format` are the documented public checks.
+`IXM1001`–`IXM1005` and `IXM3001`–`IXM3003` are errors; `IXM2001` and `MA0109` are suggestions. `CS1591` is intentionally none. `make validate`, `make build`, `make test`, and `make format` are the documented public checks.
 
 ## Authoritative references
 

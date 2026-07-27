@@ -12,6 +12,9 @@ Use this index to navigate the produced analyzer package and its individual diag
 | `IXM1004` | error | [Service type](diagnostics/ixm1004.md) |
 | `IXM1005` | error | [Service member](diagnostics/ixm1005.md) |
 | `IXM2001` | suggestion | [Record suggestion](diagnostics/ixm2001.md) |
+| `IXM3001` | error | [Service result contract](diagnostics/ixm3001.md) |
+| `IXM3002` | error | [Coded business failure](diagnostics/ixm3002.md) |
+| `IXM3003` | error | [Broad catch rethrow](diagnostics/ixm3003.md) |
 
 ## Related policy
 
