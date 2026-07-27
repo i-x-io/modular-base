@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+**/TestResults/
+**/*.trx
+**/*.coverage
+**/*.coveragexml
+**/coverage.cobertura.xml
+**/coverage.opencover.xml
+**/*.user
+**/*.suo
+.DS_Store
+.idea/
+.vs/
+.vscode/
+artifacts/
+.cache/
+BenchmarkDotNet.Artifacts/

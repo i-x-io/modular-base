@@ -1,0 +1,160 @@
+<Project DefaultTargets="Validate;ToolRestore" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <RepositoryRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))$([System.IO.Path]::DirectorySeparatorChar)</RepositoryRoot>
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+    <GlobalJsonPath>$(RepositoryRoot)global.json</GlobalJsonPath>
+    <PackagesPath>$(RepositoryRoot)Directory.Packages.props</PackagesPath>
+    <NuGetConfigPath>$(RepositoryRoot)NuGet.Config</NuGetConfigPath>
+    <ToolManifestPath>$(RepositoryRoot).config/dotnet-tools.json</ToolManifestPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RepositorySolution Include="$(RepositoryRoot)**/*.sln;$(RepositoryRoot)**/*.slnx"
+                        Exclude="$(RepositoryRoot)**/bin/**;$(RepositoryRoot)**/obj/**;$(RepositoryRoot)**/artifacts/**" />
+    <RepositoryProject Include="$(RepositoryRoot)**/*.csproj;$(RepositoryRoot)**/*.fsproj;$(RepositoryRoot)**/*.vbproj"
+                       Exclude="$(RepositoryRoot)**/bin/**;$(RepositoryRoot)**/obj/**;$(RepositoryRoot)**/artifacts/**" />
+    <RepositoryBuildEntry Include="@(RepositorySolution)" Condition="'@(RepositorySolution)' != '' And '@(RepositoryProject)' != ''">
+      <SbomOutputSubdirectory>solutions/%(RepositorySolution.RecursiveDir)%(RepositorySolution.Filename)</SbomOutputSubdirectory>
+    </RepositoryBuildEntry>
+    <RepositoryBuildEntry Include="@(RepositoryProject)" Condition="'@(RepositorySolution)' == ''">
+      <SbomOutputSubdirectory>projects/%(RepositoryProject.RecursiveDir)%(RepositoryProject.Filename)</SbomOutputSubdirectory>
+    </RepositoryBuildEntry>
+  </ItemGroup>
+
+  <Target Name="Validate">
+    <Error Condition="'$(Configuration)' != 'Debug' And '$(Configuration)' != 'Release'" Text="Configuration must be Debug or Release." />
+    <Error Condition="!Exists('$(GlobalJsonPath)')" Text="Required repository configuration file is missing: global.json." />
+    <Error Condition="!Exists('$(PackagesPath)')" Text="Required repository configuration file is missing: Directory.Packages.props." />
+    <Error Condition="!Exists('$(NuGetConfigPath)')" Text="Required repository configuration file is missing: NuGet.Config." />
+    <Error Condition="!Exists('$(ToolManifestPath)')" Text="Required repository configuration file is missing: .config/dotnet-tools.json." />
+
+    <ReadLinesFromFile File="$(GlobalJsonPath)">
+      <Output TaskParameter="Lines" ItemName="_GlobalJsonLine" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <_GlobalJson>@(_GlobalJsonLine, ' ')</_GlobalJson>
+    </PropertyGroup>
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(_GlobalJson)', '&quot;version&quot;\s*:\s*&quot;10\.0\.302&quot;'))" Text="global.json must pin SDK version 10.0.302." />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(_GlobalJson)', '&quot;rollForward&quot;\s*:\s*&quot;disable&quot;'))" Text="global.json must set sdk.rollForward to disable." />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(_GlobalJson)', '&quot;allowPrerelease&quot;\s*:\s*false'))" Text="global.json must set sdk.allowPrerelease to false." />
+
+    <XmlPeek XmlInputPath="$(PackagesPath)" Query="/Project/PropertyGroup/CentralPackageTransitivePinningEnabled/text()">
+      <Output TaskParameter="Result" PropertyName="_TransitivePinning" />
+    </XmlPeek>
+    <Error Condition="'$(_TransitivePinning)' != 'false'" Text="Directory.Packages.props must set CentralPackageTransitivePinningEnabled to false." />
+    <XmlPeek XmlInputPath="$(PackagesPath)" Query="/Project/ItemGroup/PackageVersion/@Include">
+      <Output TaskParameter="Result" ItemName="_CentralPackageVersion" />
+    </XmlPeek>
+    <RemoveDuplicates Inputs="@(_CentralPackageVersion)">
+      <Output TaskParameter="Filtered" ItemName="_DistinctCentralPackageVersion" />
+    </RemoveDuplicates>
+    <Error Condition="'@(_CentralPackageVersion)' != '@(_DistinctCentralPackageVersion)'" Text="Directory.Packages.props contains duplicate central PackageVersion entries." />
+
+    <XmlPeek XmlInputPath="$(NuGetConfigPath)" Query="/configuration/packageSources/add[@key='nuget.org']/@value">
+      <Output TaskParameter="Result" PropertyName="_NuGetOrgSource" />
+    </XmlPeek>
+    <Error Condition="'$(_NuGetOrgSource)' != 'https://api.nuget.org/v3/index.json'" Text="NuGet.Config must configure the nuget.org v3 source." />
+
+    <ReadLinesFromFile File="$(ToolManifestPath)">
+      <Output TaskParameter="Lines" ItemName="_ToolManifestLine" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <_ToolManifest>@(_ToolManifestLine, ' ')</_ToolManifest>
+    </PropertyGroup>
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(_ToolManifest)', '&quot;cyclonedx&quot;\s*:\s*\{\s*&quot;version&quot;\s*:\s*&quot;6\.2\.0&quot;'))" Text=".config/dotnet-tools.json must pin cyclonedx 6.2.0." />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(_ToolManifest)', '&quot;dotnet-CycloneDX&quot;'))" Text=".config/dotnet-tools.json must expose the dotnet-CycloneDX command." />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(_ToolManifest)', '&quot;dotnet-outdated-tool&quot;\s*:\s*\{\s*&quot;version&quot;\s*:\s*&quot;4\.8\.1&quot;'))" Text=".config/dotnet-tools.json must pin dotnet-outdated-tool 4.8.1." />
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(_ToolManifest)', '&quot;dotnet-outdated&quot;'))" Text=".config/dotnet-tools.json must expose the dotnet-outdated command." />
+    <Message Importance="high" Text="Repository configuration validation passed." />
+  </Target>
+
+  <Target Name="ToolRestore" DependsOnTargets="Validate">
+    <Exec Command="dotnet tool restore" WorkingDirectory="$(RepositoryRoot)" />
+  </Target>
+
+  <Target Name="Restore" DependsOnTargets="Validate">
+    <CallTarget Targets="SkipRestore" Condition="'@(RepositoryBuildEntry)' == ''" />
+    <CallTarget Targets="RestoreDebug" Condition="'@(RepositoryBuildEntry)' != '' And '$(Configuration)' == 'Debug' And '$(CI)' != 'true'" />
+    <CallTarget Targets="RestoreLocked" Condition="'@(RepositoryBuildEntry)' != '' And ('$(Configuration)' == 'Release' Or '$(CI)' == 'true')" />
+  </Target>
+
+  <Target Name="RestoreDebug">
+    <Exec Command="dotnet restore &quot;%(RepositoryBuildEntry.FullPath)&quot; -p:Configuration=Debug" WorkingDirectory="$(RepositoryRoot)" />
+  </Target>
+
+  <Target Name="RestoreLocked">
+    <Exec Command="dotnet restore &quot;%(RepositoryBuildEntry.FullPath)&quot; -p:Configuration=Release --locked-mode" WorkingDirectory="$(RepositoryRoot)" Condition="'$(Configuration)' == 'Release'" />
+    <Exec Command="dotnet restore &quot;%(RepositoryBuildEntry.FullPath)&quot; -p:Configuration=Debug --locked-mode" WorkingDirectory="$(RepositoryRoot)" Condition="'$(Configuration)' == 'Debug'" />
+  </Target>
+
+  <Target Name="Format" DependsOnTargets="Restore">
+    <CallTarget Targets="SkipFormat" Condition="'@(RepositoryBuildEntry)' == ''" />
+    <Exec Command="dotnet format &quot;%(RepositoryBuildEntry.FullPath)&quot; --no-restore --verify-no-changes" WorkingDirectory="$(RepositoryRoot)" Condition="'@(RepositoryBuildEntry)' != ''" />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="Restore">
+    <CallTarget Targets="SkipBuild" Condition="'@(RepositoryBuildEntry)' == ''" />
+    <CallTarget Targets="BuildDebug" Condition="'@(RepositoryBuildEntry)' != '' And '$(Configuration)' == 'Debug'" />
+    <CallTarget Targets="BuildRelease" Condition="'@(RepositoryBuildEntry)' != '' And '$(Configuration)' == 'Release'" />
+  </Target>
+
+  <Target Name="BuildDebug">
+    <Exec Command="dotnet build &quot;%(RepositoryBuildEntry.FullPath)&quot; --configuration Debug --no-restore" WorkingDirectory="$(RepositoryRoot)" />
+  </Target>
+
+  <Target Name="BuildRelease">
+    <Exec Command="dotnet build &quot;%(RepositoryBuildEntry.FullPath)&quot; --configuration Release --no-restore" WorkingDirectory="$(RepositoryRoot)" />
+  </Target>
+
+  <Target Name="Test" DependsOnTargets="Build">
+    <CallTarget Targets="SkipTest" Condition="'@(RepositoryBuildEntry)' == ''" />
+    <CallTarget Targets="TestDebug" Condition="'@(RepositoryBuildEntry)' != '' And '$(Configuration)' == 'Debug'" />
+    <CallTarget Targets="TestRelease" Condition="'@(RepositoryBuildEntry)' != '' And '$(Configuration)' == 'Release'" />
+  </Target>
+
+  <Target Name="TestDebug">
+    <Exec Command="dotnet test &quot;%(RepositoryBuildEntry.FullPath)&quot; --configuration Debug --no-build --no-restore" WorkingDirectory="$(RepositoryRoot)" />
+  </Target>
+
+  <Target Name="TestRelease">
+    <Exec Command="dotnet test &quot;%(RepositoryBuildEntry.FullPath)&quot; --configuration Release --no-build --no-restore" WorkingDirectory="$(RepositoryRoot)" />
+  </Target>
+
+  <Target Name="Audit" DependsOnTargets="Restore">
+    <CallTarget Targets="SkipAudit" Condition="'@(RepositoryBuildEntry)' == ''" />
+    <Exec Command="dotnet package list &quot;%(RepositoryBuildEntry.FullPath)&quot; --include-transitive --vulnerable --format json --output-version 1" WorkingDirectory="$(RepositoryRoot)" Condition="'@(RepositoryBuildEntry)' != ''" />
+  </Target>
+
+  <Target Name="Outdated" DependsOnTargets="ToolRestore">
+    <CallTarget Targets="SkipOutdated" Condition="'@(RepositoryBuildEntry)' == ''" />
+    <Exec Command="dotnet tool run dotnet-outdated -- &quot;%(RepositoryBuildEntry.FullPath)&quot;" WorkingDirectory="$(RepositoryRoot)" Condition="'@(RepositoryBuildEntry)' != ''" />
+  </Target>
+
+  <Target Name="Sbom" DependsOnTargets="ToolRestore">
+    <CallTarget Targets="SkipSbom" Condition="'@(RepositoryBuildEntry)' == ''" />
+    <MakeDir Directories="$(MSBuildThisFileDirectory)../artifacts/sbom/%(RepositoryBuildEntry.SbomOutputSubdirectory)" Condition="'@(RepositoryBuildEntry)' != ''" />
+    <Exec Command="dotnet tool run dotnet-CycloneDX -- &quot;%(RepositoryBuildEntry.FullPath)&quot; --output &quot;$(MSBuildThisFileDirectory)../artifacts/sbom/%(RepositoryBuildEntry.SbomOutputSubdirectory)&quot; --filename bom.cdx.json --output-format Json" WorkingDirectory="$(RepositoryRoot)" Condition="'@(RepositoryBuildEntry)' != ''" />
+  </Target>
+
+  <Target Name="SkipRestore" Condition="'@(RepositoryBuildEntry)' == ''">
+    <Message Importance="high" Text="Restore skipped: no solution containing projects or standalone project exists in this configuration-only repository." />
+  </Target>
+  <Target Name="SkipFormat" Condition="'@(RepositoryBuildEntry)' == ''">
+    <Message Importance="high" Text="Format skipped: the solution contains no projects; dotnet format is an SDK command and no dotnet-format tool is required." />
+  </Target>
+  <Target Name="SkipBuild" Condition="'@(RepositoryBuildEntry)' == ''">
+    <Message Importance="high" Text="Build skipped: the solution contains no projects." />
+  </Target>
+  <Target Name="SkipTest" Condition="'@(RepositoryBuildEntry)' == ''">
+    <Message Importance="high" Text="Test skipped: the solution contains no projects." />
+  </Target>
+  <Target Name="SkipAudit" Condition="'@(RepositoryBuildEntry)' == ''">
+    <Message Importance="high" Text="Audit skipped: the solution contains no projects; restore will apply the configured NuGet audit policy when projects are added." />
+  </Target>
+  <Target Name="SkipOutdated" Condition="'@(RepositoryBuildEntry)' == ''">
+    <Message Importance="high" Text="Outdated skipped: the solution contains no projects." />
+  </Target>
+  <Target Name="SkipSbom" Condition="'@(RepositoryBuildEntry)' == ''">
+    <Message Importance="high" Text="SBOM skipped: CycloneDX requires at least one project. Future builds write bom.cdx.json beneath artifacts/sbom/solutions or artifacts/sbom/projects." />
+  </Target>
+</Project>

@@ -1,0 +1,19 @@
+// Avoid weakly typed dictionary contracts. Use IReadOnlyDictionary<TKey, TValue>,
+// Dictionary<TKey, TValue>, or a purpose-specific immutable value type.
+T:System.Collections.IDictionary;Use a generic, statically typed collection contract.
+T:System.Collections.Generic.IDictionary`2;Use IReadOnlyDictionary<TKey, TValue> for input contracts or a concrete collection for owned mutation.
+
+// Ambient clocks make behavior non-deterministic. Inject the consuming
+// ecosystem's IClock; its infrastructure adapter may wrap TimeProvider.
+P:System.DateTime.Now;Inject IClock and request the required local time.
+P:System.DateTime.UtcNow;Inject IClock and request UTC time.
+P:System.DateTime.Today;Inject IClock and derive the required local date explicitly.
+P:System.DateTimeOffset.Now;Inject IClock and request the required local time.
+P:System.DateTimeOffset.UtcNow;Inject IClock and request UTC time.
+
+// Application source must not perform runtime reflection. Prefer source generators,
+// explicit registration, generated serializers, or reviewed framework integrations.
+M:System.Object.GetType;Runtime reflection is prohibited in repository source.
+T:System.Type;Runtime reflection is prohibited in repository source.
+T:System.Activator;Runtime reflection is prohibited in repository source.
+N:System.Reflection;Runtime reflection is prohibited in repository source.

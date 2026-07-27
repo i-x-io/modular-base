@@ -1,0 +1,6 @@
+IX.Modularity is an independent clean implementation informed by architectural
+analysis of devmentors/modular-framework. No source files from that repository
+are copied into this repository.
+
+Third-party dependencies retain their respective licenses. Restore metadata and
+the generated packages.lock.json files identify the exact versions in use.

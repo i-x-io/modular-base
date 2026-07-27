@@ -1,0 +1,21 @@
+is_global = true
+global_level = 100
+
+# Analyzer diagnostics are visible repository-wide and become build errors through
+# TreatWarningsAsErrors. File-scoped style and naming rules live in .editorconfig.
+dotnet_analyzer_diagnostic.severity = warning
+dotnet_analyzer_diagnostic.category-Design.severity = warning
+dotnet_analyzer_diagnostic.category-Documentation.severity = warning
+dotnet_analyzer_diagnostic.category-Globalization.severity = warning
+dotnet_analyzer_diagnostic.category-Interoperability.severity = warning
+dotnet_analyzer_diagnostic.category-Maintainability.severity = warning
+dotnet_analyzer_diagnostic.category-Naming.severity = warning
+dotnet_analyzer_diagnostic.category-Performance.severity = warning
+dotnet_analyzer_diagnostic.category-Reliability.severity = warning
+dotnet_analyzer_diagnostic.category-Security.severity = warning
+dotnet_analyzer_diagnostic.category-Style.severity = warning
+dotnet_analyzer_diagnostic.category-Usage.severity = warning
+
+# BannedApiAnalyzers must not report SDK/source-generator output. Repository
+# source is still checked by RS0030 and the source-policy task.
+dotnet_banned_api_analyzer.exclude_generated_code = true

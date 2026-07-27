@@ -1,0 +1,693 @@
+<Project>
+  <UsingTask TaskName="ValidateModularBaseSourcePolicy"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.IO" />
+      <Code Type="Method" Language="cs"><![CDATA[
+        public override bool Execute()
+        {
+            var success = true;
+
+            foreach (var item in Files)
+            {
+                var path = item.GetMetadata("FullPath");
+                var normalizedPath = path.Replace(Path.DirectorySeparatorChar, '/');
+                var fileName = Path.GetFileName(path);
+
+                if (normalizedPath.IndexOf("/bin/", StringComparison.OrdinalIgnoreCase) >= 0
+                    || normalizedPath.IndexOf("/obj/", StringComparison.OrdinalIgnoreCase) >= 0
+                    || normalizedPath.IndexOf("/artifacts/", StringComparison.OrdinalIgnoreCase) >= 0
+                    || normalizedPath.IndexOf("/Generated/", StringComparison.OrdinalIgnoreCase) >= 0
+                    || fileName.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase)
+                    || fileName.EndsWith(".generated.cs", StringComparison.OrdinalIgnoreCase)
+                    || fileName.EndsWith(".designer.cs", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var source = File.ReadAllText(path);
+                var tokens = Tokenize(source);
+
+                for (var index = 0; index < tokens.Count; index++)
+                {
+                    var token = tokens[index];
+                    string diagnosticId = null;
+                    string message = null;
+
+                    if (token.Text == "dynamic")
+                    {
+                        diagnosticId = "MB0001";
+                        message = "The dynamic keyword is prohibited. Use a statically typed abstraction.";
+                    }
+                    else if (IsIDictionaryTypeUse(tokens, index))
+                    {
+                        diagnosticId = "MB0002";
+                        message = "IDictionary is prohibited. Use a statically typed read-only contract or an owned concrete collection.";
+                    }
+                    else if (token.Text == "typeof")
+                    {
+                        diagnosticId = "MB0003";
+                        message = "Runtime type inspection is prohibited. Use generic, generated, or explicit metadata.";
+                    }
+                    else if (IsQualifiedSystemType(tokens, index)
+                        || IsSystemReflectionNamespace(tokens, index))
+                    {
+                        diagnosticId = "MB0003";
+                        message = "Runtime reflection is prohibited. Use source generation or an explicit statically typed registration.";
+                    }
+
+                    if (diagnosticId == null)
+                    {
+                        continue;
+                    }
+
+                    int line;
+                    int column;
+                    GetLineAndColumn(source, token.Start, out line, out column);
+                    Log.LogError(
+                        null,
+                        diagnosticId,
+                        null,
+                        path,
+                        line,
+                        column,
+                        0,
+                        0,
+                        message);
+                    success = false;
+                }
+            }
+
+            return success;
+        }
+
+        private static bool IsQualifiedSystemType(List<Token> tokens, int index)
+        {
+            return index >= 2
+                && IdentifierText(tokens[index]) == "Type"
+                && tokens[index - 1].Text == "."
+                && IdentifierText(tokens[index - 2]) == "System";
+        }
+
+        private static bool IsSystemReflectionNamespace(List<Token> tokens, int index)
+        {
+            return index >= 2
+                && IdentifierText(tokens[index]) == "Reflection"
+                && tokens[index - 1].Text == "."
+                && IdentifierText(tokens[index - 2]) == "System";
+        }
+
+        private static bool IsIDictionaryTypeUse(List<Token> tokens, int index)
+        {
+            if (IdentifierText(tokens[index]) != "IDictionary")
+            {
+                return false;
+            }
+
+            if (IsQualifiedIDictionary(tokens, index))
+            {
+                return true;
+            }
+
+            if (index > 0 && tokens[index - 1].Text == ".")
+            {
+                return false;
+            }
+
+            if (index > 0 && IsTypeDeclarationKeyword(IdentifierText(tokens[index - 1])))
+            {
+                return false;
+            }
+
+            if (index + 1 >= tokens.Count)
+            {
+                return false;
+            }
+
+            var next = tokens[index + 1];
+            if (IsIdentifierToken(next))
+            {
+                return true;
+            }
+
+            if (next.Text == "?" || next.Text == "[")
+            {
+                return true;
+            }
+
+            if (next.Text == "<")
+            {
+                var genericEnd = FindMatchingAngleBracket(tokens, index + 1);
+                return genericEnd < 0
+                    || genericEnd + 1 >= tokens.Count
+                    || tokens[genericEnd + 1].Text != "(";
+            }
+
+            if (index == 0)
+            {
+                return false;
+            }
+
+            var previous = IdentifierText(tokens[index - 1]);
+            return previous == "new"
+                || previous == "as"
+                || previous == "is"
+                || previous == "default"
+                || previous == "sizeof"
+                || tokens[index - 1].Text == "="
+                || tokens[index - 1].Text == "<"
+                || tokens[index - 1].Text == ":";
+        }
+
+        private static bool IsQualifiedIDictionary(List<Token> tokens, int index)
+        {
+            if (index >= 4
+                && tokens[index - 1].Text == "."
+                && IdentifierText(tokens[index - 2]) == "Collections"
+                && tokens[index - 3].Text == "."
+                && IdentifierText(tokens[index - 4]) == "System")
+            {
+                return true;
+            }
+
+            return index >= 6
+                && tokens[index - 1].Text == "."
+                && IdentifierText(tokens[index - 2]) == "Generic"
+                && tokens[index - 3].Text == "."
+                && IdentifierText(tokens[index - 4]) == "Collections"
+                && tokens[index - 5].Text == "."
+                && IdentifierText(tokens[index - 6]) == "System";
+        }
+
+        private static bool IsTypeDeclarationKeyword(string text)
+        {
+            return text == "class"
+                || text == "struct"
+                || text == "interface"
+                || text == "enum"
+                || text == "delegate"
+                || text == "record";
+        }
+
+        private static bool IsIdentifierToken(Token token)
+        {
+            if (token.Text.Length == 0)
+            {
+                return false;
+            }
+
+            var start = token.Text[0] == '@' ? 1 : 0;
+            return start < token.Text.Length && IsIdentifierStart(token.Text[start]);
+        }
+
+        private static int FindMatchingAngleBracket(List<Token> tokens, int start)
+        {
+            var depth = 0;
+            for (var index = start; index < tokens.Count; index++)
+            {
+                if (tokens[index].Text == "<")
+                {
+                    depth++;
+                }
+                else if (tokens[index].Text == ">")
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        return index;
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        private static string IdentifierText(Token token)
+        {
+            return token.Text.Length > 1 && token.Text[0] == '@'
+                ? token.Text.Substring(1)
+                : token.Text;
+        }
+
+        private static List<Token> Tokenize(string source)
+        {
+            var tokens = new List<Token>();
+            TokenizeRange(source, 0, source.Length, tokens);
+            return tokens;
+        }
+
+        private static void TokenizeRange(string source, int start, int end, List<Token> tokens)
+        {
+            var index = start;
+
+            while (index < end)
+            {
+                var next = index;
+                if (TrySkipComment(source, index, out next)
+                    || TrySkipCharacter(source, index, out next)
+                    || TrySkipString(source, index, tokens, out next))
+                {
+                    index = next;
+                    continue;
+                }
+
+                var current = source[index];
+                if (current == '@'
+                    && index + 1 < end
+                    && IsIdentifierStart(source[index + 1]))
+                {
+                    var tokenStart = index++;
+                    while (index < end && IsIdentifierPart(source[index]))
+                    {
+                        index++;
+                    }
+
+                    tokens.Add(new Token(source.Substring(tokenStart, index - tokenStart), tokenStart));
+                    continue;
+                }
+
+                if (IsIdentifierStart(current))
+                {
+                    var tokenStart = index++;
+                    while (index < end && IsIdentifierPart(source[index]))
+                    {
+                        index++;
+                    }
+
+                    tokens.Add(new Token(source.Substring(tokenStart, index - tokenStart), tokenStart));
+                    continue;
+                }
+
+                if (current == '.'
+                    || current == '('
+                    || current == ')'
+                    || current == '<'
+                    || current == '>'
+                    || current == '?'
+                    || current == '['
+                    || current == ']'
+                    || current == ':'
+                    || current == '='
+                    || current == '{'
+                    || current == '}'
+                    || current == ','
+                    || current == ';')
+                {
+                    tokens.Add(new Token(current.ToString(), index));
+                }
+
+                index++;
+            }
+        }
+
+        private static bool TrySkipComment(string source, int index, out int next)
+        {
+            next = index;
+            if (source[index] != '/' || index + 1 >= source.Length)
+            {
+                return false;
+            }
+
+            if (source[index + 1] == '/')
+            {
+                next = index + 2;
+                while (next < source.Length && source[next] != '\n')
+                {
+                    next++;
+                }
+
+                return true;
+            }
+
+            if (source[index + 1] != '*')
+            {
+                return false;
+            }
+
+            next = index + 2;
+            while (next + 1 < source.Length
+                && !(source[next] == '*' && source[next + 1] == '/'))
+            {
+                next++;
+            }
+
+            next = Math.Min(source.Length, next + 2);
+            return true;
+        }
+
+        private static bool TrySkipCharacter(string source, int index, out int next)
+        {
+            next = index;
+            if (source[index] != '\'')
+            {
+                return false;
+            }
+
+            next = index + 1;
+            while (next < source.Length)
+            {
+                if (source[next] == '\\')
+                {
+                    next = Math.Min(source.Length, next + 2);
+                    continue;
+                }
+
+                if (source[next++] == '\'')
+                {
+                    break;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool TrySkipString(
+            string source,
+            int index,
+            List<Token> tokens,
+            out int next)
+        {
+            next = index;
+            var cursor = index;
+            var verbatim = false;
+            var dollarCount = 0;
+
+            if (source[cursor] == '@')
+            {
+                verbatim = true;
+                cursor++;
+                if (cursor < source.Length && source[cursor] == '$')
+                {
+                    dollarCount = 1;
+                    cursor++;
+                }
+            }
+            else
+            {
+                while (cursor < source.Length && source[cursor] == '$')
+                {
+                    dollarCount++;
+                    cursor++;
+                }
+
+                if (cursor < source.Length && source[cursor] == '@')
+                {
+                    verbatim = true;
+                    cursor++;
+                }
+            }
+
+            if (cursor >= source.Length || source[cursor] != '"')
+            {
+                return false;
+            }
+
+            var quoteCount = 0;
+            while (cursor + quoteCount < source.Length
+                && source[cursor + quoteCount] == '"')
+            {
+                quoteCount++;
+            }
+
+            if (quoteCount >= 3)
+            {
+                next = cursor + quoteCount;
+                while (next < source.Length)
+                {
+                    if (dollarCount > 0 && source[next] == '{')
+                    {
+                        var openingBraces = CountRun(source, next, '{');
+                        if (openingBraces >= dollarCount)
+                        {
+                            var expressionStart = next + dollarCount;
+                            var expressionEnd = FindInterpolationEnd(
+                                source,
+                                expressionStart,
+                                dollarCount);
+                            if (tokens != null)
+                            {
+                                TokenizeRange(source, expressionStart, expressionEnd, tokens);
+                            }
+
+                            next = Math.Min(source.Length, expressionEnd + dollarCount);
+                            continue;
+                        }
+                    }
+
+                    var closingQuotes = 0;
+                    while (next + closingQuotes < source.Length
+                        && source[next + closingQuotes] == '"')
+                    {
+                        closingQuotes++;
+                    }
+
+                    if (closingQuotes >= quoteCount)
+                    {
+                        next += quoteCount;
+                        return true;
+                    }
+
+                    next += Math.Max(1, closingQuotes);
+                }
+
+                return true;
+            }
+
+            next = cursor + 1;
+            while (next < source.Length)
+            {
+                if (dollarCount > 0 && source[next] == '{')
+                {
+                    if (next + 1 < source.Length && source[next + 1] == '{')
+                    {
+                        next += 2;
+                        continue;
+                    }
+
+                    var expressionStart = next + 1;
+                    var expressionEnd = FindInterpolationEnd(source, expressionStart, 1);
+                    if (tokens != null)
+                    {
+                        TokenizeRange(source, expressionStart, expressionEnd, tokens);
+                    }
+
+                    next = Math.Min(source.Length, expressionEnd + 1);
+                    continue;
+                }
+
+                if (verbatim && source[next] == '"')
+                {
+                    if (next + 1 < source.Length && source[next + 1] == '"')
+                    {
+                        next += 2;
+                        continue;
+                    }
+
+                    next++;
+                    return true;
+                }
+
+                if (!verbatim && source[next] == '\\')
+                {
+                    next = Math.Min(source.Length, next + 2);
+                    continue;
+                }
+
+                if (!verbatim && source[next++] == '"')
+                {
+                    return true;
+                }
+
+                if (verbatim)
+                {
+                    next++;
+                }
+            }
+
+            return true;
+        }
+
+        private static int FindInterpolationEnd(
+            string source,
+            int start,
+            int closingBraceCount)
+        {
+            var index = start;
+            var nestedBraceDepth = 0;
+
+            while (index < source.Length)
+            {
+                var next = index;
+                if (TrySkipComment(source, index, out next)
+                    || TrySkipCharacter(source, index, out next)
+                    || TrySkipString(source, index, null, out next))
+                {
+                    index = next;
+                    continue;
+                }
+
+                if (source[index] == '{')
+                {
+                    nestedBraceDepth++;
+                    index++;
+                    continue;
+                }
+
+                if (source[index] == '}')
+                {
+                    var braceRun = CountRun(source, index, '}');
+                    if (nestedBraceDepth == 0 && braceRun >= closingBraceCount)
+                    {
+                        return index;
+                    }
+
+                    if (nestedBraceDepth > 0)
+                    {
+                        nestedBraceDepth--;
+                    }
+
+                    index++;
+                    continue;
+                }
+
+                index++;
+            }
+
+            return source.Length;
+        }
+
+        private static int CountRun(string source, int start, char value)
+        {
+            var count = 0;
+            while (start + count < source.Length && source[start + count] == value)
+            {
+                count++;
+            }
+
+            return count;
+        }
+
+        private static bool IsIdentifierStart(char value)
+        {
+            return value == '_' || char.IsLetter(value) || value > 127;
+        }
+
+        private static bool IsIdentifierPart(char value)
+        {
+            return IsIdentifierStart(value) || char.IsDigit(value);
+        }
+
+        private static void GetLineAndColumn(string source, int position, out int line, out int column)
+        {
+            line = 1;
+            column = 1;
+            for (var index = 0; index < position; index++)
+            {
+                if (source[index] == '\n')
+                {
+                    line++;
+                    column = 1;
+                }
+                else
+                {
+                    column++;
+                }
+            }
+        }
+
+        private sealed class Token
+        {
+            public Token(string text, int start)
+            {
+                Text = text;
+                Start = start;
+            }
+
+            public string Text { get; private set; }
+
+            public int Start { get; private set; }
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers"
+                      PrivateAssets="all"
+                      IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)/PublicAPI.Shipped.txt"
+                     Condition="Exists('$(MSBuildProjectDirectory)/PublicAPI.Shipped.txt')" />
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt"
+                     Condition="Exists('$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt')" />
+    <None Include="$(MSBuildThisFileDirectory)README.md"
+          Condition="Exists('$(MSBuildThisFileDirectory)README.md')"
+          Pack="true"
+          PackagePath=""
+          Link="README.md" />
+    <None Include="$(MSBuildThisFileDirectory)NOTICE"
+          Condition="Exists('$(MSBuildThisFileDirectory)NOTICE')"
+          Pack="true"
+          PackagePath=""
+          Link="NOTICE" />
+  </ItemGroup>
+
+  <Target Name="ValidateCentralPackageReferences"
+          BeforeTargets="CollectPackageReferences">
+    <ItemGroup>
+      <_PackageReferenceWithVersion Include="@(PackageReference)"
+                                    Condition="'%(PackageReference.Version)' != ''" />
+      <_PackageReferenceWithOverride Include="@(PackageReference)"
+                                     Condition="'%(PackageReference.VersionOverride)' != ''" />
+      <_TestOnlyPackageReference Include="@(PackageReference)"
+                                 Condition="'%(PackageReference.Identity)' == 'AwesomeAssertions'
+                                         Or '%(PackageReference.Identity)' == 'coverlet.collector'
+                                         Or '%(PackageReference.Identity)' == 'FastEndpoints.Testing'
+                                         Or '%(PackageReference.Identity)' == 'Microsoft.AspNetCore.Mvc.Testing'
+                                         Or '%(PackageReference.Identity)' == 'Microsoft.EntityFrameworkCore.InMemory'
+                                         Or '%(PackageReference.Identity)' == 'Microsoft.Extensions.TimeProvider.Testing'
+                                         Or '%(PackageReference.Identity)' == 'Microsoft.NET.Test.Sdk'
+                                         Or '%(PackageReference.Identity)' == 'SpecsFor'
+                                         Or '%(PackageReference.Identity)' == 'Testcontainers.PostgreSql'
+                                         Or '%(PackageReference.Identity)' == 'Testcontainers.Redis'
+                                         Or '%(PackageReference.Identity)' == 'xunit.v3'
+                                         Or '%(PackageReference.Identity)' == 'xunit.runner.visualstudio'" />
+    </ItemGroup>
+
+    <Error Condition="'@(_PackageReferenceWithVersion)' != ''"
+           Text="PackageReference versions must be declared in Directory.Packages.props. Remove Version from: @(_PackageReferenceWithVersion, ', ')." />
+    <Error Condition="'@(_PackageReferenceWithOverride)' != ''"
+           Text="PackageReference VersionOverride is prohibited. Remove it from: @(_PackageReferenceWithOverride, ', ')." />
+    <Error Condition="'$(IsTestProject)' != 'true' And '@(_TestOnlyPackageReference)' != ''"
+           Text="Test-only packages may only be referenced by projects with IsTestProject=true. Invalid references: @(_TestOnlyPackageReference, ', ')." />
+  </Target>
+
+  <Target Name="ValidatePackableProjectPolicy"
+          BeforeTargets="Pack"
+          Condition="'$(IsPackable)' == 'true'">
+    <Error Condition="!Exists('$(MSBuildProjectDirectory)/PublicAPI.Shipped.txt')"
+           Text="Packable projects must contain PublicAPI.Shipped.txt." />
+    <Error Condition="!Exists('$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt')"
+           Text="Packable projects must contain PublicAPI.Unshipped.txt." />
+    <Error Condition="'$(PackageId)' == ''"
+           Text="Packable projects must define PackageId." />
+    <Error Condition="'$(PackageVersion)' == '' And '$(Version)' == ''"
+           Text="Packable projects must define PackageVersion or Version." />
+  </Target>
+
+  <Target Name="ValidateSourcePolicy"
+          BeforeTargets="CoreCompile"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <ItemGroup>
+      <_SourcePolicyFile Include="@(Compile)"
+                         Condition="'%(Compile.AutoGen)' != 'true' And '%(Compile.DesignTime)' != 'true'" />
+    </ItemGroup>
+    <ValidateModularBaseSourcePolicy Files="@(_SourcePolicyFile)"
+                                     Condition="'@(_SourcePolicyFile)' != ''" />
+  </Target>
+</Project>

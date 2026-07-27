@@ -1,0 +1,60 @@
+# Microsoft.OpenApi
+
+## Catalog entry
+
+| Package | Pinned version | Role | Status |
+| --- | --- | --- | --- |
+| `Microsoft.OpenApi` | `2.11.0` | OpenAPI.NET document object model used by the ASP.NET Core/FastEndpoints document pipeline | Centrally pinned; compatibility-constrained infrastructure |
+
+## Decision and scope
+
+Keep this package on the OpenAPI.NET 2.x line while using `Microsoft.AspNetCore.OpenApi` 10.0.10 and FastEndpoints.OpenApi 8.2.0. It is an infrastructure dependency for document models and customizations, not an application-level API-registration package.
+
+## Recommended registration and use
+
+Do not add application startup calls for this package. Let the OpenAPI pipeline own it:
+
+- FastEndpoints applications: [FastEndpoints.OpenApi](fastendpoints-openapi.md) `.OpenApiDocument()` and `.MapOpenApi()`.
+- Raw ASP.NET Core Minimal APIs: [Microsoft.AspNetCore.OpenApi](microsoft-aspnetcore-openapi.md) `AddOpenApi()` and `MapOpenApi()`.
+
+Add a direct reference only when application code must use OpenAPI.NET types and only at the catalog’s compatible `2.11.0` pin.
+
+## Enterprise implementation guidance
+
+- Treat the central `2.11.0` pin as a compatibility boundary, not a floating convenience version.
+- Keep custom OpenAPI model manipulation in a small, tested document-customization boundary.
+- Upgrade ASP.NET Core OpenAPI, FastEndpoints.OpenApi, and Microsoft.OpenApi together after a compatibility review.
+- Capture the resolved dependency graph in CI so a transitive change cannot silently reintroduce an incompatible major.
+
+## Integration with the catalog
+
+- [Microsoft.AspNetCore.OpenApi](microsoft-aspnetcore-openapi.md) 10.0.10 consumes the compatible 2.x model line.
+- [FastEndpoints.OpenApi](fastendpoints-openapi.md) builds FastEndpoints documents on the Microsoft pipeline.
+- [Scalar.AspNetCore](scalar-aspnetcore.md) consumes serialized OpenAPI documents, not this object model directly.
+
+## Security, performance, AOT, trimming, and operations
+
+- This package does not authenticate requests, expose routes, or replace document generation. Its operational risk is dependency compatibility.
+- Keep vulnerability auditing enabled and remediate within the supported 2.x compatibility range.
+- Do not preserve OpenAPI model types through trimming unless custom runtime document transformation actually uses them.
+- For Native AOT production, prefer exported static documents over runtime generation when FastEndpoints recommends that deployment pattern.
+
+## Avoid
+
+- Do not reference `Microsoft.OpenApi` **3.x** with `Microsoft.AspNetCore.OpenApi` 10.0.10. The official OpenAPI.NET 3.x migration guidance requires ASP.NET Core OpenAPI 10.x consumers to remain on OpenAPI.NET 2.x.
+- Do not use this package as a substitute for `Microsoft.AspNetCore.OpenApi` or `FastEndpoints.OpenApi`.
+- Do not override the centrally pinned version from a project.
+
+## Verification checklist
+
+- [ ] Restore resolves `Microsoft.OpenApi` `2.11.0`.
+- [ ] `dotnet build` succeeds with FastEndpoints.OpenApi and Microsoft.AspNetCore.OpenApi present.
+- [ ] Dependency/audit checks confirm no 3.x OpenAPI.NET package is selected.
+- [ ] Any custom OpenAPI.NET model code is covered by document-output tests.
+
+## Sources
+
+- [OpenAPI.NET repository](https://github.com/microsoft/OpenAPI.NET) — Accessed 2026-07-27.
+- [OpenAPI.NET 3.x upgrade guide](https://github.com/microsoft/OpenAPI.NET/blob/main/docs/upgrade-guide-3.md) — Accessed 2026-07-27.
+- [Microsoft: generate OpenAPI documents](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/aspnetcore-openapi?view=aspnetcore-10.0) — Accessed 2026-07-27.
+- [NuGet: Microsoft.OpenApi 2.11.0](https://www.nuget.org/packages/Microsoft.OpenApi/2.11.0) — Accessed 2026-07-27.
