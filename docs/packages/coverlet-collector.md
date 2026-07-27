@@ -8,6 +8,9 @@
 | Pinned version | `10.0.1` |
 | Status | Approved test-only dependency for the VSTest alternative |
 | Role | VSTest data collector for cross-platform line and branch coverage |
+| Owner | IX |
+| Last reviewed | 2026-07-27 |
+| Review trigger | Collector, `Microsoft.NET.Test.Sdk`, .NET SDK/test-runner, coverage-format, or CI publishing change |
 
 ## Decision and scope
 
@@ -37,9 +40,24 @@ For stable filters and formats, commit a VSTest `.runsettings` file and pass `--
 
 Measure line and branch coverage on production assemblies, exclude generated code and test assemblies by an explicit reviewed policy, and keep the raw Cobertura file for diagnosis. Gate on meaningful changed/critical paths rather than a repository-wide percentage alone. Pin SDK, adapter, framework variant, and collector as one validated toolchain, and run coverage in a dedicated CI job to keep the fast test signal clear.
 
+Keep the reviewed `.runsettings` surface small:
+
+| Setting | Purpose | Default behavior | Repository guidance | Failure behavior |
+| --- | --- | --- | --- | --- |
+| `Format` | Select report formats | Collector default includes Cobertura | Prefer one consumer-compatible format unless another is required | Unsupported values prevent the expected attachment |
+| `Include` / `Exclude` | Filter instrumented code | Package-defined discovery | Commit narrow, reviewed filters; never exclude code merely to raise a score | Over-broad filters produce misleading or empty coverage |
+| `ExcludeByFile` | Exclude generated source paths | No repository-specific exclusions | Use repository-relative glob patterns for generated files only | Platform-sensitive paths can make CI and local results diverge |
+| `IncludeTestAssembly` | Instrument the test assembly | `false` | Keep `false` unless test-code coverage is an explicit diagnostic goal | Enabling it inflates work and can distort the reported denominator |
+
+These values are read for the VSTest run and are not runtime-reloadable; a new test invocation is required.
+
+### Upgrade and rollback
+
+Upgrade the collector together with the validated `Microsoft.NET.Test.Sdk`, xUnit framework, and adapter set. Run the same VSTest coverage job before and after the change, compare discovered-test counts and report contents, and review any filter or output-format changes from the pinned release. Roll back all compatibility-set pins together if discovery, instrumentation, or report publishing regresses; no production deployment or data migration is involved.
+
 ## Integration with the catalog
 
-Pair with [Microsoft.NET.Test.Sdk](microsoft-net-test-sdk.md), [xunit.runner.visualstudio](xunit-runner-visualstudio.md), and `xunit.v3` in a run configuration whose active platform is VSTest. Do not invoke this collector in the preferred MTP run described by [xunit.v3](xunit-v3.md). Coverlet's upstream documentation explicitly distinguishes `coverlet.collector`/VSTest from `coverlet.MTP`/MTP.
+Pair with [Microsoft.NET.Test.Sdk](microsoft-net-test-sdk.md), [xunit.runner.visualstudio](xunit-runner-visualstudio.md), and `xunit.v3` in a run configuration whose active platform is VSTest. Do not invoke this collector in the preferred MTP run described by [xunit.v3](xunit-v3.md). Coverlet's upstream documentation explicitly distinguishes `coverlet.collector`/VSTest from `coverlet.MTP`/MTP. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage) and the [coverlet.collector supply-chain entry](../package-guidance/supply-chain.md#coverlet-collector).
 
 ## Security, performance, AOT, trimming, and operations
 

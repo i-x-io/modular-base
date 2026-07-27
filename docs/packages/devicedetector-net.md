@@ -4,6 +4,10 @@
 
 `DeviceDetector.NET` **6.5.0** — direct catalog package; user-agent parser for client, device, operating system, brand, and model classification. The catalog owns the version for `net10.0` projects using C# 14.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+**Review trigger:** `DeviceDetector.NET` version changes, target-framework changes, or upstream regex/parser-data changes.
+
 ## Decision and scope
 
 Use only where coarse client classification has a concrete product or operational purpose, such as analytics segmentation or optional UX hints. User-agent output is incomplete and spoofable: it is advisory metadata, never an identity, authorization, anti-fraud, or security signal.
@@ -50,13 +54,37 @@ Treat an absent or malformed header as an unknown classification. For repeated u
 
 Centralize parsing in middleware or an edge adapter so requests are classified once. Define a stable internal vocabulary that includes `unknown`; do not expose package-specific result objects to domain code. Bound the header length before parsing, bound cache size and TTL, and record aggregate parse latency, unknown rate, bot rate, and cache behavior. Review retention, consent, and data-subject requirements before storing raw user agents or Client Hints, because combinations can contribute to fingerprinting.
 
+### Configuration reference
+
+| Setting | Purpose | Default behavior | Production guidance | Reload | Sensitive | Failure behavior |
+| --- | --- | --- | --- | --- | --- | --- |
+| `LRUCacheMaxSize` | Bounds cached unique user agents | Library-defined | Set from measured traffic diversity and memory budget | Startup only | No | Too small increases parse CPU; too large increases memory |
+| `LRUCacheCleanPercentage` | Controls eviction batch size | Library-defined | Tune with churn/load tests | Startup only | No | Poor tuning causes churn or bursty cleanup |
+| `LRUCacheMaxDuration` | Expires cached classifications | Library-defined | Keep bounded and align with regex-data rollout policy | Startup only | No | Stale entries persist until expiry |
+
+### Upgrade and rollback
+
+Treat an upgrade as a data-classification change because bundled regexes can alter outputs without API changes. Diff a pinned representative corpus, inspect cache-setting changes, and monitor unknown and bot rates. Roll back the central pin and redeploy all classifier instances together.
+
 ## Integration with the catalog
 
 Use `microsoft-extensions-resilience.md` only if device data comes from an explicit remote dependency; local parsing needs no retry policy. Use `fluentresults.md` when classification is optional enrichment whose failure should not fail the request.
 
+See the [`DeviceDetector.NET` supply-chain entry](../package-guidance/supply-chain.md#devicedetector-net).
+
 ## Security, performance, AOT, trimming, and operations
 
 High-cardinality attacker-controlled headers can create CPU pressure and cache churn. Enforce the web server's header limits, prefer a bounded LRU cache for long-lived services, and never use a persistent cache without approved retention, access, and cleanup controls. Pin package upgrades and regression-test the classification corpus because regex data changes can alter results without application code changes. AOT/trimming support is not documented as a package guarantee; validate parsing and embedded regex resources in the production publish artifact.
+
+Operational signals should include parse latency, unknown/bot classification rates, cache entry/eviction behavior if exposed by the application wrapper, and rejected oversized-header counts. Keep raw user agents and Client Hints out of logs, traces, and metric labels.
+
+### Troubleshooting
+
+| Symptom | Likely cause | Diagnostic | Correction | Retry? |
+| --- | --- | --- | --- | --- |
+| Unknown rate jumps after deployment | Regex-data/version change or new agents | Diff the pinned fixture corpus and aggregate version-segmented rates | Roll back or update the internal mapping after review | No |
+| CPU rises with unique agents | Cache churn or unbounded attacker input | Inspect header-length rejection, unique-rate, eviction, and allocation data | Tighten header limits and right-size the bounded LRU cache | No |
+| Published app cannot classify | Embedded regex resources trimmed/missing | Run the same fixture against the publish artifact | Preserve required resources or revise publish settings | No |
 
 ## Avoid
 

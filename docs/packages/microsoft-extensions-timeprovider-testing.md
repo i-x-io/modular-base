@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.8.0` | Test-only controllable `TimeProvider` implementation (`FakeTimeProvider`) | Approved test dependency only |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, `FakeTimeProvider`, timer, or test-framework behavior change |
+
 ## Decision and scope
 
 Use this package in tests to control wall-clock time, timestamps, and timers deterministically. Domain and application code depend on a consuming-project-owned `IClock` contract, which is not supplied by this catalog; infrastructure may implement that contract by wrapping `System.TimeProvider`, with production composition supplying `TimeProvider.System`. `FakeTimeProvider` must not be registered in production services.
@@ -59,9 +63,15 @@ Make the `IClock` boundary explicit in services with business time rules, token/
 
 A deterministic workflow starts the fake provider at an explicit instant, constructs the system under test, starts the pending delay/timer operation, advances only enough time to cross one boundary, and then awaits/asserts the result. Test just-before, exact-boundary, and just-after cases. Set `LocalTimeZone` only for tests that intentionally cover daylight-saving or presentation behavior. `AutoAdvanceAmount` advances on time reads and can hide extra reads, so prefer explicit `Advance` for most behavior tests.
 
+### Upgrade and rollback
+
+This is a test-only package; upgrade it independently only when its target-framework range remains compatible with the test suite. Re-run exact-boundary, timer ordering, auto-advance, cancellation, and time-zone tests, and review any `FakeTimeProvider` behavior change. Production rollout and data migration do not apply. Roll back the test dependency if deterministic behavior changes, without changing production `TimeProvider.System` composition.
+
 ## Integration with the catalog
 
 Register the production `IClock` implementation and its `TimeProvider.System` adapter through [DependencyInjection](microsoft-extensions-dependencyinjection.md); background jobs commonly execute under [Hosting](microsoft-extensions-hosting.md). Validate time-based options through [Options](microsoft-extensions-options.md), but do not bind an operational clock from configuration.
+
+See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-timeprovider-testing) for provenance and dependency metadata.
 
 ## Security, performance, AOT, trimming, and operations
 

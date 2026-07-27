@@ -1,5 +1,7 @@
 # EFCore.NamingConventions
 
+> **Owner:** `IX` · **Last reviewed:** `2026-07-27` · **Review trigger:** Package, EF Core/Npgsql provider, target-framework, or production schema naming-policy change.
+
 ## Catalog entry
 
 | Package | Exact version | Role | Status |
@@ -43,9 +45,13 @@ Treat conversion of an established schema as a reviewed data-migration program. 
 
 Inventory dependent views, functions, triggers, policies, quoted SQL, reporting jobs, and external consumers. Test rename SQL and rollback/recovery from a production-like copy, estimate locks, and deploy with a DDL identity rather than the application identity. For a new database, capture the convention in the initial model snapshot so every environment starts consistently.
 
+### Upgrade and rollback
+
+Upgrade `EFCore.NamingConventions` with the corresponding EF Core major line and regenerate a throwaway migration before accepting the change. Compare the model snapshot and every identifier operation; a package or convention change can appear as broad schema renames even when entity classes are unchanged. For a new schema, rollback is an application/package revert plus regeneration of undeployed migrations. For an already migrated schema, use a reviewed down/forward-fix migration or restore plan—never assume reverting the package reverses database identifiers.
+
 ## Integration with the catalog
 
-Use with [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md), [Microsoft.EntityFrameworkCore.Relational](microsoft-entityframeworkcore-relational.md), [Microsoft.EntityFrameworkCore.Design](microsoft-entityframeworkcore-design.md), and the cataloged Npgsql provider. Specifications must not assume names outside generated SQL/migrations.
+Use with [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md), [Microsoft.EntityFrameworkCore.Relational](microsoft-entityframeworkcore-relational.md), [Microsoft.EntityFrameworkCore.Design](microsoft-entityframeworkcore-design.md), and the cataloged Npgsql provider. Specifications must not assume names outside generated SQL/migrations. See [PostgreSQL data-access selection](../package-guidance/package-selection.md#postgresql-data-access), the [EF Core/PostgreSQL recipe](../recipes/efcore-npgsql-exception-mapping.md), and the [supply-chain entry](../package-guidance/supply-chain.md#efcore-namingconventions).
 
 ## Security, performance, AOT, trimming, and operations
 

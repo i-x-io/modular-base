@@ -4,6 +4,10 @@
 
 `Microsoft.CodeAnalysis.PublicApiAnalyzers` **5.6.0** — project-scoped catalog analyzer; packable projects opt in and own their public API baseline files.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+- **Review trigger:** Review when the analyzer pin, public API baseline format, nullable API policy, or package-release compatibility process changes.
+
 ## Decision and scope
 
 Use only for packable libraries where public API compatibility is a release contract. It is intentionally not a repository-wide global analyzer and must not be added to non-packable applications by default. It makes API additions, removals, signatures, and nullable annotations visible as reviewed text changes; package validation remains the complementary binary/source compatibility check against released packages.
@@ -38,6 +42,14 @@ Create both files beside every packable project and enable nullable API tracking
 
 On an intentional API addition, use the RS0016/RS0036 code fix to generate the exact entry in `PublicAPI.Unshipped.txt`, then review it rather than hand-authoring a guessed signature. RS0017 reports deleted API entries; a deliberate removal is recorded in the unshipped file with the analyzer's `*REMOVED*` form. RS0048 catches missing or unregistered baseline files, and the repository also fails `Pack` if either file is absent.
 
+| Setting or input | Catalog guidance |
+| --- | --- |
+| `dotnet_public_api_analyzer.require_api_files` | Keep enabled for governed packable projects so missing baselines fail visibly. |
+| `PublicAPI.Shipped.txt` | Immutable release history; promote reviewed entries here during the release process, never to hide a break. |
+| `PublicAPI.Unshipped.txt` | Development delta for additions and explicit removals; review it with the source change. |
+| `#nullable enable` | Keep at the top of both files so nullability remains part of the API contract. |
+| RS diagnostic severity | Configure per diagnostic in shared AnalyzerConfig policy; do not blanket-suppress API drift. |
+
 ## Enterprise implementation guidance
 
 Use this release workflow:
@@ -50,9 +62,13 @@ Use this release workflow:
 
 When adopting the analyzer for an existing package, generate a complete baseline from the current released-compatible surface, review it, and commit it as a distinct baseline change before enforcing subsequent diffs.
 
+### Upgrade and rollback
+
+Upgrade the analyzer in a dedicated policy change and build, test, and pack every governed project without rewriting baseline files first. Inventory new RS diagnostics and baseline-format changes, then compare package validation against the last released package. Accept generated baseline edits only after reviewing the actual public surface. If the upgrade produces incorrect entries, breaks the release workflow, or cannot run on the supported SDK, restore the `5.6.0` pin and lock-file resolution while leaving shipped history unchanged; revert upgrade-induced unshipped churn separately so intentional API work is preserved.
+
 ## Integration with the catalog
 
-This project-scoped analyzer differs from the universal `GlobalPackageReference` analyzers. `Directory.Build.targets` activates it only when `IsPackable=true`; central package management supplies version `5.6.0`, and `PrivateAssets=all` prevents it from becoming a consumer dependency. The same targets add the two adjacent files as `AdditionalFiles` and validate them before pack. Common severity policy remains in `ModularBase.globalconfig` and `.editorconfig`.
+This project-scoped analyzer differs from the universal `GlobalPackageReference` analyzers. `Directory.Build.targets` activates it only when `IsPackable=true`; central package management supplies version `5.6.0`, and `PrivateAssets=all` prevents it from becoming a consumer dependency. The same targets add the two adjacent files as `AdditionalFiles` and validate them before pack. Common severity policy remains in `ModularBase.globalconfig` and `.editorconfig`. Review its [supply-chain record](../package-guidance/supply-chain.md#microsoft-codeanalysis-publicapianalyzers) before upgrading release tooling.
 
 ## Security, performance, AOT, trimming, and operations
 

@@ -4,6 +4,10 @@
 
 `MimeKit` **4.17.0** — direct catalog package; MIME message, body, address, header, and attachment construction/parsing library.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+**Review trigger:** `MimeKit`/`MailKit` version changes, target-framework changes, or MIME/security algorithm behavior changes.
+
 ## Decision and scope
 
 Use to model messages and attachments correctly before handing them to MailKit. It does not send or receive mail transport traffic.
@@ -54,13 +58,29 @@ Hand the completed `MimeMessage` to MailKit for transport. Preserve the original
 
 The usual outbound workflow is: validate recipients and template data, render both plain-text and HTML variants, construct the MIME tree, attach bounded content with an explicit media type, assign a stable message identifier, then hand the immutable work item to the transport worker. Keep template rendering separate from MIME construction and audit metadata outside the user-visible body. For inbound mail, parse under size/depth limits, enumerate attachments, sanitize file names with `Path.GetFileName`, scan decoded bytes, and quarantine before storage or display.
 
+### Upgrade and rollback
+
+Upgrade `MimeKit` and `MailKit` together when both are used. Parse and round-trip the application MIME fixture corpus, verify attachment encoding, and exercise signing/encryption with non-production keys. Roll back both pins together; retain original RFC message bytes when policy requires exact replay.
+
 ## Integration with the catalog
 
 `mailkit.md` delivers the resulting message. `anglesharp.md` may process HTML templates or inbound HTML, but parsing does not sanitize it for display.
 
+See the [durable mail-outbox recipe](../recipes/durable-mail-outbox.md) and [`MimeKit` supply-chain entry](../package-guidance/supply-chain.md#mimekit).
+
 ## Security, performance, AOT, trimming, and operations
 
 Treat parsed mail as hostile input: headers, HTML, Unicode display names, file names, nested messages, and attachments need independent validation. MIME parsing and correct encoding do not sanitize HTML. Do not infer trust from an extension or declared content type, prevent path traversal when extracting files, and cap encoded and decoded sizes to resist archive/decompression abuse. Stream large content where practical and dispose owned streams according to the overload contract. No catalog AOT/trimming guarantee is asserted; test parse/build/serialize paths in the deployment mode.
+
+Observe parse/build duration, message and attachment size, part/depth counts, rejection class, and signing/encryption outcome. Never record message bodies, attachment contents, addresses, subject lines, private keys, passwords, or decrypted material.
+
+### Troubleshooting
+
+| Symptom | Likely cause | Diagnostic | Correction | Retry? |
+| --- | --- | --- | --- | --- |
+| Message parse fails | Malformed MIME, invalid encoding, or resource limit | Use exception/location and a quarantined redacted fixture | Reject or repair only under an explicit import policy | No |
+| Attachment/name is corrupted | Header parameter/character-set mismatch | Inspect encoded headers and round-trip fixture without logging content | Set explicit valid filename/media type/encoding | No |
+| Signing or decryption fails | Wrong/expired certificate, missing key, unsupported algorithm, or tampering | Inspect algorithm, certificate identity/status, and verification result | Rotate/select approved material or reject tampered content | Retry only after key/certificate availability changes |
 
 ## Avoid
 

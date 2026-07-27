@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | Logging contracts such as `ILogger`, `ILoggerFactory`, and `LogLevel` | Approved library-facing abstraction |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, logging contract, source generator, or telemetry privacy-policy change |
+
 ## Decision and scope
 
 Reference this package when application or library code needs structured logging contracts without selecting a provider. It does not configure console, OpenTelemetry, or other sinks; host/application composition supplies providers and filtering.
@@ -58,9 +62,15 @@ Define event IDs, categories, property naming, correlation identifiers, retentio
 
 A common workflow is to emit one completion event at an owned boundary, attach stable business-safe identifiers, and let distributed tracing carry request correlation. Use `BeginScope` only for values that genuinely apply to all nested events and always dispose the returned scope. Choose levels by operator action: `Information` for meaningful state transitions, `Warning` for recoverable abnormal conditions, and `Error` for failed operations. Avoid logging the same exception at every layer.
 
+### Upgrade and rollback
+
+Keep abstractions compatible with the host's concrete logging providers and exporters. Rebuild source-generated logging methods and verify event IDs, levels, scopes, structured-property names, redaction, and sink filtering after upgrade. No data migration is required, but schema changes can break dashboards and alerts. Roll back the application/provider set together and preserve stable event fields during mixed-version deployment.
+
 ## Integration with the catalog
 
 [Hosting](microsoft-extensions-hosting.md) configures the normal logging pipeline. [DependencyInjection.Abstractions](microsoft-extensions-dependencyinjection-abstractions.md) supplies constructor injection. HTTP and health-check integrations should log outcomes with the same privacy rules.
+
+Use the [abstraction-versus-runtime selection guide](../package-guidance/package-selection.md#microsoft-abstractions-and-runtime-implementations) when selecting providers at the host boundary. See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-logging-abstractions).
 
 ## Security, performance, AOT, trimming, and operations
 

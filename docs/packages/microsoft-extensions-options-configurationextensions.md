@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | DI extensions that bind `IConfiguration` sections into options | Approved composition-boundary integration |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, configuration binding, reload, or validation integration change |
+
 ## Decision and scope
 
 Use this package to connect a configuration section to the options system through `OptionsBuilder<TOptions>.Bind` and related registration APIs. It complements, but does not replace, options validation or configuration providers.
@@ -45,6 +49,15 @@ public sealed class OutboundApiOptions
 
 `Bind` also registers a configuration change-token source. Reload only occurs when the underlying provider supports and enables reload; consumers must use `IOptionsSnapshot<T>` or `IOptionsMonitor<T>` to observe updated instances.
 
+### Binding integration reference
+
+| Setting/API | Purpose | Default behavior | Production guidance | Reload | Sensitivity | Failure behavior |
+| --- | --- | --- | --- | --- | --- | --- |
+| Section path | Maps external keys to an options type | Application-defined | Treat as a stable external contract and require startup-critical sections | Provider-dependent | Path can reveal subsystem names | Missing leaves bind as defaults unless validation rejects them |
+| Named options | Maps multiple instances of one type | Default name when omitted | Use explicit, case-sensitive names and validate every name | Provider-dependent | Name may identify tenant/provider | Wrong name can resolve an unconfigured default instance |
+| Binder strictness | Controls unknown-key handling | Unknown keys accepted | Decide per section; reject drift for tightly controlled deployment config | Applied on each materialization | Errors must omit values | Strict mode throws on unknown or unconvertible input |
+| Change-token source | Invalidates option caches after source change | Registered by `Bind` | Use monitor/snapshot only when downstream resources can transition safely | Requires provider reload support | Callbacks must redact values | Provider without reload leaves existing instances unchanged |
+
 ## Enterprise implementation guidance
 
 - Centralize registration per feature so section name, options type, binder strictness, validators, startup policy, and consuming services are visible together.
@@ -52,9 +65,15 @@ public sealed class OutboundApiOptions
 - For named options, use `AddOptions<T>(name).Bind(section)` so the name-to-section mapping is explicit; names are case-sensitive and each one needs validation coverage.
 - Treat each resolved options instance as read-only application input. Do not mutate it after resolution or retain stale nested references across reloads.
 
+### Upgrade and rollback
+
+Upgrade with Options, Configuration.Abstractions, and Configuration.Binder. Re-run required-section, strict-binding, validation-on-start, named-options, reload, and trimmed/Native AOT artifact tests. No data migration is required. Roll back package and configuration-schema changes together because keys accepted by a newer deployment may be unknown to an older strict binder.
+
 ## Integration with the catalog
 
 Uses [Configuration.Abstractions](microsoft-extensions-configuration-abstractions.md) and [Configuration.Binder](microsoft-extensions-configuration-binder.md) to configure [Options](microsoft-extensions-options.md). Registration belongs in [DependencyInjection](microsoft-extensions-dependencyinjection.md) / [Hosting](microsoft-extensions-hosting.md) composition.
+
+The [options validation, reload, and health recipe](../recipes/options-validation-reload-health.md) shows the complete binding and validation workflow. See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-options-configurationextensions).
 
 ## Security, performance, AOT, trimming, and operations
 

@@ -8,6 +8,9 @@
 | Pinned version | `8.0.0-rc2a` |
 | Status | Catalog-only prerelease dependency; do not adopt |
 | Role | Legacy BDD-style specification framework retained for evaluation or migration research |
+| Owner | IX |
+| Last reviewed | 2026-07-27 |
+| Review trigger | `SpecsFor` prerelease/status, target-framework, transitive dependency, vulnerability, or migration-policy change |
 
 ## Decision and scope
 
@@ -37,9 +40,13 @@ Prefer [xunit.v3](xunit-v3.md) for all new automated tests. For a sanctioned mig
 
 Treat the prerelease version as unsupported until restore, compilation, discovery, runtime, licensing, and dependency-health checks succeed on the repository's pinned .NET SDK. An experiment is evidence gathering, not permission for broader adoption.
 
+### Upgrade and rollback
+
+Do not advance this prerelease pin as routine maintenance. A version change requires a renewed, time-bounded migration decision plus exact direct/transitive dependency, vulnerability, license, restore, compile, and discovery evidence. Upgrade only the isolated pilot and continue translating behavior to xUnit v3. Rollback means restoring the previous central pin or, preferably, removing the pilot reference and migrated SpecsFor code; verify that no StructureMap-derived dependency remains in production or test outputs.
+
 ## Integration with the catalog
 
-This entry is deliberately separate from the preferred xUnit v3/MTP stack and must not become a transitive production dependency. Central package management supplies the prerelease pin; project files must not override it. `Directory.Build.targets` owns test-role enforcement.
+This entry is deliberately separate from the preferred xUnit v3/MTP stack and must not become a transitive production dependency. Central package management supplies the prerelease pin; project files must not override it. `Directory.Build.targets` owns test-role enforcement. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage) and the [SpecsFor supply-chain entry](../package-guidance/supply-chain.md#specsfor).
 
 ## Security, performance, AOT, trimming, and operations
 

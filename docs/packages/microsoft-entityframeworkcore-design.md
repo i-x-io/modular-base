@@ -1,5 +1,7 @@
 # Microsoft.EntityFrameworkCore.Design
 
+> **Owner:** `IX` · **Last reviewed:** `2026-07-27` · **Review trigger:** Package, `dotnet-ef`, EF runtime/provider, target-framework, or migration-delivery change.
+
 ## Catalog entry
 
 | Package | Exact version | Role | Status |
@@ -59,9 +61,13 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 
 Do not hard-code or print the connection string. Review generated operations for destructive changes and data backfills. Apply DDL with a narrowly privileged deployment identity; keep normal application identities free of DDL permission. Test forward migration and documented recovery against a production-like PostgreSQL copy before release.
 
+### Upgrade and rollback
+
+Keep `Microsoft.EntityFrameworkCore.Design`, the EF runtime/provider packages, and repository-local `dotnet-ef` tool on the same compatible release line. After an upgrade, recreate a migration from an unchanged model and compare it with the prior tool output, then generate scripts/bundles in CI. This design package has no runtime state to migrate. Roll back its package/tool pins and regenerate only artifacts that were not deployed; deployed migrations remain database changes and require their reviewed down, forward-fix, or restore procedure.
+
 ## Integration with the catalog
 
-This package supports [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md) and [Microsoft.EntityFrameworkCore.Relational](microsoft-entityframeworkcore-relational.md). Coordinate naming changes with [EFCore.NamingConventions](efcore-namingconventions.md) and test generated PostgreSQL SQL through the Npgsql provider.
+This package supports [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md) and [Microsoft.EntityFrameworkCore.Relational](microsoft-entityframeworkcore-relational.md). Coordinate naming changes with [EFCore.NamingConventions](efcore-namingconventions.md) and test generated PostgreSQL SQL through the Npgsql provider. See [PostgreSQL data-access selection](../package-guidance/package-selection.md#postgresql-data-access), the [EF Core/PostgreSQL recipe](../recipes/efcore-npgsql-exception-mapping.md), and the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-entityframeworkcore-design).
 
 ## Security, performance, AOT, trimming, and operations
 

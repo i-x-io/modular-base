@@ -1,5 +1,7 @@
 # Ardalis.Specification.EntityFrameworkCore
 
+> **Owner:** `IX` · **Last reviewed:** `2026-07-27` · **Review trigger:** This package, Ardalis.Specification, EF Core, Npgsql, or target-framework change.
+
 ## Catalog entry
 
 | Package | Exact version | Role | Status |
@@ -57,9 +59,13 @@ A common read workflow is:
 
 Use `AsNoTracking()`/the specification tracking feature for read-only entity results; projections are usually preferable. Use `AsSplitQuery()` only after measuring cartesian expansion from multiple collection includes, because it adds database round trips and consistency tradeoffs. Apply `IgnoreQueryFilters()` only in a tightly authorized administrative workflow.
 
+### Upgrade and rollback
+
+Treat `Ardalis.Specification.EntityFrameworkCore` `9.3.1`, the core specification package, EF Core, and Npgsql as one tested compatibility set. The adapter's declared EF dependency range does not by itself certify this catalog's EF Core 10 combination, so compile custom evaluators/repositories and run PostgreSQL translation tests before promotion. There is no adapter-owned schema change. Roll back the application and both Ardalis pins together; if an EF/provider upgrade also emitted migrations, follow that migration's separately rehearsed database recovery plan.
+
 ## Integration with the catalog
 
-The provider-neutral query model is [Ardalis.Specification](ardalis-specification.md). Use Npgsql for PostgreSQL execution, [EFCore.NamingConventions](efcore-namingconventions.md) before migrations, and [MR.EntityFrameworkCore.KeysetPagination](mr-entityframeworkcore-keysetpagination.md) only with stable ordering.
+The provider-neutral query model is [Ardalis.Specification](ardalis-specification.md). Use Npgsql for PostgreSQL execution, [EFCore.NamingConventions](efcore-namingconventions.md) before migrations, and [MR.EntityFrameworkCore.KeysetPagination](mr-entityframeworkcore-keysetpagination.md) only with stable ordering. See [PostgreSQL data-access selection](../package-guidance/package-selection.md#postgresql-data-access), the [EF Core/PostgreSQL recipe](../recipes/efcore-npgsql-exception-mapping.md), and the [supply-chain entry](../package-guidance/supply-chain.md#ardalis-specification-entityframeworkcore).
 
 ## Security, performance, AOT, trimming, and operations
 

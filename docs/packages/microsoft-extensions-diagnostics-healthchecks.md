@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | Health-check registration and service implementation | Approved observability implementation |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, health-check execution/publishing, or orchestrator probe change |
+
 ## Decision and scope
 
 Use this package to register and execute application/dependency health checks. It implements the contracts from `HealthChecks.Abstractions`; an HTTP endpoint is supplied by the web host, not by this package alone.
@@ -49,6 +53,15 @@ app.Run();
 
 The liveness endpoint above proves that the process can answer without calling remote dependencies. Readiness runs only checks tagged `ready` and can remove an instance from service when a dependency is unavailable. Keep endpoint paths and tags stable because deployment manifests and monitors consume them as an API.
 
+### Execution configuration reference
+
+| Setting | Purpose | Default behavior | Production guidance | Reload | Sensitivity | Failure behavior |
+| --- | --- | --- | --- | --- | --- | --- |
+| Check name/tags | Stable identity and readiness/liveness selection | Application-defined | Use bounded stable names and explicit tags | Registration-time | Names can reveal topology | Duplicate/incorrect filters can omit or conflate checks |
+| `Timeout` | Bounds one check execution | No per-check timeout unless supplied | Set below the platform probe timeout and honor cancellation | Registration-time | Not sensitive | Timed-out check is reported unhealthy with timeout context |
+| `FailureStatus` | Maps a failed check to degraded/unhealthy | `Unhealthy` | Reserve `Degraded` for traffic-safe impairment | Registration-time | Not sensitive | Changes overall aggregate status and routing decisions |
+| Publisher period/delay/predicate | Controls background publication | Framework defaults apply | Keep publication separate from probe traffic and bound backend work | Options-dependent; treat as host configuration | Endpoint/credentials can be secret | Slow publishers can overlap or delay telemetry |
+
 ## Enterprise implementation guidance
 
 Make probes cheap, bounded, and non-mutating. Align tags with orchestrator probe semantics and alerting ownership. A common workflow is:
@@ -61,13 +74,37 @@ Make probes cheap, bounded, and non-mutating. Align tags with orchestrator probe
 
 By default the middleware maps `Healthy` and `Degraded` to HTTP 200 and `Unhealthy` to HTTP 503. If status-code mappings are changed, document and test the contract with every load balancer, orchestrator, and monitor that consumes it. Use `IHealthCheckPublisher` for an intentional periodic push workflow; configure its predicate, period, and aggregate timeout separately from request-driven endpoints.
 
+### Upgrade and rollback
+
+Upgrade with `Diagnostics.HealthChecks.Abstractions` and re-run readiness/liveness filtering, timeout, cancellation, concurrent execution, publisher, and degraded-state tests. Coordinate probe contract changes with deployment manifests and alerting before rollout. No data migration is required. Roll back the package and probe configuration together; preserve endpoint paths and response semantics during a rolling deployment.
+
 ## Integration with the catalog
 
 [HealthChecks.Abstractions](microsoft-extensions-diagnostics-healthchecks-abstractions.md) defines custom checks. Register through [DependencyInjection](microsoft-extensions-dependencyinjection.md); provide endpoints from the ASP.NET Core host. Use [Hosting](microsoft-extensions-hosting.md) for worker lifecycle readiness.
 
+Use the [abstraction-versus-runtime selection guide](../package-guidance/package-selection.md#microsoft-abstractions-and-runtime-implementations) and the [options validation, reload, and health recipe](../recipes/options-validation-reload-health.md). See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-diagnostics-healthchecks).
+
 ## Security, performance, AOT, trimming, and operations
 
 Do not expose dependency names, connection data, exceptions, or secrets to unauthenticated callers. Apply network restrictions or authorization to detailed health endpoints; `RequireHost` alone is not a security boundary because the Host header can be spoofed. Avoid fan-out probes that can amplify an outage, and bound cancellation/timeouts. Limit concurrent network work and do not make a health request depend on another service's health endpoint. Prefer explicit check types over reflection-based discovery for AOT/trimming clarity.
+
+### Operational signals
+
+| Signal | Meaning/action | Privacy/cardinality rule |
+| --- | --- | --- |
+| Overall status and status per stable check name | Drives probe response, dashboards, and dependency ownership | Keep names bounded; do not include tenant/resource IDs |
+| Check duration and timeout count | Detects slow dependencies and probe-budget exhaustion | Record check name/status only; redact exception data |
+| Degraded/unhealthy transition count | Supports alerting on state changes instead of high-volume polling logs | Alert on stable transitions and duration, not every probe request |
+| Publisher failure/duration | Shows telemetry-backend or publisher saturation independently from application readiness | Never publish credentials or full check-data dictionaries |
+
+### Troubleshooting
+
+| Symptom | Likely causes and diagnostics | Safe corrective action | Retry suitability |
+| --- | --- | --- | --- |
+| Readiness fails while liveness is healthy | A tagged dependency check failed or timed out; inspect per-check status/duration and dependency telemetry | Restore dependency or shed traffic; keep liveness independent unless the process itself is irrecoverable | Platform readiness polling is sufficient; avoid nested retry storms |
+| Probe endpoint times out | One check ignores cancellation, check timeout exceeds platform budget, or too many expensive checks run concurrently | Bound every external check, honor cancellation, and move deep diagnostics out of traffic probes | Retrying an unchanged saturated check adds load |
+| Healthy dependency reported unhealthy | Wrong endpoint/credential, overly strict threshold, DNS/TLS issue, or check executed in the wrong tag set | Correct validated configuration or threshold; do not disable certificate validation | Retry only transient dependency failures within the next probe interval |
+| Publisher emits no data | Predicate excludes checks, publisher throws, or backend is unavailable; inspect publisher logs/duration | Fix predicate/backend and keep publisher failure from masking probe state | Bounded exporter retry may be appropriate; never block readiness on it |
 
 ## Avoid
 

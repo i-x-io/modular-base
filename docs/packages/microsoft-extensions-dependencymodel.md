@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | Runtime access to the `.deps.json` dependency context | Approved only for metadata/discovery scenarios |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, `.deps.json` format, publish mode, or runtime dependency-context change |
+
 ## Decision and scope
 
 Use this package only when tooling or infrastructure must inspect compile/runtime library metadata emitted into a `.deps.json` file. It is not a general-purpose plugin loader, assembly scanner, or DI registration mechanism.
@@ -55,9 +59,15 @@ Prefer explicit extension points, manifests, or compile-time source generation f
 
 A common controlled workflow is: read metadata, filter against an application-owned allowlist, sort it for deterministic output, record the decision, and then invoke a separately reviewed loader only for approved extensions. Keep discovery and loading as separate interfaces so metadata inspection cannot accidentally become code execution.
 
+### Upgrade and rollback
+
+Upgrade only after testing against `.deps.json` files produced by every supported target framework, runtime identifier, single-file setting, and trim mode. Treat metadata shape and file availability as deployment contracts, not implementation details. No application-data migration is required. Roll back the tooling/runtime component together with its parser assumptions; retain representative previous deployment artifacts for regression tests.
+
 ## Integration with the catalog
 
 Use [DependencyInjection.Abstractions](microsoft-extensions-dependencyinjection-abstractions.md) for normal registration contracts; do not use dependency metadata to replace explicit registration. [Hosting](microsoft-extensions-hosting.md) remains responsible for process composition.
+
+See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-dependencymodel) for provenance and dependency metadata.
 
 ## Security, performance, AOT, trimming, and operations
 

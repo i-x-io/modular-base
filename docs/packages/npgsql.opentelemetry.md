@@ -1,5 +1,7 @@
 # Npgsql.OpenTelemetry
 
+> **Owner:** `IX` · **Last reviewed:** `2026-07-27` · **Review trigger:** Npgsql/OpenTelemetry version, database semantic-convention, exporter-policy, or target-framework change.
+
 ## Catalog entry
 
 | Field | Value |
@@ -49,9 +51,13 @@ Use the same tracer provider for the service’s application and HTTP instrument
 
 Instrument a representative workflow end to end: incoming HTTP request, application activity, Npgsql command, and exporter delivery. Confirm error status and duration behavior with a deliberately failed command in a non-production environment. Telemetry is diagnostic evidence, not a retry or auditing mechanism.
 
+### Upgrade and rollback
+
+Upgrade `Npgsql.OpenTelemetry` with its matching Npgsql release and compatible OpenTelemetry SDK/exporters. Diff semantic-convention attribute and metric names, then exercise successful, failed, cancelled, and pooled commands and update dashboards/alerts before rollout. Telemetry has no database migration, but collector queries and retention rules are operational state. Roll back the package set and dashboard/query changes together; keep temporary dual-compatible queries during a staged rollout when mixed application versions emit different schemas.
+
 ## Integration with the catalog
 
-Use [Npgsql](npgsql.md) for data-source configuration and the catalog’s `OpenTelemetry` and `OpenTelemetry.Extensions.Hosting` packages for provider lifecycle and application-wide instrumentation.
+Use [Npgsql](npgsql.md) for data-source configuration and the catalog’s `OpenTelemetry` and `OpenTelemetry.Extensions.Hosting` packages for provider lifecycle and application-wide instrumentation. See the [OpenTelemetry/PostgreSQL recipe](../recipes/opentelemetry-otlp-postgresql.md), [PostgreSQL data-access selection](../package-guidance/package-selection.md#postgresql-data-access), and the [supply-chain entry](../package-guidance/supply-chain.md#npgsql-opentelemetry).
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -66,6 +72,8 @@ dataSourceBuilder.ConfigureTracing(options => options
 Do not set span names to raw SQL in production unless SQL content is classified safe: SQL can contain sensitive literals and creates high-cardinality telemetry. Prefer stable operation names, approved tags, and sampling appropriate to database volume.
 
 Exporters can add latency, memory pressure, and network traffic. Monitor dropped spans and exporter failures, keep attributes bounded, and never attach parameter values, connection strings, tokens, tenant secrets, or full result data. Treat database names, server addresses, SQL text, and exception messages according to the organization's telemetry data classification and retention policy.
+
+Expected signals include command spans and physical-connection activity plus Npgsql meters for command duration/failures and pool used/idle/waiting connections. If spans are missing, verify the provider is built once, `.AddNpgsql()` is attached to that provider, sampling retains the trace, and exporter delivery succeeds. If cardinality or cost spikes, inspect custom span names/tags and SQL capture before increasing sampling limits; telemetry failures are not a reason to retry database writes.
 
 ## Avoid
 
@@ -86,6 +94,7 @@ Exporters can add latency, memory pressure, and network traffic. Monitor dropped
 ## Sources
 
 - [Npgsql tracing with OpenTelemetry](https://www.npgsql.org/doc/diagnostics/tracing.html)
+- [Npgsql OpenTelemetry metrics](https://www.npgsql.org/doc/diagnostics/metrics.html)
 - [Npgsql 10 tracing and metrics changes](https://www.npgsql.org/doc/release-notes/10.0.html#tracing-and-metrics-have-been-changed-to-align-with-the-opentelemetry-standard)
 - [OpenTelemetry .NET ASP.NET Core setup](https://opentelemetry.io/docs/languages/dotnet/getting-started/)
 - [Npgsql.OpenTelemetry package on NuGet](https://www.nuget.org/packages/Npgsql.OpenTelemetry/10.0.3)

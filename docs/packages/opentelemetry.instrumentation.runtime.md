@@ -1,5 +1,9 @@
 # OpenTelemetry.Instrumentation.Runtime
 
+> **Owner:** `IX`
+> **Last reviewed:** `2026-07-27`
+> **Review trigger:** Review when the instrumentation version, target .NET runtime, built-in `System.Runtime` meter, runtime metric conventions, or export policy changes.
+
 ## Catalog entry
 
 `<PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.17.0" />`
@@ -42,11 +46,39 @@ On .NET 9 and later, the package registers the runtime’s built-in `System.Runt
 - Use SDK views to drop metrics that have no operational consumer or to set intentional histogram aggregation; keep the export interval aligned with alert latency needs and backend cost.
 - Version dashboards and alert rules alongside service operational ownership.
 
+### Configuration and signal reference
+
+This package has no endpoint or credential settings. Its material configuration is whether the meter is enabled, which metric streams/views are exported, and the metric reader’s interval/temporality.
+
+| Configuration/signal | Purpose and default behavior | Production guidance | Reload, sensitivity, and failure behavior |
+| --- | --- | --- | --- |
+| `AddRuntimeInstrumentation()` | Enables runtime metrics; on .NET 9+ it registers the built-in `System.Runtime` meter. | Register once on the hosted metric pipeline. | Pipeline shape is fixed at provider construction; restart to apply. Duplicate meters/providers can duplicate export. |
+| Metric views | Drop instruments or change aggregation/tag selection. | Retain only actionable metrics and preserve units/types expected by dashboards. | Configure before provider build. An incompatible view can suppress a stream or change its meaning. |
+| Reader export interval/timeout | Determines observation/export cadence and alert delay. | Match SLO detection needs, backend cost, and collector capacity. | Fixed with the reader. Short intervals add collection/export pressure; long intervals delay detection. |
+| Allocation and GC collection/pause metrics | Expose allocation pressure, heap/fragmentation, generation collections, and pause behavior; some values appear only after GC. | Correlate with throughput, latency, container memory, and profiles. | Operationally sensitive, not secret. Missing pre-GC values may be expected. |
+| Thread-pool queue/thread metrics | Expose queued work and worker availability. | Correlate sustained queueing with CPU throttling, blocking, dependency latency, and request rate. | Do not alert on an isolated sample; runtime/target-framework availability varies. |
+| Exceptions/JIT/assembly metrics | Expose runtime exception, compilation, and load behavior where the target runtime supports them. | Use trends and workload correlation; avoid treating exception count alone as an incident. | Metric names/availability can change with target runtime; dashboards must be version-aware. |
+
+### Troubleshooting
+
+| Symptom | Inspect | Safe action | Retry suitability |
+| --- | --- | --- | --- |
+| No runtime metrics | `.WithMetrics(...AddRuntimeInstrumentation())`, exporter/reader, resource, target framework, SDK diagnostics | Verify one known `System.Runtime` metric on the deployed runtime and correct pipeline/export registration. | Restart after configuration correction; workload replay is irrelevant. |
+| Some GC metrics are absent | Whether a GC has occurred and whether that metric exists for the target runtime | Generate representative load in a non-production test and consult the exact runtime metric list. Do not force full GC in production to populate a dashboard. | Wait for natural observation; not an exporter retry case. |
+| Metric names disappear after target-framework/package upgrade | .NET 9+ built-in meter names/attributes versus older package-produced names; dashboard queries and views | Update queries/views as an intentional schema migration and canary both telemetry and alerts. | Not transient. |
+| High metric volume/backend cost | Multiple providers, duplicate collection, export interval, resource/added tag cardinality | Keep one provider, remove unconsumed streams with views, lengthen measured cadence, and eliminate unbounded custom resource/tags. | Not retryable; fix configuration. |
+| GC/thread-pool alert fires without latency impact | Request rate/latency, CPU/container throttling, dependencies, profiles/traces | Validate the hypothesis with correlated evidence before tuning runtime knobs. | Do not restart/retry solely from one runtime metric. |
+
+### Upgrade and rollback
+
+Upgrade with the aligned OpenTelemetry metric pipeline and the production target framework. Runtime metrics are especially target-runtime-dependent: snapshot names, instrument types, units, attributes, aggregation, and dashboard/alert queries; then load-test allocation, GC, thread-pool saturation, exception, and steady-state overhead. On .NET 9+, explicitly account for delegation to the built-in `System.Runtime` meter. Canary telemetry cost and alert behavior before broad rollout. Roll back package/runtime/dashboard changes as a coordinated unit if metric contracts or overhead regress; a package-only rollback may not restore old metrics when the target runtime itself changed.
+
 ## Integration with the catalog
 
 - Configure through [OpenTelemetry.Extensions.Hosting](opentelemetry.extensions.hosting.md) with the [OpenTelemetry](opentelemetry.md) SDK.
 - Pair with [ASP.NET Core](opentelemetry.instrumentation.aspnetcore.md) and [HTTP](opentelemetry.instrumentation.http.md) metrics when those workloads apply.
 - Send to the collector via [OpenTelemetry.Exporter.OpenTelemetryProtocol](opentelemetry.exporter.opentelemetryprotocol.md).
+- See the catalog-wide [OpenTelemetry composition decision](../package-guidance/package-selection.md#opentelemetry-composition), the [OTLP observability recipe](../recipes/opentelemetry-otlp-postgresql.md), and the [runtime instrumentation supply-chain entry](../package-guidance/supply-chain.md#opentelemetry-instrumentation-runtime).
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -74,7 +106,7 @@ Runtime metrics reveal process behavior and can expose deployment topology throu
 Accessed 2026-07-27:
 
 - [OpenTelemetry runtime instrumentation 1.17.0 on NuGet](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.Runtime/1.17.0)
-- [Runtime instrumentation source](https://github.com/open-telemetry/opentelemetry-dotnet-contrib/tree/main/src/OpenTelemetry.Instrumentation.Runtime)
-- [Runtime instrumentation setup and metric availability](https://github.com/open-telemetry/opentelemetry-dotnet-contrib/blob/main/src/OpenTelemetry.Instrumentation.Runtime/README.md)
+- [Runtime instrumentation 1.17.0 source](https://github.com/open-telemetry/opentelemetry-dotnet-contrib/tree/Instrumentation.Runtime-1.17.0/src/OpenTelemetry.Instrumentation.Runtime)
+- [Runtime instrumentation 1.17.0 setup and metric availability](https://github.com/open-telemetry/opentelemetry-dotnet-contrib/blob/Instrumentation.Runtime-1.17.0/src/OpenTelemetry.Instrumentation.Runtime/README.md)
 - [.NET built-in runtime metrics](https://learn.microsoft.com/dotnet/core/diagnostics/built-in-metrics-runtime)
 - [OpenTelemetry .NET metrics](https://opentelemetry.io/docs/languages/dotnet/metrics/)

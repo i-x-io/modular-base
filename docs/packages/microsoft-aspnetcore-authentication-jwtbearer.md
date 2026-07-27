@@ -6,6 +6,10 @@
 | --- | --- | --- | --- |
 | `Microsoft.AspNetCore.Authentication.JwtBearer` | `10.0.10` | ASP.NET Core bearer-token authentication handler | Centrally pinned; catalog-only until an API project consumes it |
 
+- Owner: IX
+- Last reviewed: 2026-07-27
+- Review trigger: Package/target-framework servicing update, token-validation defaults, identity-provider metadata behavior, or trust-boundary changes.
+
 ## Decision and scope
 
 Use this as the production bearer-token validation handler. It authenticates a request and constructs the principal; ASP.NET Core authorization and FastEndpoints endpoint rules then decide access.
@@ -46,6 +50,20 @@ This syntax follows Microsoft’s current ASP.NET Core 10 documentation. `Author
 
 A normal client workflow is: acquire an OAuth/OIDC **access token**, send it in `Authorization: Bearer ...`, receive `401` when authentication fails, and receive `403` when the authenticated principal lacks the required policy. The API must not redirect clients to obtain a token.
 
+| Setting | Purpose | Default behavior | Production guidance | Reload / sensitivity / failure behavior |
+| --- | --- | --- | --- | --- |
+| `Authority` / `MetadataAddress` | Locates trusted issuer metadata and signing keys | No external authority is inferred | Use HTTPS issuer metadata from the approved identity provider | Options are normally startup-bound; metadata refresh is handled by the configuration manager; URLs are not secrets but reveal trust topology |
+| `Audience` | Restricts tokens to this API | No application-specific audience is inferred | Require the exact API resource/audience contract | Startup-bound; mismatch produces 401 |
+| `MapInboundClaims` | Controls legacy claim-type mapping | Handler/framework default applies | Set deliberately; `false` preserves issuer claim names in the shown contract | Startup-bound; changing it can turn successful authentication into 403 policy failures |
+| `TokenValidationParameters.ClockSkew` | Allows bounded issuer/API clock difference | IdentityModel default applies | Keep small and monitor time synchronization; do not use it to mask expired tokens | Startup-bound; wider skew extends token acceptance |
+| `RequireHttpsMetadata` | Requires HTTPS for metadata retrieval | `true` | Keep `true` outside isolated local tests | Startup-bound; disabling it weakens metadata transport security |
+
+### Upgrade and rollback
+
+Apply ASP.NET Core servicing updates with the target framework/runtime and review security advisories plus authentication/IdentityModel dependency changes. Before rollout, test trusted and rejected token cases, discovery/JWKS refresh, key rollover, claim mapping, and challenge responses against a non-production issuer.
+
+Rollback the application and compatible ASP.NET Core runtime/package set together. Do not weaken validation to restore service; if a new issuer key/claim contract was introduced, keep the previous and new trust material overlapped only for the approved rotation window while the application rollback completes.
+
 ## Enterprise implementation guidance
 
 - Prefer OIDC/OAuth access tokens issued by a trusted identity provider. Do not mint production access tokens from username/password requests.
@@ -60,6 +78,9 @@ A normal client workflow is: acquire an OAuth/OIDC **access token**, send it in 
 - [FastEndpoints.Security](fastendpoints-security.md) offers FastEndpoints conveniences but does not replace this handler for external identity-provider validation.
 - [FastEndpoints.OpenApi](fastendpoints-openapi.md) describes bearer security for clients; it does not authenticate requests.
 - [FastEndpoints.Testing](fastendpoints-testing.md) and [MVC Testing](microsoft-aspnetcore-mvc-testing.md) must use isolated test authentication.
+- Use the [API authentication ownership decision](../package-guidance/package-selection.md#api-authentication-ownership) to choose direct JWT bearer registration or FastEndpoints conveniences without double registration.
+- Follow the [FastEndpoints, JWT, OpenAPI, and Scalar recipe](../recipes/fastendpoints-jwt-openapi-scalar.md) for complete middleware and document composition.
+- Review [JWT bearer supply-chain metadata](../package-guidance/supply-chain.md#microsoft-aspnetcore-authentication-jwtbearer) before approval or servicing updates.
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -68,6 +89,17 @@ A normal client workflow is: acquire an OAuth/OIDC **access token**, send it in 
 - Monitor authentication failures and key/metadata refresh health without recording credential material.
 - Cache identity-provider metadata according to the handler/provider model; do not hand-roll per-request key discovery.
 - Keep detailed `JwtBearerEvents` diagnostics server-side and sanitized. Return standards-appropriate challenges, not validation internals that reveal issuer or key-selection details.
+
+### Operational signals and troubleshooting
+
+Monitor 401 and 403 rates separately, metadata/JWKS retrieval failures, token-validation exception categories, and identity-provider/key-rotation health using bounded dimensions. Never record the authorization header, raw token, signing keys, or full sensitive claims.
+
+| Symptom | Likely cause and diagnostic | Safe corrective action | Retry? |
+| --- | --- | --- | --- |
+| All calls return 401 | Authority/audience/scheme/middleware order is wrong or metadata is unavailable; inspect sanitized handler category and issuer/audience values | Restore trusted configuration and middleware order; verify provider availability | Retry only after configuration/provider recovery |
+| Token works at issuer but API reports invalid signature | Stale/missing JWKS, wrong issuer, or uncoordinated key rotation; compare token `kid` with trusted metadata without logging the token | Repair metadata reachability or complete coordinated key rotation | Bounded retry after metadata refresh |
+| Authenticated caller gets 403 | Authentication succeeded but policy claim names/values or `MapInboundClaims` differ | Align authorization policy with the verified issuer claim contract | Only after entitlement/policy correction |
+| Recently expired/not-yet-valid results vary by node | Clock synchronization or excessive/unequal skew differs across hosts | Repair host time synchronization and use one reviewed skew policy | Do not retry until clocks/token are valid |
 
 ## Avoid
 

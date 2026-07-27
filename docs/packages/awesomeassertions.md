@@ -8,6 +8,9 @@
 | Pinned version | `9.5.0` |
 | Status | Approved test-only dependency |
 | Role | Expressive assertions with detailed failure diagnostics |
+| Owner | IX |
+| Last reviewed | 2026-07-27 |
+| Review trigger | `AwesomeAssertions` version, target-framework, assertion-extension API, or supported test-framework change |
 
 ## Decision and scope
 
@@ -52,9 +55,13 @@ Use direct assertions for scalar outcomes and `BeEquivalentTo` for DTO/value-obj
 
 When a snapshot-sized graph fails, narrow the subject or exclusions instead of enabling broad global equivalency rules. Run an intentionally failing example locally to review the diagnostic payload before enabling it in CI.
 
+### Upgrade and rollback
+
+Upgrade the central pin in a focused change, then compile every custom assertion extension and run representative scalar, exception, and object-graph assertions, including one intentional failure to inspect diagnostics. Major-version migrations may rename namespaces or change the custom-assertion API; follow the upstream migration guide rather than applying a broad textual replacement without compilation. Roll back by restoring the previous central pin and any compatible namespace or extension changes together. Assertions do not migrate persistent data, so rollback is code-and-package only.
+
 ## Integration with the catalog
 
-Use with [xunit.v3](xunit-v3.md) for the preferred MTP test stack and with the Testcontainers guides for integration assertions. The central version and test-role restriction are owned by `Directory.Packages.props` and `Directory.Build.targets`; project references stay versionless.
+Use with [xunit.v3](xunit-v3.md) for the preferred MTP test stack and with the Testcontainers guides for integration assertions. The central version and test-role restriction are owned by `Directory.Packages.props` and `Directory.Build.targets`; project references stay versionless. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage) and the [AwesomeAssertions supply-chain entry](../package-guidance/supply-chain.md#awesomeassertions).
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -79,6 +86,7 @@ Failure formatting can traverse large graphs and print subject values. Never ass
 - [Awesome Assertions introduction and assertion scopes](https://awesomeassertions.org/introduction)
 - [Awesome Assertions object-graph equivalency](https://awesomeassertions.org/objectgraphs/)
 - [Awesome Assertions exception assertions](https://awesomeassertions.org/exceptions/)
+- [Awesome Assertions version 9 migration guide](https://awesomeassertions.org/upgradingtov9)
 - [AwesomeAssertions 9.5.0 on NuGet](https://www.nuget.org/packages/AwesomeAssertions/9.5.0)
 
 Accessed 2026-07-27. Context7 was consulted first.

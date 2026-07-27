@@ -1,5 +1,7 @@
 # Microsoft.EntityFrameworkCore.Relational
 
+> **Owner:** `IX` · **Last reviewed:** `2026-07-27` · **Review trigger:** EF relational API, Npgsql provider, target-framework, or migration-policy change.
+
 ## Catalog entry
 
 | Package | Exact version | Role | Status |
@@ -51,9 +53,13 @@ await strategy.ExecuteAsync(async () =>
 
 The delegate may be replayed, so keep it deterministic and coordinate non-database side effects using an idempotent/outbox workflow. Keep transactions short, define an isolation level only with a documented consistency requirement, and test serialization/deadlock handling with the actual provider.
 
+### Upgrade and rollback
+
+Upgrade `Relational` with the exact EF runtime/design line and a compatible Npgsql provider. Review breaking changes in SQL generation, migrations, transactions, batching, and set-based operations; generate a no-model-change migration and compare critical SQL/plans before promotion. Roll back the whole EF/provider application set. Any deployed relational migration or data rewrite needs its own reviewed down, forward-fix, or restore path—package rollback does not revert schema state.
+
 ## Integration with the catalog
 
-The runtime is [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md); design tooling is [Microsoft.EntityFrameworkCore.Design](microsoft-entityframeworkcore-design.md). Naming and provider exception behavior are documented in [EFCore.NamingConventions](efcore-namingconventions.md) and [EntityFrameworkCore.Exceptions.PostgreSQL](entityframeworkcore-exceptions-postgresql.md).
+The runtime is [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md); design tooling is [Microsoft.EntityFrameworkCore.Design](microsoft-entityframeworkcore-design.md). Naming and provider exception behavior are documented in [EFCore.NamingConventions](efcore-namingconventions.md) and [EntityFrameworkCore.Exceptions.PostgreSQL](entityframeworkcore-exceptions-postgresql.md). See [relational test fidelity](../package-guidance/package-selection.md#relational-test-fidelity), [PostgreSQL data-access selection](../package-guidance/package-selection.md#postgresql-data-access), the [EF Core/PostgreSQL recipe](../recipes/efcore-npgsql-exception-mapping.md), and the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-entityframeworkcore-relational).
 
 ## Security, performance, AOT, trimming, and operations
 

@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | Host and hosted-service contracts including `IHost`, `IHostApplicationLifetime`, and `IHostedService` | Approved library-facing abstraction |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, hosting lifecycle contract, or background-service convention change |
+
 ## Decision and scope
 
 Reference this package when a reusable component needs host lifecycle contracts, especially an `IHostedService`, without taking a dependency on the Generic Host implementation. It does not build a host or configure application services.
@@ -55,9 +59,15 @@ Define the work's delivery guarantee, shutdown drain/checkpoint limit, failure p
 
 Use `IHostApplicationLifetime` to observe `ApplicationStarted`, `ApplicationStopping`, and `ApplicationStopped`, or to request an orderly stop with `StopApplication`; do not terminate the process directly from reusable infrastructure. Keep `StartAsync` bounded because hosted services start as part of the host startup sequence. Treat the cancellation token passed to `StopAsync` as the shutdown deadline, not merely a notification.
 
+### Upgrade and rollback
+
+Keep this contract package aligned with the concrete Hosting implementation. Recompile hosted-service libraries and test startup cancellation, `BackgroundService` failure behavior, application-lifetime callbacks, and graceful shutdown in the actual host. No data migration is required. Roll back library and host artifacts together when lifecycle contracts cannot be honored.
+
 ## Integration with the catalog
 
 [Hosting](microsoft-extensions-hosting.md) provides the Generic Host and registration APIs. Use [DependencyInjection.Abstractions](microsoft-extensions-dependencyinjection-abstractions.md) for dependencies and [Logging.Abstractions](microsoft-extensions-logging-abstractions.md) for safe structured diagnostics.
+
+Use the [abstraction-versus-runtime selection guide](../package-guidance/package-selection.md#microsoft-abstractions-and-runtime-implementations) before taking a concrete Hosting dependency. See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-hosting-abstractions).
 
 ## Security, performance, AOT, trimming, and operations
 

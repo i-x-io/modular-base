@@ -1,5 +1,7 @@
 # Pgvector.EntityFrameworkCore
 
+> **Owner:** `IX` · **Last reviewed:** `2026-07-27` · **Review trigger:** Package, Pgvector/Npgsql/EF Core, server-extension, target-framework, or ranking/index-policy change.
+
 ## Catalog entry
 
 | Field | Value |
@@ -90,15 +92,23 @@ Neither Pgvector nor Npgsql provides a built-in hybrid-search or reciprocal-rank
 
 Vector similarity is a candidate generator, not a complete business-ranking policy. RRF candidate limits and `k` are relevance/latency controls and should be evaluated with a labeled query set, not copied as universal constants.
 
+### Upgrade and rollback
+
+Upgrade `Pgvector.EntityFrameworkCore` with compatible Pgvector, Npgsql provider/driver, and EF Core versions. Generate and inspect a no-model-change migration, compile distance expressions, and run PostgreSQL extension, dimension, index-DDL, plan, recall, and hybrid-ranking regressions. Treat embedding-model/dimension changes as a versioned data migration rather than a package update. Roll back the full application package set; reverse or forward-fix extension, column, generated migration, and index changes through a rehearsed database procedure.
+
 ## Integration with the catalog
 
 Use [Pgvector](pgvector.md) for Npgsql type registration, [Npgsql.EntityFrameworkCore.PostgreSQL](npgsql.entityframeworkcore.postgresql.md) for full-text candidate queries, and `MR.EntityFrameworkCore.KeysetPagination` only after final ordering is complete.
 
 Carry the exact final order—including the unique tie-breaker—into the keyset definition; do not paginate a floating vector, lexical, or fusion score alone.
 
+See [PostgreSQL data-access selection](../package-guidance/package-selection.md#postgresql-data-access), the [pgvector hybrid-ranking recipe](../recipes/pgvector-hybrid-ranking.md), and the [supply-chain entry](../package-guidance/supply-chain.md#pgvector-entityframeworkcore).
+
 ## Security, performance, AOT, trimming, and operations
 
 Apply migrations under a principal allowed to create the extension and index; keep those privileges away from the application runtime identity. Assess HNSW/IVFFlat build time, memory, recall, and latency on production-like data. EF translation is provider-dependent, so inspect generated migration SQL and query plans after upgrades. Validate embedding dimensions and finite values at the boundary, classify embeddings under the data-handling policy, and avoid logging them. AOT/trimming compatibility is unverified and requires publish testing with the actual EF model.
+
+Track query latency, candidate count, exact-versus-approximate recall, model/index version, migration/index build duration, and expected index-plan use with bounded tags. If EF cannot translate a distance method, verify `UseVector()` on both provider and external data source and the pinned compatibility set; do not silently materialize an unbounded table. If the expected index is absent, inspect generated SQL, operator class, `Take`, filters, statistics, and index readiness. These are deterministic configuration/plan faults, not broadly retryable failures.
 
 ## Avoid
 

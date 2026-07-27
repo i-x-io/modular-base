@@ -4,6 +4,10 @@
 
 `SonarAnalyzer.CSharp` **10.30.0.144632** — universal catalog analyzer supplied through a shared `GlobalPackageReference` with private analyzer assets.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+- **Review trigger:** Review when the analyzer pin, `Sxxxx` rule metadata/defaults, Sonar quality profile/connected mode, or repository security policy changes.
+
 ## Decision and scope
 
 Use as the repository's compile-time Sonar rule set for future C# code. It supplies `Sxxxx` diagnostics for bugs, vulnerabilities, security hotspots, and code smells. This NuGet package is not SonarQube Server, SonarQube Cloud, SonarQube for IDE, or SonarScanner analysis; it does not upload source or diagnostics by itself and does not replace code review, dependency scanning, penetration testing, or threat modeling.
@@ -38,15 +42,26 @@ dotnet_diagnostic.S2245.severity = warning
 
 Use `ModularBase.globalconfig` for repository defaults and `.editorconfig` only for justified file/path-specific policy. If the organization later introduces Sonar connected mode or scanner analysis, reconcile its quality profile and exclusions with this build-time policy deliberately; those products have separate configuration and data-flow considerations.
 
+| Setting or boundary | Catalog guidance |
+| --- | --- |
+| `dotnet_diagnostic.Sxxxx.severity` | Use for standalone NuGet analyzer policy and narrow reviewed source scopes. |
+| `PrivateAssets="all"` | Keep the analyzer build-only and out of package-consumer graphs. |
+| Sonar quality profile | Treat as a separate server/connected-mode source of policy; reconcile it explicitly with committed AnalyzerConfig. |
+| Analysis exclusions | Scope to generated/vendor code with an owner and rationale; never broadly exclude security-sensitive source. |
+
 ## Enterprise implementation guidance
 
 Start with a full representative build and inventory new `Sxxxx` diagnostics by defect class, security relevance, and overlap with other analyzers. Fix high-confidence bugs and vulnerabilities first. For existing debt, baseline only specific diagnostic IDs and paths with an owner and removal condition; do not turn off the complete Sonar rule family.
 
 Review security hotspots with system context: determine whether input is attacker-controlled, identify the trust boundary, verify the proposed mitigation, and add a regression test. A false-positive decision needs a durable rationale. CI should run the same committed analyzer configuration as developer builds and retain normal build diagnostics as evidence. Treat changes to the NuGet analyzer version, Sonar quality profile, or connected-mode binding as separate policy changes that require diagnostic-diff review.
 
+### Upgrade and rollback
+
+Upgrade the NuGet analyzer separately from quality-profile or connected-mode changes. Build representative projects and diff rule keys, categories, default severities, messages, hotspot behavior, code fixes, and clean-build cost; threat-model new security findings before suppression. If the analyzer cannot run on a supported compiler host, produces unacceptable policy drift, or materially regresses builds, restore `10.30.0.144632` and lock files. Keep validated security fixes, but remove suppressions created only for the failed version; server profile rollback, if applicable, is a distinct governed action.
+
 ## Integration with the catalog
 
-This package shares the global analyzer mechanism with `meziantou-analyzer.md`, `roslynator-analyzers.md`, and the other universal analyzers. Repository-wide defaults are in `ModularBase.globalconfig`; matching `.editorconfig` entries take precedence. Central package management owns exact version `10.30.0.144632`, and `PrivateAssets=all` prevents analyzer assets from flowing to package consumers. Scanner or connected-mode tooling is not installed by this catalog entry.
+This package shares the global analyzer mechanism with `meziantou-analyzer.md`, `roslynator-analyzers.md`, and the other universal analyzers. Repository-wide defaults are in `ModularBase.globalconfig`; matching `.editorconfig` entries take precedence. Central package management owns exact version `10.30.0.144632`, and `PrivateAssets=all` prevents analyzer assets from flowing to package consumers. Scanner or connected-mode tooling is not installed by this catalog entry. Review its [supply-chain record](../package-guidance/supply-chain.md#sonaranalyzer-csharp) before changing analyzer provenance or connected tooling.
 
 ## Security, performance, AOT, trimming, and operations
 

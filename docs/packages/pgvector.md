@@ -1,5 +1,7 @@
 # Pgvector
 
+> **Owner:** `IX` · **Last reviewed:** `2026-07-27` · **Review trigger:** Pgvector, Npgsql, server-extension, target-framework, or vector indexing/query-policy change.
+
 ## Catalog entry
 
 | Field | Value |
@@ -76,13 +78,27 @@ Use `vector_l2_ops` for L2, `vector_ip_ops` for inner product, and `vector_cosin
 
 HNSW offers a recall/latency trade-off; `hnsw.ef_search` raises recall at a speed cost and `SET LOCAL` confines a tuning override to one transaction. IVFFlat is another approximate-index option; build it only after the table has representative data and tune its lists/probes from measured dataset size, recall, build time, and query latency. Keep eligibility filters consistent and inspect plans, because filtered approximate queries may need iterative scans or different indexing strategies on the deployed pgvector version.
 
+| Setting/choice | Purpose/default behavior | Production guidance | Scope and failure behavior |
+| --- | --- | --- | --- |
+| `vector(n)` dimension | Fixes the stored embedding dimension. | Version the embedding model and validate dimension/finite values before writes. | Schema-level; mismatch fails writes/queries and requires a data/schema migration. |
+| Distance operator/operator class | Defines L2, inner-product, or cosine ordering and index compatibility. | Choose from the product score definition and keep query/index pairs identical. | Query/index-level; mismatch usually prevents the intended index plan or changes ranking meaning. |
+| HNSW `m`, `ef_construction` | Trade index build memory/time for graph quality. | Tune from production-like recall, build, memory, and latency measurements. | Index build parameters; changing them requires rebuilding the index. |
+| `hnsw.ef_search` | Trades query work for recall. | Prefer a measured session/transaction-local value for exceptional workloads. | Session/transaction scoped; higher values consume more CPU/latency. |
+| IVFFlat `lists`/`ivfflat.probes` | Control partitioning and partitions searched. | Build with representative data and tune against an exact-search baseline. | Index/session scoped; poor settings reduce recall or increase latency. |
+
+### Upgrade and rollback
+
+Upgrade the .NET `Pgvector` mapping with a compatible Npgsql driver and separately verify the PostgreSQL `vector` extension version; these are independent artifacts. Regression-test type registration, serialization, each distance operator, dimensions, exact-search baselines, approximate plans, and recall. Extension/index upgrades may rewrite or rebuild database objects and need a staged DDL plan. Roll back the application package independently only if wire/type compatibility is proven; roll back server extension/schema/index changes through the database's documented restore or forward-fix path.
+
 ## Integration with the catalog
 
-Use [Npgsql](npgsql.md) to build the registered data source. Use [Pgvector.EntityFrameworkCore](pgvector.entityframeworkcore.md) where EF owns extension migrations and index definitions.
+Use [Npgsql](npgsql.md) to build the registered data source. Use [Pgvector.EntityFrameworkCore](pgvector.entityframeworkcore.md) where EF owns extension migrations and index definitions. See [PostgreSQL data-access selection](../package-guidance/package-selection.md#postgresql-data-access), the [pgvector hybrid-ranking recipe](../recipes/pgvector-hybrid-ranking.md), and the [supply-chain entry](../package-guidance/supply-chain.md#pgvector).
 
 ## Security, performance, AOT, trimming, and operations
 
 The database server must have pgvector installed and the database principal must be permitted to create/enable the extension. For EF-owned databases, prefer the migration declaration rather than issuing DDL from request code. Use a separate migration/deployment identity so the runtime principal does not need extension or index DDL privileges. Create large production indexes concurrently where the migration workflow supports non-transactional concurrent DDL, and measure recall and latency for each index/tuning combination. Reject non-finite values and dimension mismatches before persistence; do not log embeddings if they are sensitive derived data.
+
+Observe candidate-query latency, returned candidates, exact-versus-approximate recall, index build time/memory, index size, and `EXPLAIN` plan selection, partitioned by a bounded query/model version—not by raw embedding or user query text. A dimension error is deterministic and requires correcting the embedding/model contract. Unexpected sequential scans require checking the `ORDER BY distance LIMIT` shape, operator class, filters, statistics, and index readiness; retries do not correct either problem.
 
 ## Avoid
 

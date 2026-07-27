@@ -4,6 +4,10 @@
 
 `Polly.Extensions` **8.7.0** — companion catalog package; `IServiceCollection` registration and lookup integration for Polly resilience pipelines.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+**Review trigger:** either Polly companion version changes, target-framework changes, or DI pipeline/reload semantics change.
+
 ## Decision and scope
 
 Use when a service needs a centrally configured, named pipeline through dependency injection. Keep the key and retry ownership part of the application dependency contract. This package manages pipelines; it does not make a repeated operation safe.
@@ -88,17 +92,42 @@ Common workflow:
 
 Configuration reload is opt-in and should be used only when the host explicitly binds and validates reloadable strategy options. Treat a policy change as an operational change: validate bounds, observe its effect, and retain a rollback value.
 
-When a registration callback creates a disposable rate limiter or similar resource, call `context.OnPipelineDisposed(...)` in the overload that supplies `ResiliencePipelineBuilderContext`. This prevents discarded resources from surviving a dynamic reload.
+When a registration callback creates a disposable rate limiter or similar resource, use the overload that supplies `AddResiliencePipelineContext<TKey>` and call `context.OnPipelineDisposed(...)`. This prevents discarded resources from surviving a dynamic reload.
+
+### Configuration reference
+
+| Setting | Purpose | Default behavior | Production guidance | Reload | Sensitive | Failure behavior |
+| --- | --- | --- | --- | --- | --- | --- |
+| Pipeline key | Selects a registered contract | Application supplied | Use constants and low-cardinality dependency names | Restart unless registration reloads | No | Unknown key fails lookup |
+| Strategy order | Defines nesting/execution order | Registration order | Document outer-to-inner order and test it | Pipeline rebuild | No | Different timing/attempt semantics |
+| Strategy options | Controls retry, timeout, breaker, limiter | Strategy defaults | Bind validated bounded options | Opt-in | No | Invalid options fail construction/reload |
+| `OnPipelineDisposed` | Cleans custom disposable resources | Not automatic for caller-created resources | Register cleanup in context-aware callbacks | On replacement/disposal | No | Resource leak across reloads |
+
+### Upgrade and rollback
+
+Keep `Polly.Extensions` compatible with the centrally pinned `Polly`. Build the provider, resolve every key, fault-test each pipeline, and exercise option reload and disposal callbacks where enabled. Roll back both pins and associated strategy configuration together.
 
 ## Integration with the catalog
 
 This is the DI companion to `polly.md`. Use `microsoft-extensions-resilience.md` for telemetry enrichment and `microsoft-extensions-http-resilience.md` for `HttpClient` handlers. Do not register a retrying DI pipeline around the HTTP handler by default; choose one retry owner.
+
+Use the [resilience selection guidance](../package-guidance/package-selection.md#resilience-and-retry-ownership) and [`Polly.Extensions` supply-chain entry](../package-guidance/supply-chain.md#polly-extensions).
 
 ## Security, performance, AOT, trimming, and operations
 
 The provider caches pipelines, preserving breaker and limiter state and avoiding per-call construction. Pipeline keys can select materially different failure and capacity behavior, so do not derive them from untrusted input. Keep keys and telemetry labels low-cardinality and free of tenant IDs, URLs, or secrets.
 
 Validate options before activation, bound retries/timeouts/queues, and ensure reload cannot introduce unlimited work. Test the deployed trim/NativeAOT artifact if configuration binding, DI, or strategy construction is reflection-sensitive.
+
+Monitor pipeline-resolution failures, reload success/failure, replaced-pipeline disposal, and the underlying Polly strategy signals by stable key. Keys must not contain tenant IDs, request URLs, secrets, or other high-cardinality data.
+
+### Troubleshooting
+
+| Symptom | Likely cause | Diagnostic | Correction | Retry? |
+| --- | --- | --- | --- | --- |
+| Pipeline lookup fails | Missing registration or key mismatch | Enumerate application-owned registrations and requested constant | Correct the composition root/key contract | No |
+| Reload retains old behavior/resources | Reload not enabled, validation failed, or disposal callback absent | Inspect reload diagnostics and resource counts | Validate/bind correctly and register `OnPipelineDisposed` | No; fix configuration lifecycle |
+| Different instances behave differently | Mixed deployment/config meaning under one key | Compare version, option snapshot, and key across instances | Roll out compatible code/config atomically | Only after convergence |
 
 ## Avoid
 

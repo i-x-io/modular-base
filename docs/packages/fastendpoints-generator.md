@@ -6,6 +6,10 @@
 | --- | --- | --- | --- |
 | `FastEndpoints.Generator` | `8.2.0` | Compile-time FastEndpoints registrations, permissions, and serializer-context support | Centrally pinned; catalog-only until an endpoint project consumes it |
 
+- Owner: IX
+- Last reviewed: 2026-07-27
+- Review trigger: Generator/FastEndpoints version, target framework, compiler, source-generation, trimming, or Native AOT changes.
+
 ## Decision and scope
 
 Use the generator in each project that declares FastEndpoints endpoint types when opting into source-generated startup, generated permissions, or Native AOT support. It is a build-time asset, not a runtime service and must not flow to package consumers.
@@ -63,16 +67,26 @@ public override void Configure()
 ## Enterprise implementation guidance
 
 - Do not edit generated output. FastEndpoints requires generated serializer-context files to be checked in because its development-time tool bridges a source-generator chaining limitation; ordinary analyzer output remains build output.
+- Enabling serializer-context generation invokes the package build targets, which can create a local tool manifest and install/update `FastEndpoints.Generator.Cli`. Pre-restore the pinned tool in controlled CI, account for feed/network access, and review manifest/generated-output changes.
 - Use `PrivateAssets="all"` so a library does not impose the generator on consumers.
 - Make permission keys stable and review them as API authorization identifiers. `AccessControl()` and partial `Allow` members generate stable hashed permission codes.
 - When endpoints live in several assemblies, reference the generator in each endpoint assembly, pass all generated discovered-type collections needed by the host, and chain each assembly's serializer-context/reflection-cache extension methods.
 - Keep source generation in CI and validate both regular build and publish/AOT build when AOT is a deployment target.
+
+### Upgrade and rollback
+
+Pin the generator to the same FastEndpoints version as the runtime packages. On upgrade, clean/rebuild each endpoint project, regenerate checked-in serializer contexts, review permission-code and discovered-type changes, and run both normal build and AOT publish checks where applicable; compiler and target-framework changes also trigger this review.
+
+Rollback the generator and all FastEndpoints runtime companions together, then regenerate artifacts with the restored toolchain. Do not retain generated serializer contexts or permission mappings produced by a newer incompatible generator without a clean rebuild and review.
 
 ## Integration with the catalog
 
 - [FastEndpoints](fastendpoints.md) owns the endpoint declarations that generator discovery examines.
 - [FastEndpoints.Security](fastendpoints-security.md) documents `AccessControl()` and generated `Allow` permissions.
 - [FastEndpoints.OpenApi](fastendpoints-openapi.md) exports documents for AOT deployments; serializer contexts and static document export complete that path.
+- The [package-selection guide](../package-guidance/package-selection.md#api-authentication-ownership) explains the runtime authentication boundary for generated access-control metadata.
+- The [FastEndpoints, JWT, OpenAPI, and Scalar recipe](../recipes/fastendpoints-jwt-openapi-scalar.md) shows the generated endpoint stack in context.
+- Review [FastEndpoints.Generator supply-chain metadata](../package-guidance/supply-chain.md#fastendpoints-generator) before approval or upgrade.
 
 ## Security, performance, AOT, trimming, and operations
 

@@ -8,6 +8,9 @@
 | Pinned version | `3.2.2` |
 | Status | Preferred approved test-only dependency |
 | Role | xUnit v3 framework with Microsoft Testing Platform v1 runner integration |
+| Owner | IX |
+| Last reviewed | 2026-07-27 |
+| Review trigger | xUnit v3 meta-package/runner variant, .NET SDK/MTP, target-framework, test configuration, or CI runner change |
 
 ## Decision and scope
 
@@ -54,9 +57,22 @@ Inject clocks, randomness, environment, filesystem, and network boundaries so un
 
 Keep runner configuration repository-owned. On .NET 10+, `global.json` selects `Microsoft.Testing.Platform`; CI and local commands must use MTP options consistently. Record expected test counts or other discovery evidence so a zero-test run cannot appear successful.
 
+Keep runner configuration explicit and repository-owned:
+
+| Setting | Purpose | Default behavior | Repository guidance | Reload/failure behavior |
+| --- | --- | --- | --- | --- |
+| `parallelizeTestCollections` | Run independent collections concurrently | Runner-defined enabled behavior | Disable only for a measured shared-resource constraint; prefer fixture isolation | Read at process start; unsafe sharing produces nondeterministic failures |
+| `maxParallelThreads` | Bound test concurrency | Runner-calculated | Cap for constrained CI or external resources, and measure the effect | Read at process start; excessive concurrency causes contention |
+
+Store supported settings in `xunit.runner.json`, copy it to the output directory, and restart the test process after changes. Do not place secrets in runner configuration or diagnostic messages.
+
+### Upgrade and rollback
+
+Inspect the exact `xunit.v3` meta-package dependency before upgrading because it selects the MTP runner variant; version 3.2.2 resolves `xunit.v3.mtp-v1` exactly. Upgrade companion assertion/architecture extensions after confirming compatibility, keep the repository's .NET 10 runner selection coherent, and compare discovery counts, filters, fixtures, parallel behavior, and failure output in all test projects. Roll back the central pin and any runner/configuration changes together. There is no persistent-data migration, but restored discovery and execution—not compilation—prove rollback.
+
 ## Integration with the catalog
 
-Use [AwesomeAssertions](awesomeassertions.md) for richer diagnostics, Testcontainers for real PostgreSQL/Redis tests, and `TngTech.ArchUnitNET.xUnitV3` only in the architecture-test project. Do not add [Microsoft.NET.Test.Sdk](microsoft-net-test-sdk.md), [xunit.runner.visualstudio](xunit-runner-visualstudio.md), or [coverlet.collector](coverlet-collector.md) to this MTP stack. MTP coverage requires a separately approved `coverlet.MTP` entry.
+Use [AwesomeAssertions](awesomeassertions.md) for richer diagnostics, Testcontainers for real PostgreSQL/Redis tests, and `TngTech.ArchUnitNET.xUnitV3` only in the architecture-test project. Do not add [Microsoft.NET.Test.Sdk](microsoft-net-test-sdk.md), [xunit.runner.visualstudio](xunit-runner-visualstudio.md), or [coverlet.collector](coverlet-collector.md) to this MTP stack. MTP coverage requires a separately approved `coverlet.MTP` entry. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage), the [PostgreSQL and Redis Testcontainers recipe](../recipes/testcontainers-postgresql-redis-xunit.md), and the [xunit.v3 supply-chain entry](../package-guidance/supply-chain.md#xunit-v3).
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -81,6 +97,7 @@ Test and fixture code can execute arbitrary processes and external calls. Use sy
 
 - [xUnit v3 getting started](https://xunit.net/docs/getting-started/v3/getting-started)
 - [xUnit v3 Microsoft Testing Platform guidance](https://xunit.net/docs/getting-started/v3/microsoft-testing-platform)
+- [xUnit v3 configuration files](https://xunit.net/docs/config-xunit-runner-json)
 - [xUnit v3 query filter language](https://xunit.net/docs/query-filter-language)
 - [`dotnet test` runner selection](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test)
 - [xunit.v3 3.2.2 on NuGet](https://www.nuget.org/packages/xunit.v3/3.2.2)

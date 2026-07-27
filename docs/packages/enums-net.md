@@ -4,6 +4,10 @@
 
 `Enums.NET` **5.0.0** — direct catalog package; high-performance enum utilities, including parsing, formatting, cached metadata, validation, and flag operations. The catalog owns the version for `net10.0` projects using C# 14.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+**Review trigger:** `Enums.NET` version changes, target-framework changes, or enum metadata/formatting API changes.
+
 ## Decision and scope
 
 Use for enum-specific operations where the standard library lacks the required API, attribute-backed formats are intentional, or measured throughput justifies its cached metadata. Keep public contracts expressed as the enum type or an explicitly documented wire string, not library-specific metadata wrappers.
@@ -51,9 +55,15 @@ For `[Flags]` enums, use `IsValid()` to reject unknown bits and use `HasAllFlags
 
 Centralize external-string conversion and return a domain-level error rather than letting `Parse` exceptions escape normal validation paths. Decide whether names, numeric values, `EnumMemberAttribute`, descriptions, or another registered format are accepted; accepting multiple formats can create ambiguous contracts. During an enum change, test every supported wire value, aliases/duplicate values, the zero value, and all permitted flag combinations. Cache only derived presentation data whose culture and invalidation rules are explicit.
 
+### Upgrade and rollback
+
+Before upgrading, run contract tests for every accepted name, numeric representation, attribute format, alias, zero value, and flags combination. Review target-framework and reflection behavior in the published artifact. Rollback is a central-version re-pin and redeploy; stored enum values must remain readable by both versions during rollout.
+
 ## Integration with the catalog
 
 `humanizer-core.md` can produce presentation text after validation; it must not define wire-format names. Use `fluentvalidation.md` to reject request values before domain conversion, and keep serializer configuration aligned with the same canonical names.
+
+See the [`Enums.NET` supply-chain entry](../package-guidance/supply-chain.md#enums-net).
 
 ## Security, performance, AOT, trimming, and operations
 

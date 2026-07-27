@@ -1,5 +1,9 @@
 # OpenTelemetry.Api
 
+> **Owner:** `IX`
+> **Last reviewed:** `2026-07-27`
+> **Review trigger:** Review when the OpenTelemetry API version, target framework, propagation specification, or semantic conventions change.
+
 ## Catalog entry
 
 `<PackageVersion Include="OpenTelemetry.Api" Version="1.17.0" />`
@@ -64,11 +68,25 @@ The application must register `.AddMeter("ModularBase.Orders")`. Keep `orders.ch
 - Record meaningful operation boundaries, not every method call. Keep tag values finite and sanitized at the emission point when possible.
 - Use baggage only for small, propagated, approved correlation values; it crosses process boundaries and is not a secure storage channel.
 
+### Source and propagation contract
+
+| Contract | Default behavior | Library guidance | Failure and sensitivity |
+| --- | --- | --- | --- |
+| `ActivitySource` name/version | Only listeners subscribed to the source receive its activities. | Use a stable, documented name; add an instrumentation version when consumers need it. | A name mismatch silently yields `null` activities. Names are non-secret but become query contracts. |
+| `Meter` and instrument names | Only registered meters are collected; instrument name, unit, type, and meaning form a contract. | Keep names stable, units explicit, and attributes finite. | Changing name/type/unit breaks dashboards; unbounded values create series growth. |
+| `Activity.Current` | Carries ambient context through supported async execution. | Use it only for correlation and parentage; pass explicit domain/security context separately. | Suppressed/lost execution context can break correlation and must never change authorization behavior. |
+| `Propagators.DefaultTextMapPropagator` | Injects/extracts the process-wide configured propagation formats. | Let the application choose propagators; libraries should use the global API rather than replacing it. | Extracted baggage/headers are untrusted input. Never propagate secrets or use baggage for authorization. |
+
+### Upgrade and rollback
+
+Upgrade `OpenTelemetry.Api` with the aligned SDK family. For reusable libraries, verify the package’s target-framework compatibility and treat source names, meter/instrument definitions, semantic attributes, and propagation behavior as public contracts. Test both with no listener (including `StartActivity() == null`) and with the cataloged `1.17.0` SDK. Roll back the API and SDK family together if consumers cannot load the assembly or correlation changes; reverting the package does not restore dashboards after an instrumentation-name or metric-contract change, so revert those library changes too.
+
 ## Integration with the catalog
 
 - [OpenTelemetry](opentelemetry.md) configures the SDK pipeline that consumes API emissions.
 - [OpenTelemetry.Extensions.Hosting](opentelemetry.extensions.hosting.md) is the recommended hosted application integration.
 - HTTP, ASP.NET Core, runtime, and Npgsql packages produce their own built-in source/meter telemetry; application code should add custom spans only where that telemetry does not already establish the operation boundary.
+- See the catalog-wide [OpenTelemetry composition decision](../package-guidance/package-selection.md#opentelemetry-composition), the [OTLP observability recipe](../recipes/opentelemetry-otlp-postgresql.md), and the [OpenTelemetry.Api supply-chain entry](../package-guidance/supply-chain.md#opentelemetry-api).
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -94,7 +112,7 @@ API emission should remain cheap when no provider listens. Avoid eagerly allocat
 Accessed 2026-07-27:
 
 - [OpenTelemetry.Api 1.17.0 on NuGet](https://www.nuget.org/packages/OpenTelemetry.Api/1.17.0)
-- [OpenTelemetry.Api source](https://github.com/open-telemetry/opentelemetry-dotnet/tree/main/src/OpenTelemetry.Api)
+- [OpenTelemetry.Api 1.17.0 source](https://github.com/open-telemetry/opentelemetry-dotnet/tree/core-1.17.0/src/OpenTelemetry.Api)
 - [Manual instrumentation for OpenTelemetry .NET](https://opentelemetry.io/docs/languages/dotnet/instrumentation/)
-- [OpenTelemetry .NET tracing API guidance](https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/docs/trace/README.md)
+- [OpenTelemetry .NET 1.17.0 tracing API guidance](https://github.com/open-telemetry/opentelemetry-dotnet/blob/core-1.17.0/docs/trace/README.md)
 - [OpenTelemetry error-recording semantic conventions](https://opentelemetry.io/docs/specs/semconv/general/recording-errors/)

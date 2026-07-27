@@ -4,6 +4,10 @@
 
 `FluentResults` **4.0.0** — direct catalog package; result-pattern types that model successful values and expected failures.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+**Review trigger:** `FluentResults` version changes, target-framework changes, or upstream result/error API changes.
+
 ## Decision and scope
 
 Use for expected, caller-actionable outcomes across application boundaries. Do not use it to conceal programming faults, cancellation, or infrastructure failures that need normal exception/telemetry handling.
@@ -52,9 +56,15 @@ Keep error messages safe for clients and retain diagnostic detail in structured 
 
 When several failures are useful to the caller, preserve `Errors` instead of collapsing them into one string. Use `CausedBy` for internal causal detail only if the resulting error will not cross a trust boundary.
 
+### Upgrade and rollback
+
+Before upgrading, compile all composition and mapping code, then test multi-error preservation, metadata keys, causal chains, and boundary serialization. Keep application error codes independent of package messages. Rollback is a central-version re-pin and redeploy unless result objects were incorrectly persisted or exposed as a wire contract.
+
 ## Integration with the catalog
 
 Use `fluentvalidation.md` for request validation; translate validation failures into the application result contract at the boundary. `polly.md` reports resilience outcomes; it should not be substituted for domain results.
+
+See the [validation/results recipe](../recipes/fastendpoints-validation-results.md) and [`FluentResults` supply-chain entry](../package-guidance/supply-chain.md#fluentresults).
 
 ## Security, performance, AOT, trimming, and operations
 

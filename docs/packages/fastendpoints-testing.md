@@ -6,6 +6,10 @@
 | --- | --- | --- | --- |
 | `FastEndpoints.Testing` | `8.2.0` | FastEndpoints integration/unit-test fixtures, route-less request helpers, and message receivers | Catalog-only; this repository intentionally has no test project |
 
+- Owner: IX
+- Last reviewed: 2026-07-27
+- Review trigger: FastEndpoints.Testing, xUnit, MVC Testing, target framework, fixture-cache, or Native AOT test-mode changes.
+
 ## Decision and scope
 
 Reserve this package for a future dedicated test project. It adds `AppFixture<TProgram>`, `TestBase`, test-service configuration, request helpers, and command/event receivers. It has no dependency on the main FastEndpoints package, so it can test compatible ASP.NET applications as well.
@@ -72,11 +76,28 @@ The repository currently has no test project, so this example is a template for 
 - Prefer route-less request helpers for endpoint-focused tests; retain a small set of raw `HttpClient` tests for protocol concerns such as unknown routes, headers, content negotiation, and middleware outside FastEndpoints.
 - Create authenticated clients with `CreateClient(...)` and test 401 separately from 403. Never reuse production credentials or signing material.
 
+| Setting / hook | Purpose | Default behavior | Test guidance | Reload / sensitivity / failure behavior |
+| --- | --- | --- | --- | --- |
+| `ConfigureApp` | Overrides host/application configuration | Application configuration is used | Supply only test-environment values and deterministic endpoints | Applied when the fixture host starts; missing values should fail setup visibly |
+| `ConfigureServices` | Replaces or adds test services | Application services remain registered | Replace external boundaries without bypassing authorization/routing | Applied at host creation; fixture caching retains the resulting graph |
+| `[DisableWafCache]` | Creates a fresh host instead of reusing the fixture cache | Compatible fixture instances are cached | Use only when host isolation is required | Increases startup cost; does not itself isolate external state |
+| `NativeAotTestMode` | Runs tests against a published executable | In-memory WAF mode | Enable only in the test project with explicit executable/readiness configuration | Process configuration; readiness/timeout failures should fail the suite |
+
+### Upgrade and rollback
+
+Upgrade with the FastEndpoints runtime family, `Microsoft.AspNetCore.Mvc.Testing`, and the chosen xUnit v3 packages after checking fixture/cache and route-less helper changes. Rebuild the test host and run representative WAF and Native AOT modes before accepting the upgrade.
+
+Rollback only the test dependency set if no production assembly depends on it, but keep the test packages mutually compatible. A rollback that makes tests green by no longer exercising the deployed runtime is invalid; align the fixture packages with the application version under test.
+
 ## Integration with the catalog
 
 - [Microsoft.AspNetCore.Mvc.Testing](microsoft-aspnetcore-mvc-testing.md) provides the underlying `WebApplicationFactory<TEntryPoint>` model.
+- Central transitive pinning is disabled: FastEndpoints.Testing 8.2.0 declares MVC Testing 10.0.9 for `net10.0`. The direct versionless MVC Testing reference shown above intentionally selects the catalog's 10.0.10 servicing pin and exposes its APIs to test code.
 - [FastEndpoints](fastendpoints.md) provides endpoint types and route-less helpers used by this package.
 - [FastEndpoints.Security](fastendpoints-security.md) and [JWT bearer](microsoft-aspnetcore-authentication-jwtbearer.md) require isolated test credentials/environments.
+- The [package-selection guide](../package-guidance/package-selection.md#api-authentication-ownership) clarifies which authentication registration the test host must reproduce or replace.
+- The [FastEndpoints, JWT, OpenAPI, and Scalar recipe](../recipes/fastendpoints-jwt-openapi-scalar.md) defines the production pipeline that integration tests should preserve.
+- Review [FastEndpoints.Testing supply-chain metadata](../package-guidance/supply-chain.md#fastendpoints-testing) before approval or upgrade.
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -85,6 +106,17 @@ The repository currently has no test project, so this example is a template for 
 - For dual AOT testing, configure the AOT executable, health endpoint, timeouts, and `Testing` environment explicitly.
 - Native AOT tests are black-box process tests rather than in-memory `WebApplicationFactory` tests. Enable the documented `NativeAotTestMode` only in the test project and keep readiness endpoints free of sensitive diagnostics.
 - Dispose custom `HttpClient` instances and external resources in fixture teardown.
+
+### Operational signals and troubleshooting
+
+Testing has no production signals. In CI, record bounded host-start duration, test duration, fixture mode, exit status, and sanitized readiness failures; never attach test tokens, connection strings, or captured sensitive bodies to shared logs.
+
+| Symptom | Likely cause and diagnostic | Safe corrective action | Retry? |
+| --- | --- | --- | --- |
+| Fixture cannot locate/start the application | Entry point is inaccessible, content root is wrong, or startup requires unavailable production configuration | Expose the documented partial `Program`, set test configuration/content root, and replace external boundaries | Retry only after setup is corrected |
+| Tests pass alone but fail together | Cached host or external state leaks across tests; inspect fixture/state lifetimes | Reset state, use isolated resources, or deliberately disable WAF cache for that fixture | Not as a blanket flaky-test retry |
+| Route-less helper targets no endpoint | Endpoint type/route metadata changed or the application assembly is not discovered | Update the typed request and ensure the real endpoint assembly is loaded | No |
+| Native AOT mode times out | Executable path, environment, readiness route, port, or startup failure is wrong | Inspect sanitized process output and correct the explicit AOT fixture configuration | Retry only for a proven transient resource condition |
 
 ## Avoid
 

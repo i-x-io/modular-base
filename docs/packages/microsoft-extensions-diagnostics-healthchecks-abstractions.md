@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | Health-check contracts including `IHealthCheck`, `HealthCheckResult`, and `HealthCheckContext` | Approved library-facing abstraction |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, public health-check contract, or status-model change |
+
 ## Decision and scope
 
 Reference this package to implement a reusable custom health check without coupling it to a particular endpoint or host. It defines contracts only; use the companion implementation package to register and run checks.
@@ -53,9 +57,15 @@ Give each check a stable registration name, tags, timeout, and owner at the comp
 
 For reusable packages, document the dependency queried, expected latency, permissions required, possible statuses, and whether concurrent calls are supported. Do not make the abstraction package depend on ASP.NET Core endpoint middleware or a concrete logging provider.
 
+### Upgrade and rollback
+
+Keep the abstraction aligned with the concrete HealthChecks implementation used by the host. Recompile custom checks and verify status, duration, exception, and data handling against the new runtime. No state migration is required. Roll back custom-check libraries with their host when contract compatibility fails; keep externally exposed probe semantics stable.
+
 ## Integration with the catalog
 
 The runner and registration APIs are in [HealthChecks](microsoft-extensions-diagnostics-healthchecks.md). Its lifetime dependencies come from [DependencyInjection](microsoft-extensions-dependencyinjection.md), and it commonly reflects [Hosting](microsoft-extensions-hosting.md) state.
+
+Use the [abstraction-versus-runtime selection guide](../package-guidance/package-selection.md#microsoft-abstractions-and-runtime-implementations) to keep reusable checks independent from host execution. See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-diagnostics-healthchecks-abstractions).
 
 ## Security, performance, AOT, trimming, and operations
 

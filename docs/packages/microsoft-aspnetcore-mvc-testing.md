@@ -6,6 +6,10 @@
 | --- | --- | --- | --- |
 | `Microsoft.AspNetCore.Mvc.Testing` | `10.0.10` | In-memory ASP.NET Core functional test host and `WebApplicationFactory<TEntryPoint>` | Catalog-only; this repository intentionally has no test project |
 
+- Owner: IX
+- Last reviewed: 2026-07-27
+- Review trigger: Package/target-framework servicing update, hosting/content-root conventions, test runner, or application entry-point changes.
+
 ## Decision and scope
 
 Use this package in a future test project for functional/integration tests through an in-memory ASP.NET Core host. Despite its name, `WebApplicationFactory<TEntryPoint>` is useful for FastEndpoints applications because it hosts the ASP.NET Core application, not only MVC controllers.
@@ -68,11 +72,27 @@ The repository has no test project, so no sample is represented as repository-ru
 - For authentication tests, replace the handler with a test-only scheme and create explicit anonymous, authenticated, and forbidden cases. Do not bypass authorization middleware.
 - For persistence tests, give each test an isolated database/schema or reset known state; an in-memory substitute does not prove provider-specific queries or transaction behavior.
 
+| Setting / hook | Purpose | Default behavior | Test guidance | Reload / sensitivity / failure behavior |
+| --- | --- | --- | --- | --- |
+| `WithWebHostBuilder` / `ConfigureTestServices` | Applies test-only service overrides | Application registrations are used | Replace external boundaries after application services are registered | Creates/configures a test host; missing replacements fail during startup/use |
+| `WebApplicationFactoryClientOptions` | Controls redirect, cookies, base address, and client behavior | Factory defaults apply | Disable automatic redirects when asserting auth redirect/challenge behavior | Per client; options are not hot reloaded |
+| `UseEnvironment("Testing")` | Selects test configuration/environment behavior | Application environment applies | Set explicitly and ensure production cannot select test-only services | Host-start setting; test secrets remain sensitive |
+| Content root | Locates views/static/configuration content | Factory conventions/attributes apply | Set explicitly when repository layout breaks discovery | Host-start setting; wrong roots cause missing content/configuration |
+
+### Upgrade and rollback
+
+Upgrade with the ASP.NET Core target framework/runtime and the test runner, then exercise application entry-point discovery, content-root resolution, test service replacement, authentication, redirects, and disposal. Keep the package out of production projects throughout the change.
+
+Rollback is test-only when the application contract remains unchanged, but the selected package must remain compatible with the target framework and application assembly. Do not use an older factory that omits behaviors introduced by the deployed runtime; preserve protocol assertions when changing test infrastructure.
+
 ## Integration with the catalog
 
 - [FastEndpoints.Testing](fastendpoints-testing.md) builds conveniences on the same in-memory-host model.
 - [FastEndpoints](fastendpoints.md) describes the middleware order the host must run.
 - [JWT bearer](microsoft-aspnetcore-authentication-jwtbearer.md) must be configured safely in a test-only environment.
+- The [package-selection guide](../package-guidance/package-selection.md#api-authentication-ownership) clarifies which authentication owner the factory must exercise.
+- The [FastEndpoints, JWT, OpenAPI, and Scalar recipe](../recipes/fastendpoints-jwt-openapi-scalar.md) supplies an example production composition boundary for the test host.
+- Review [MVC Testing supply-chain metadata](../package-guidance/supply-chain.md#microsoft-aspnetcore-mvc-testing) before approval or upgrade.
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -80,6 +100,17 @@ The repository has no test project, so no sample is represented as repository-ru
 - Reuse a factory where safe to avoid host startup cost, and reset state between tests.
 - A `WebApplicationFactory` tests managed hosting behavior; it is not a substitute for testing a Native AOT published executable when that is a deployment target.
 - Dispose factory-created resources and avoid cross-test external state.
+
+### Operational signals and troubleshooting
+
+This package has no production runtime signals. In CI, retain host-start/test duration, exit status, environment name, and sanitized startup logs; never publish test credentials, connection strings, authorization headers, or captured confidential responses.
+
+| Symptom | Likely cause and diagnostic | Safe corrective action | Retry? |
+| --- | --- | --- | --- |
+| Factory fails to find `Program` or content root | Entry point is not visible or repository layout defeats conventions; inspect the startup exception and resolved content path | Expose the partial entry point and configure/attribute the intended content root | No |
+| Test override does not replace production service | Override ran too early or registration order/lifetime differs; inspect the final test service graph | Use `ConfigureTestServices` and remove/replace the exact service descriptor | No |
+| Auth assertion sees a redirect instead of 401/403 | Client follows redirects or cookie authentication owns the challenge | Configure client redirect behavior and assert the intended authentication scheme | No |
+| Parallel tests contaminate state | Shared factory, singleton, database, cookie container, or external resource is mutable | Reset/isolate state and declare fixture/collection lifetimes | Not as an automatic retry |
 
 ## Avoid
 

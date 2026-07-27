@@ -4,6 +4,10 @@
 
 `Humanizer.Core` **3.0.10** — direct catalog package; human-readable transformations for strings, dates, quantities, enums, and numbers. The catalog owns the version for `net10.0` projects using C# 14.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+**Review trigger:** `Humanizer.Core` version changes, target-framework changes, or supported locale/globalization-data changes.
+
 ## Decision and scope
 
 Use for user-facing display text close to the presentation boundary. It is not a formatting standard for logs, database values, URLs, cache keys, API payloads, or other machine contracts. `Humanizer.Core` provides the library and neutral English resources; verify package/resource choices before promising other locales.
@@ -42,9 +46,15 @@ Establish the request's UI culture before formatting, or pass `CultureInfo` to c
 
 Keep canonical data and localization keys separate from rendered text. Define supported cultures, fallback behavior, time-zone conversion, and whether relative time compares UTC or local values. Prefer explicit culture at background-job, queue-consumer, and batch boundaries where ambient request culture is absent. Inventory the exact locale resources included in deployment, and have product/localization review translated output rather than assuming grammatical equivalence.
 
+### Upgrade and rollback
+
+Review target-framework removals and localization changes, then snapshot-test each promised culture, inflection, date, quantity, and enum format. Humanizer 3 changed its target-framework asset set, so verify restore and publish output. Roll back the central pin and redeploy; do not persist humanized text as authoritative data.
+
 ## Integration with the catalog
 
 Use with `enums-net.md` only after enum values have been validated and converted. Keep FluentValidation error codes and localization keys stable; humanize a separately localized client message if desired. Preserve structured values in telemetry and humanize only in the UI or final report renderer.
+
+See the [`Humanizer.Core` supply-chain entry](../package-guidance/supply-chain.md#humanizer-core).
 
 ## Security, performance, AOT, trimming, and operations
 

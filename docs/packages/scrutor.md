@@ -4,6 +4,10 @@
 
 `Scrutor` **7.0.0** — direct catalog package; assembly scanning and service-decoration extensions for `Microsoft.Extensions.DependencyInjection`.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+**Review trigger:** `Scrutor` version changes, target-framework changes, or Microsoft DI/scanning behavior changes.
+
 ## Decision and scope
 
 Use for narrowly bounded convention-based registration or well-defined decorators. It is not a replacement for an explicit composition root: assembly boundaries, filters, service shapes, lifetimes, and decorator order remain application decisions.
@@ -63,9 +67,15 @@ Common workflow:
 
 Decorators should preserve cancellation, exception, result, async, and disposal semantics. If a decorator adds resilience, ensure it is the single retry owner and that its lifetime matches the stateful pipeline it uses. Prefer the HTTP resilience integration for `HttpClient` instead of a Scrutor retry decorator.
 
+### Upgrade and rollback
+
+Compare supported frameworks and scan/decoration semantics, then snapshot service descriptors, lifetimes, duplicate-registration behavior, and decorator order. Publish-test trimmed deployments. Roll back the central pin and redeploy; mixed application versions can otherwise construct different service graphs.
+
 ## Integration with the catalog
 
 The fixed-marker policy aligns with `fluentvalidation-dependencyinjectionextensions.md`. Decorators may invoke a DI-managed `polly-extensions.md` pipeline for non-HTTP work, but `microsoft-extensions-http-resilience.md` remains the preferred HTTP integration. Keep a single retry layer when these packages meet.
+
+See the [`Scrutor` supply-chain entry](../package-guidance/supply-chain.md#scrutor).
 
 ## Security, performance, AOT, trimming, and operations
 

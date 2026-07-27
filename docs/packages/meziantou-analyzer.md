@@ -4,6 +4,10 @@
 
 `Meziantou.Analyzer` **3.0.132** — universal catalog analyzer supplied through a shared `GlobalPackageReference` with private analyzer assets.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+- **Review trigger:** Review when the analyzer pin, `MAxxxx` rule inventory/default severity, SDK analyzer set, or repository warning policy changes.
+
 ## Decision and scope
 
 Use as a repository-wide supplementary quality analyzer. The catalog's global reference means future projects inherit it without local `PackageReference` duplication; it is not a production dependency and no custom analyzer is required. It complements the .NET SDK analyzers with `MAxxxx` diagnostics covering correctness, security, performance, globalization, and maintainability.
@@ -35,6 +39,13 @@ dotnet_diagnostic.MA0009.severity = error
 
 Meziantou also supports `MeziantouAnalysisMode` values such as `Default`, `None`, `all-suggestions`, `all-warnings`, and `all-errors`. This repository already establishes repository-wide warning severity in `ModularBase.globalconfig`, so prefer diagnostic-ID overrides here instead of adding a second bulk policy.
 
+| Setting | Catalog guidance |
+| --- | --- |
+| `MeziantouAnalysisMode` | Leave at the repository-approved default; changing it is a catalog-wide diagnostic policy migration. |
+| `dotnet_diagnostic.MAxxxx.severity` | Use for reviewed rule-specific policy and the narrowest necessary source scope. |
+| `PrivateAssets="all"` | Preserve on every installation so analyzer assets do not flow to consumers. |
+| `IncludeAssets` | Keep analyzer/build assets available to compilation and confirm the produced library package remains clean. |
+
 ## Enterprise implementation guidance
 
 A common adoption workflow is:
@@ -47,9 +58,13 @@ A common adoption workflow is:
 
 Use code fixes as proposed refactorings, not as proof of semantic equivalence. Review diffs and run affected tests, especially for culture, comparison, cancellation, regex, and async rules.
 
+### Upgrade and rollback
+
+Change the global pin in isolation, restore, and build representative projects before modifying severity configuration. Diff emitted `MAxxxx` IDs, default severities, code-fix output, and clean-build time, then resolve overlap with SDK, Roslynator, and Sonar rules. If new diagnostics cannot be triaged safely or build/IDE cost regresses, restore `3.0.132` and its lock-file resolution; keep any independently valid source fixes, but revert suppressions or baselines added only to accommodate the failed upgrade.
+
 ## Integration with the catalog
 
-This shares the global analyzer mechanism with `microsoft-codeanalysis-bannedapianalyzers.md`, `microsoft-visualstudio-threading-analyzers.md`, `roslynator-analyzers.md`, and `sonaranalyzer-csharp.md`. `Directory.Build.props` adds `ModularBase.globalconfig` to every project; file-scoped policy uses `.editorconfig`, whose matching entries take precedence over global AnalyzerConfig entries. Central package management owns the pin, so project files never add a version.
+This shares the global analyzer mechanism with `microsoft-codeanalysis-bannedapianalyzers.md`, `microsoft-visualstudio-threading-analyzers.md`, `roslynator-analyzers.md`, and `sonaranalyzer-csharp.md`. `Directory.Build.props` adds `ModularBase.globalconfig` to every project; file-scoped policy uses `.editorconfig`, whose matching entries take precedence over global AnalyzerConfig entries. Central package management owns the pin, so project files never add a version. Review its [supply-chain record](../package-guidance/supply-chain.md#meziantou-analyzer) before changing compiler-loaded tooling.
 
 ## Security, performance, AOT, trimming, and operations
 

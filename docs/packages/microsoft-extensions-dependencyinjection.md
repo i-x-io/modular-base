@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | Default .NET DI container implementation and registration extensions | Approved composition-root implementation |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, container validation, lifetime, or disposal behavior change |
+
 ## Decision and scope
 
 Use the default container to compose applications and infrastructure. This implementation consumes the contracts in `DependencyInjection.Abstractions`. Application services should use constructor injection and should not build nested service providers or resolve services ad hoc.
@@ -85,9 +89,15 @@ Keep registrations in feature-focused extension methods owned by the integrating
 
 Use `TryAdd...` only when a library intentionally supplies an overridable default; use `Replace` only when replacement is part of the integration contract. Multiple registrations of the same service type are returned by `IEnumerable<T>`, while a direct `T` resolution returns the last registration. Document either behavior when it is part of a public extension method.
 
+### Upgrade and rollback
+
+Upgrade this implementation with `DependencyInjection.Abstractions`, Hosting, Options, Logging, HTTP, and HealthChecks packages that participate in the same composition root. Re-run build/scope validation, disposal tests, and closed-generic composition tests under the target framework. There is no data migration. Roll back the application and aligned package set together if resolution, lifetime validation, or disposal ordering changes.
+
 ## Integration with the catalog
 
 [DependencyInjection.Abstractions](microsoft-extensions-dependencyinjection-abstractions.md) defines the public contracts. [Hosting](microsoft-extensions-hosting.md) creates and owns the root provider. HTTP, options, logging, and health checks are all registered through this container.
+
+Use the [abstraction-versus-runtime selection guide](../package-guidance/package-selection.md#microsoft-abstractions-and-runtime-implementations) for direct-reference ownership. See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-dependencyinjection).
 
 ## Security, performance, AOT, trimming, and operations
 

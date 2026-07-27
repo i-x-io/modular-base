@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | Options contracts, factories, caching, validation, and `IOptions*` accessors | Approved typed-configuration foundation |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, options lifecycle, validation, or source-generator change |
+
 ## Decision and scope
 
 Use options for strongly typed, scenario-specific application settings. This package owns the options lifecycle and validation contracts; binding configuration sections requires [Options.ConfigurationExtensions](microsoft-extensions-options-configurationextensions.md).
@@ -47,6 +51,15 @@ public sealed class RetryOptions
 
 Consumers select a lifecycle explicitly: read `IOptions<T>.Value` for static settings, `IOptionsSnapshot<T>.Value` once per scope, or `IOptionsMonitor<T>.CurrentValue` for reloadable settings. An `IOptionsMonitor<T>.OnChange` subscription returns `IDisposable`; a long-lived subscriber should retain and dispose it.
 
+### Options lifecycle reference
+
+| API | Purpose | Default behavior | Production guidance | Reload | Sensitivity | Failure behavior |
+| --- | --- | --- | --- | --- | --- | --- |
+| `IOptions<T>` | Singleton-readable options | Creates/caches the default instance on first access | Use for intentionally static values | Does not observe reload | May contain secrets; never log the object | Validation failure appears on access unless startup validation runs |
+| `IOptionsSnapshot<T>` | Per-scope options | Recomputes/caches per scope and name | Use only in scoped/transient consumers | Observes changes in a later scope | Same as source configuration | Invalid value fails when accessed in the scope |
+| `IOptionsMonitor<T>` | Current value and callbacks | Singleton service with cached named values | Keep callbacks fast, thread-safe, and disposable | Observes configured change tokens | Callback must not expose values | Invalid updated values can fail access/callback processing |
+| `ValidateOnStart` | Forces startup-critical validation | Validation is otherwise lazy | Enable for settings required to start safely | Revalidates startup instance; reload semantics remain consumer-specific | Validation messages must omit secrets | Host startup fails with `OptionsValidationException` |
+
 ## Enterprise implementation guidance
 
 - Create one small options class per capability, not a global configuration object. Keep its public shape separate from credentials where different ownership or disclosure rules apply.
@@ -55,9 +68,15 @@ Consumers select a lifecycle explicitly: read `IOptions<T>.Value` for static set
 - All options instances are named internally; names are case-sensitive. Validate and test each configured name rather than assuming default-name validation covers it.
 - Define reload semantics: which settings may change, whether consumers read a fresh value per operation, how callbacks update dependent state atomically, and what happens when a newly supplied value fails validation.
 
+### Upgrade and rollback
+
+Upgrade with `Options.ConfigurationExtensions`, configuration packages, and the hosting/DI stack. Re-run validation timing, every named option, snapshot scope, monitor reload, invalid-update, and callback-disposal tests. No persistent-data migration is required, but configuration-schema changes need staged deployment. Roll back the package set and configuration shape together; keep the last-known-good external configuration available.
+
 ## Integration with the catalog
 
 [Configuration.Abstractions](microsoft-extensions-configuration-abstractions.md) supplies settings, [Configuration.Binder](microsoft-extensions-configuration-binder.md) maps them, and [Options.ConfigurationExtensions](microsoft-extensions-options-configurationextensions.md) wires them into DI. [DependencyInjection](microsoft-extensions-dependencyinjection.md) registers the services.
+
+The [options validation, reload, and health recipe](../recipes/options-validation-reload-health.md) shows a complete lifecycle. See the [abstraction-versus-runtime selection guide](../package-guidance/package-selection.md#microsoft-abstractions-and-runtime-implementations) and [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-options).
 
 ## Security, performance, AOT, trimming, and operations
 

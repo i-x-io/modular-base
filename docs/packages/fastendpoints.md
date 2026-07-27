@@ -6,6 +6,10 @@
 | --- | --- | --- | --- |
 | `FastEndpoints` | `8.2.0` | Endpoint framework and ASP.NET Core registration/middleware | Centrally pinned; catalog-only until an application project consumes it |
 
+- Owner: IX
+- Last reviewed: 2026-07-27
+- Review trigger: FastEndpoints version, target framework, endpoint discovery/binding behavior, or ASP.NET Core middleware changes.
+
 ## Decision and scope
 
 Use FastEndpoints as the API endpoint framework. It owns endpoint discovery, binding, validation integration, endpoint configuration, and endpoint authorization metadata. It is the foundation of the FastEndpoints/OpenAPI/Scalar pipeline documented in this catalog; it is not a replacement for ASP.NET Core authentication or authorization middleware.
@@ -91,6 +95,14 @@ A common delivery workflow is:
 4. Order middleware as authentication, authorization, then `UseFastEndpoints()`.
 5. Exercise one anonymous route, one authenticated success, one 401 response, and one 403 response before publishing.
 
+Material composition settings should remain explicit at the host boundary:
+
+| Setting / call | Purpose | Default behavior | Production guidance | Reload / sensitivity / failure behavior |
+| --- | --- | --- | --- | --- |
+| `AddFastEndpoints()` | Registers endpoint discovery and framework services | No endpoints are registered until called | Call once in the composition root; pass generated discovered types for the documented AOT path | Startup-only; missing registration fails application composition |
+| `UseFastEndpoints()` | Maps and executes discovered endpoints | No FastEndpoints routes are mapped until called | Call once after authentication and authorization | Startup-only; wrong order changes security behavior |
+| `AllowAnonymous()` | Opts an endpoint out of secure-by-default behavior | Endpoints require authorization | Use only on reviewed public routes | Compile/startup metadata; accidental use expands access |
+
 ## Enterprise implementation guidance
 
 - Keep endpoint types, request DTOs, validators, and response DTOs in the same vertical slice.
@@ -100,12 +112,21 @@ A common delivery workflow is:
 - Add `FastEndpoints.Generator` to every project that contains endpoint types when using generator-based startup or serializer contexts; it discovers DTOs through endpoint declarations.
 - Keep non-FastEndpoints routes deliberate. `FastEndpoints.OpenApi` includes all discovered endpoints by default; use `ExcludeNonFastEndpoints` or a document filter when an API document must be framework-only.
 
+### Upgrade and rollback
+
+Move `FastEndpoints`, `FastEndpoints.Generator`, `FastEndpoints.OpenApi`, `FastEndpoints.Security`, and `FastEndpoints.Testing` as one reviewed 8.x family unless upstream compatibility explicitly permits a split. Check release notes for binding, validation, endpoint discovery, middleware, serializer, and security-metadata changes; rebuild generated artifacts and run protocol-level endpoint tests before deployment.
+
+Rollback the family pin and deployed artifact together. If endpoint routes or DTO contracts changed in the same release, retain backward-compatible routes/contracts or roll those application changes back as well; a package-only rollback cannot repair an already-published breaking API contract.
+
 ## Integration with the catalog
 
 - [FastEndpoints.Generator](fastendpoints-generator.md) removes reflection-based discovery and supports AOT-oriented generation.
 - [FastEndpoints.OpenApi](fastendpoints-openapi.md) registers FastEndpoints-aware OpenAPI transformers; [Scalar.AspNetCore](scalar-aspnetcore.md) renders those documents.
 - [FastEndpoints.Security](fastendpoints-security.md) supplies FastEndpoints JWT and access-control conveniences; [JWT bearer](microsoft-aspnetcore-authentication-jwtbearer.md) remains the production validation baseline.
 - [Asp.Versioning.Http](asp-versioning-http.md) is separate versioning infrastructure. Coordinate document grouping explicitly rather than assuming it changes FastEndpoints endpoint versions.
+- The [package-selection guide](../package-guidance/package-selection.md#api-authentication-ownership) identifies whether FastEndpoints conveniences or ASP.NET Core JWT bearer owns authentication registration.
+- Follow the [FastEndpoints, JWT, OpenAPI, and Scalar recipe](../recipes/fastendpoints-jwt-openapi-scalar.md) or the [validation and results recipe](../recipes/fastendpoints-validation-results.md) for complete composition examples.
+- Review [FastEndpoints supply-chain metadata](../package-guidance/supply-chain.md#fastendpoints) before approval or upgrade.
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -114,6 +135,17 @@ A common delivery workflow is:
 - Avoid exposing API explorer endpoints and sensitive schemas indiscriminately in production. Treat endpoint summaries, examples, and schemas as externally visible contract data.
 - Reflection discovery is convenient for ordinary deployments. Native AOT requires the generator, `WebApplication.CreateSlimBuilder(args)`, `AddFastEndpoints(DiscoveredTypes.All)`, generated serializer/reflection registration, and explicit OpenAPI export; see [FastEndpoints.Generator](fastendpoints-generator.md).
 - Emit structured request, authorization, and dependency telemetry outside secrets and bearer tokens. Do not log authorization headers or request bodies by default.
+
+### Operational signals and troubleshooting
+
+Use ASP.NET Core request metrics/traces and structured application logs to observe route, method, status, duration, validation rejection, and downstream dependency outcomes. Keep route templates bounded; never attach bearer tokens, raw bodies, passwords, or sensitive claims.
+
+| Symptom | Likely cause and diagnostic | Safe corrective action | Retry? |
+| --- | --- | --- | --- |
+| Endpoint returns 404 or is absent at startup | Endpoint assembly was not discovered, generated types were omitted, or `UseFastEndpoints()` was not called; inspect startup registration and route inventory | Register the declaring assembly/generated discovered types and map middleware once | No |
+| Protected endpoint returns unexpected 401/403 | Authentication/authorization middleware order, scheme, claim, or endpoint policy mismatch; inspect sanitized auth diagnostics and endpoint metadata | Restore middleware order and align the policy/claim contract | Only after credentials or policy are corrected |
+| Binding/validation rejects a valid-looking request | DTO shape, content type, serializer option, validator, or route parameter differs from the contract; inspect validation errors without logging sensitive input | Correct the client contract or reviewed binding/validator configuration | Only after correcting input |
+| Latency or allocation rises after a release | Handler is buffering work, performing blocking I/O, or lost generated/AOT configuration; compare route-level traces and deployment settings | Stream/bound payloads, propagate cancellation, and restore the intended discovery/serializer path | Do not blindly retry non-idempotent work |
 
 ## Avoid
 

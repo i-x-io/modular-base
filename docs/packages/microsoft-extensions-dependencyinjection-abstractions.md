@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | DI contracts: `IServiceCollection`, `IServiceProvider`, `ServiceDescriptor`, and registration extensions | Approved library-facing abstraction |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, public DI contract, or extension-registration convention change |
+
 ## Decision and scope
 
 Reference this package when a reusable library needs to expose registration extensions or consume standard DI contracts without depending on the default container. It does not implement a container or host.
@@ -68,9 +72,15 @@ Document every registration, lifetime, required configuration, and optional depe
 
 Use an options or feature-specific builder when configuration grows beyond a few parameters. Keep implementation types internal where possible and expose only the service contract. Test the extension against the supported concrete container, including repeated registration if idempotence is promised and consumer replacement if defaults are advertised as replaceable.
 
+### Upgrade and rollback
+
+Keep this contract package compatible with the concrete DI implementation selected by the consuming host. On upgrade, rebuild public registration extensions, verify their binary/API compatibility, and run composition tests with the concrete container. No state migration is required. Roll back the library and its consumers together when a newly exposed contract cannot be supported by the deployed host.
+
 ## Integration with the catalog
 
 The default implementation is [DependencyInjection](microsoft-extensions-dependencyinjection.md). [Hosting](microsoft-extensions-hosting.md) owns the root provider. Use [Options](microsoft-extensions-options.md) for library configuration rather than injecting raw configuration into all services.
+
+Use the [abstraction-versus-runtime selection guide](../package-guidance/package-selection.md#microsoft-abstractions-and-runtime-implementations) before adding a concrete implementation dependency. See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-dependencyinjection-abstractions).
 
 ## Security, performance, AOT, trimming, and operations
 

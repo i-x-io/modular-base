@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | Binds `IConfiguration` sections to typed objects | Approved at composition boundaries |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, binder/source-generator, or trimming/AOT behavior change |
+
 ## Decision and scope
 
 Use the binder to map hierarchical configuration into a typed configuration or options object. It complements `Configuration.Abstractions`; it neither validates values nor secures configuration sources. Bind at the composition boundary, then expose an options interface or a validated immutable value to application code.
@@ -43,6 +47,15 @@ public sealed class WorkerSettings
 
 `ErrorOnUnknownConfiguration` is useful where configuration drift must fail fast, but it does not replace required-field, range, or cross-field validation.
 
+### Binding reference
+
+| Setting/API | Purpose | Default behavior | Production guidance | Reload | Sensitivity | Failure behavior |
+| --- | --- | --- | --- | --- | --- | --- |
+| `Get<T>()` | Creates and binds a new object | Returns `null` when no value can be created | Use for one-time composition; validate the result | None by itself | Bound object can contain secrets | Conversion errors can throw |
+| `Bind(instance)` | Populates an existing object | Binds matching keys | Keep off hot paths and validate afterward | None by itself | Same as source configuration | Partial objects are possible without validation |
+| `ErrorOnUnknownConfiguration` | Rejects unknown keys and strict conversion failures | `false` | Enable where configuration drift must fail deployment | Applies at each bind | Error messages should avoid values | Unknown or unconvertible input throws `InvalidOperationException` |
+| Binding source generator | Replaces supported reflection binding at compile time | Disabled unless enabled by project property | Enable for trim/AOT-sensitive applications and test the published artifact | Build-time | No change | Unsupported call shapes may still require reflection or fail publish/runtime checks |
+
 ## Enterprise implementation guidance
 
 - Name configuration sections independently from CLR types so section names remain stable during refactoring.
@@ -50,9 +63,15 @@ public sealed class WorkerSettings
 - Validate required values, ranges, cross-field constraints, nested objects, and collection cardinality after binding.
 - Decide whether unknown keys should be forward-compatible or rejected. When strict binding is enabled, malformed conversions and unknown properties can throw `InvalidOperationException`; exercise that failure path in deployment tests.
 
+### Upgrade and rollback
+
+Upgrade with `Configuration.Abstractions` and the options/configuration integration packages. Re-run strict-binding tests and publish the exact trimmed or Native AOT artifact because generated and reflection binding behavior can change independently of source compilation. No persistent-data migration is required. Roll back the package set and deployment artifact together; restore the previous configuration shape if the new deployment introduced keys older binaries reject.
+
 ## Integration with the catalog
 
 Consumes [Configuration.Abstractions](microsoft-extensions-configuration-abstractions.md) and commonly feeds [Options](microsoft-extensions-options.md). [Options.ConfigurationExtensions](microsoft-extensions-options-configurationextensions.md) supplies the DI integration.
+
+The [options validation, reload, and health recipe](../recipes/options-validation-reload-health.md) shows the complete composition. See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-configuration-binder).
 
 ## Security, performance, AOT, trimming, and operations
 

@@ -1,5 +1,7 @@
 # Microsoft.EntityFrameworkCore
 
+> **Owner:** `IX` · **Last reviewed:** `2026-07-27` · **Review trigger:** EF Core, target-framework, Npgsql provider, or migration/deployment-policy change.
+
 ## Catalog entry
 
 | Package | Exact version | Role | Status |
@@ -60,9 +62,13 @@ Pin EF runtime, relational, design, Npgsql, conventions, and exception assets to
 
 Use optimistic concurrency tokens where conflicting updates matter. Keep transaction scopes short. When a retrying execution strategy and explicit transaction are both required, execute the entire transaction delegate through `Database.CreateExecutionStrategy()` so it can replay as one unit; ensure external side effects are idempotent or occur after commit.
 
+### Upgrade and rollback
+
+Move `Microsoft.EntityFrameworkCore`, `Relational`, `Design`, `dotnet-ef`, the Npgsql provider, conventions, and exception processor as a validated set; do not mix EF patch/major lines casually. Review EF and provider breaking changes, regenerate a migration from an unchanged model to detect metadata drift, compile queries, and run PostgreSQL migrations, transactions, concurrency, and SQL-shape tests. Deploy compatible schema changes before code that requires them. Rollback means redeploying the prior application/package set and using the migration's rehearsed down, forward-fix, or restore path; restoring package pins alone cannot undo applied DDL or data transformations.
+
 ## Integration with the catalog
 
-Relational APIs are [Microsoft.EntityFrameworkCore.Relational](microsoft-entityframeworkcore-relational.md); tooling is [Microsoft.EntityFrameworkCore.Design](microsoft-entityframeworkcore-design.md); test-only fake storage is [Microsoft.EntityFrameworkCore.InMemory](microsoft-entityframeworkcore-inmemory.md). Query abstractions belong in [Ardalis.Specification](ardalis-specification.md).
+Relational APIs are [Microsoft.EntityFrameworkCore.Relational](microsoft-entityframeworkcore-relational.md); tooling is [Microsoft.EntityFrameworkCore.Design](microsoft-entityframeworkcore-design.md); test-only fake storage is [Microsoft.EntityFrameworkCore.InMemory](microsoft-entityframeworkcore-inmemory.md). Query abstractions belong in [Ardalis.Specification](ardalis-specification.md). Use [relational test fidelity](../package-guidance/package-selection.md#relational-test-fidelity) and [PostgreSQL data-access selection](../package-guidance/package-selection.md#postgresql-data-access) to choose the real-provider boundary; see the [EF Core/PostgreSQL recipe](../recipes/efcore-npgsql-exception-mapping.md) and [supply-chain entry](../package-guidance/supply-chain.md#microsoft-entityframeworkcore).
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -71,6 +77,10 @@ Parameterize values through LINQ/EF APIs; use parameterized overloads for raw SQ
 Avoid lazy-loading-driven N+1 queries and unbounded loading. Measure query count, duration, rows, allocation, and plans; add indexes based on observed filter/order shapes. Use `AsSplitQuery` only after measuring cartesian explosion. Reuse contexts only through supported DI/pooling patterns and clear state between pooled requests.
 
 EF's NativeAOT and query-precompilation support is documented as experimental and not suited to production. Dynamic queries and some value converters are unsupported, generated code can be large, and provider support is required. Treat every trimming/AOT warning as actionable and verify a published artifact with the actual Npgsql provider and workload.
+
+Operationally, use EF's `Microsoft.EntityFrameworkCore.*` log categories, `DiagnosticSource` events, interceptors, and Npgsql telemetry to observe query duration/count, save failures, optimistic-concurrency conflicts, retries, and transaction outcomes. Keep `EnableSensitiveDataLogging()` and detailed provider errors disabled in production unless an approved, time-bounded diagnostic procedure protects the output.
+
+For repeated timeouts, correlate EF command logs/spans with Npgsql pool and server signals, inspect generated SQL/plans, and distinguish pool wait, lock wait, network failure, and slow execution before tuning. A context-concurrency error indicates overlapping operations on one `DbContext`; await the first operation or create independent contexts rather than retrying it.
 
 ## Avoid
 
@@ -99,4 +109,6 @@ Accessed 2026-07-27.
 - [Applying EF Core migrations](https://learn.microsoft.com/ef/core/managing-schemas/migrations/applying)
 - [EF Core connection resiliency](https://learn.microsoft.com/ef/core/miscellaneous/connection-resiliency)
 - [EF Core performance guidance](https://learn.microsoft.com/ef/core/performance/)
+- [EF Core logging, events, and diagnostics](https://learn.microsoft.com/ef/core/logging-events-diagnostics/)
+- [EF Core simple logging and sensitive-data warning](https://learn.microsoft.com/ef/core/logging-events-diagnostics/simple-logging)
 - [EF NativeAOT and precompiled queries](https://learn.microsoft.com/ef/core/performance/nativeaot-and-precompiled-queries)

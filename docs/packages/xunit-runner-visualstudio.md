@@ -8,6 +8,9 @@
 | Pinned version | `3.1.5` |
 | Status | Approved test-only dependency for the VSTest alternative |
 | Role | Visual Studio/VSTest adapter for xUnit v3 discovery and execution |
+| Owner | IX |
+| Last reviewed | 2026-07-27 |
+| Review trigger | Adapter, xUnit v3, `Microsoft.NET.Test.Sdk`, Visual Studio/VSTest, target-framework, or runner-selection change |
 
 ## Decision and scope
 
@@ -44,9 +47,13 @@ Upgrade the framework variant, adapter, and `Microsoft.NET.Test.Sdk` as one comp
 
 Keep VSTest and MTP projects in separate run configurations. Their extension points and CLI arguments differ, even though both can be launched through `dotnet test`.
 
+### Upgrade and rollback
+
+Upgrade the adapter with the validated xUnit framework and `Microsoft.NET.Test.Sdk` set, then compare discovered/executed counts in CLI and every supported Visual Studio version, TRX output, filtering, and parallel execution. Confirm the adapter remains private to the test project. Roll back all compatibility-set pins and adapter configuration together if discovery or execution changes; successful compilation alone is not a rollback check.
+
 ## Integration with the catalog
 
-Pair with [Microsoft.NET.Test.Sdk](microsoft-net-test-sdk.md), `xunit.v3`, and optionally [coverlet.collector](coverlet-collector.md) in a run configuration whose active platform is VSTest. It is an alternative run path to the preferred [xunit.v3](xunit-v3.md) MTP setup; do not put both platform modes in one run configuration.
+Pair with [Microsoft.NET.Test.Sdk](microsoft-net-test-sdk.md), `xunit.v3`, and optionally [coverlet.collector](coverlet-collector.md) in a run configuration whose active platform is VSTest. It is an alternative run path to the preferred [xunit.v3](xunit-v3.md) MTP setup; do not put both platform modes in one run configuration. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage) and the [xunit.runner.visualstudio supply-chain entry](../package-guidance/supply-chain.md#xunit-runner-visualstudio).
 
 ## Security, performance, AOT, trimming, and operations
 

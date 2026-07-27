@@ -4,6 +4,10 @@
 
 `Microsoft.CodeAnalysis.BannedApiAnalyzers` **5.6.0** — universal catalog analyzer supplied through a shared `GlobalPackageReference` with private analyzer assets.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+- **Review trigger:** Review when the analyzer pin, `BannedSymbols.txt` grammar/content, generated-code policy, or approved replacement APIs change.
+
 ## Decision and scope
 
 Use the analyzer to enforce the repository's explicit forbidden-symbol policy. The authoritative list is the root `BannedSymbols.txt`; no custom analyzer is needed for these rules. Violations are reported as RS0030, while duplicate list entries are reported as RS0031.
@@ -44,15 +48,26 @@ N:System.Reflection;Runtime reflection is prohibited in repository source.
 
 The upstream analyzer also recognizes `BannedSymbols.*.txt`, but this repository intentionally owns one root file. Its global config excludes generated code with `dotnet_banned_api_analyzer.exclude_generated_code = true`; repository source remains checked.
 
+| Setting or input | Catalog guidance |
+| --- | --- |
+| `BannedSymbols.txt` as `AdditionalFiles` | Include the single root policy in every project evaluation. |
+| `dotnet_banned_api_analyzer.exclude_generated_code` | Keep `true` for generated output; verify ordinary source remains analyzed. |
+| `dotnet_diagnostic.RS0030.severity` | Govern forbidden-symbol violations centrally; narrow exceptions require rationale and an expiry condition. |
+| Documentation-comment ID and message | Use an exact symbol ID plus an actionable approved replacement. |
+
 ## Enterprise implementation guidance
 
 For a new ban, first identify the exact documentation ID and an approved replacement. Add the policy message, build the entire repository, migrate all existing uses, and land the policy with the migration so CI never has an unexplained red interval. Test the replacement's important behavior, not only compilation.
 
 For existing codebases with debt, create a measured baseline outside this repository before promotion: inventory RS0030 locations, migrate bounded areas, then enable the ban only when the remaining scope is understood. A narrow source suppression is acceptable only for a reviewed exception with owner, rationale, and removal condition. This repository's warnings-as-errors policy makes enabled RS0030 warnings fail CI.
 
+### Upgrade and rollback
+
+Upgrade separately from policy-list edits so new analyzer behavior is distinguishable from new bans. Build the entire repository and test representative namespace, type, member, duplicate-entry, and generated-code cases; compare RS0030/RS0031 messages and locations. If parsing, host compatibility, or diagnostic behavior regresses, restore the `5.6.0` pin and lock-file entries without weakening `BannedSymbols.txt`. Roll back a policy entry only through its normal governance decision, never as a side effect of package rollback.
+
 ## Integration with the catalog
 
-The package is globally installed alongside the other analyzer packages. `BannedSymbols.txt` is passed through `AdditionalFiles`; it is data consumed by the analyzer, not a source file governed by `.editorconfig` path sections. `ModularBase.globalconfig` owns repository-wide analyzer options, while `.editorconfig` can scope RS0030 severity to matching source. The separate dynamic-keyword and source-reflection checks in `Directory.Build.targets` are complementary MSBuild enforcement, not part of this NuGet package.
+The package is globally installed alongside the other analyzer packages. `BannedSymbols.txt` is passed through `AdditionalFiles`; it is data consumed by the analyzer, not a source file governed by `.editorconfig` path sections. `ModularBase.globalconfig` owns repository-wide analyzer options, while `.editorconfig` can scope RS0030 severity to matching source. The separate dynamic-keyword and source-reflection checks in `Directory.Build.targets` are complementary MSBuild enforcement, not part of this NuGet package. Review the analyzer's [supply-chain record](../package-guidance/supply-chain.md#microsoft-codeanalysis-bannedapianalyzers) before upgrading it.
 
 ## Security, performance, AOT, trimming, and operations
 

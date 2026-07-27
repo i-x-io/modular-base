@@ -38,8 +38,11 @@ an intended part of that baseline.
 
 ### Package pages
 
-The 84 existing package pages remain the authoritative package-specific
-references. Each page continues to use this exact H2 order:
+The implementation baseline contains 89 external catalog packages (84
+`PackageVersion` entries and five `GlobalPackageReference` entries) plus the
+repository-produced `IX.Modularity.Analyzers` package, for 90 package pages in
+total. These pages remain the authoritative package-specific references. Each
+page continues to use this exact H2 order:
 
 1. `Catalog entry`
 2. `Decision and scope`
@@ -138,7 +141,8 @@ repository.
 ### Supply-chain reference
 
 Create one catalog-wide supply-chain reference containing objective,
-source-backed metadata for every catalog package:
+source-backed metadata for all 89 external catalog packages plus a separate
+repository-controlled entry for the produced `IX.Modularity.Analyzers` package:
 
 - Package ID and pinned version.
 - License.

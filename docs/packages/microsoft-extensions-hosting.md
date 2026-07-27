@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | Generic Host implementation, configuration, DI, lifetime, and hosted-service integration | Approved application host implementation |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, Generic Host defaults, lifecycle, or shutdown behavior change |
+
 ## Decision and scope
 
 Use the Generic Host as the application composition and lifecycle boundary for services, workers, and console applications. It implements the hosting contracts and owns the root DI provider, configuration pipeline, logging, and graceful shutdown coordination.
@@ -78,21 +82,54 @@ public sealed class QueueWorker(
 
 Use `StartAsync` for short initialization, `ExecuteAsync` for long-running work, and `StopAsync` only for bounded drain/checkpoint logic. `RunAsync` keeps the process alive until shutdown; console lifetime translates `CTRL+C` and `SIGTERM` into the host stop sequence.
 
+### Host configuration reference
+
+| Setting | Purpose | Default behavior | Production guidance | Reload | Sensitivity | Failure behavior |
+| --- | --- | --- | --- | --- | --- | --- |
+| Environment name | Selects environment-specific behavior/configuration | Platform/host default | Set explicitly in deployment and validate allowed names | Restart | Can reveal deployment topology | Wrong value loads unintended configuration |
+| Content root | Resolves content files | Host builder chooses a default | Use an explicit deployment-owned path when files are required | Restart | Path may reveal filesystem layout | Missing files fail at their point of use |
+| `HostOptions.ShutdownTimeout` | Bounds graceful stop | Framework default | Keep below orchestrator termination grace while allowing safe cleanup | Options-based but operationally restart-controlled | Not sensitive | Remaining work is abandoned when the process is terminated after the limit |
+| `HostOptions.BackgroundServiceExceptionBehavior` | Defines host response to unhandled background exceptions | Stops the host | Keep stop-host behavior unless an explicit supervisor owns restart | Restart-controlled | Not sensitive | Unhandled exception stops the host or is ignored according to policy |
+
 ## Enterprise implementation guidance
 
 Set the environment, configuration sources, logging, shutdown period, and host lifetime intentionally. Treat startup as a validation gate: options and required dependencies should fail clearly before accepting work. Coordinate background consumers so stop drains or checkpoints according to each data-delivery contract.
 
 Choose a failure policy for each worker. An unhandled `BackgroundService` exception is an operational event, not a retry strategy; log enough correlation data, make work idempotent where delivery can repeat, and let the deployment supervisor restart the process when that is the declared policy. Align `HostOptions.ShutdownTimeout` with the orchestrator's termination grace period and stop accepting new work before draining in-flight work.
 
+### Upgrade and rollback
+
+Upgrade Hosting with its abstractions and the Microsoft.Extensions packages composed by the host. Re-run configuration precedence, environment selection, DI validation, hosted-service ordering, startup failure, graceful-stop, and shutdown-timeout tests. Coordinate any default change with deployment probes and termination grace periods. No data migration is required. Roll back the full application artifact if lifecycle or default composition regresses.
+
 ## Integration with the catalog
 
 [Hosting.Abstractions](microsoft-extensions-hosting-abstractions.md) is appropriate for reusable hosted-service libraries. [DependencyInjection](microsoft-extensions-dependencyinjection.md), [Options](microsoft-extensions-options.md), and [Logging.Abstractions](microsoft-extensions-logging-abstractions.md) form the standard host stack.
+
+Use the [abstraction-versus-runtime selection guide](../package-guidance/package-selection.md#microsoft-abstractions-and-runtime-implementations) for host ownership. See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-hosting).
 
 ## Security, performance, AOT, trimming, and operations
 
 Do not execute unbounded blocking work in host startup. Enforce cancellation in background loops and do not swallow service failures; choose explicit restart/exit policy. Avoid reflection-driven discovery in startup paths for trimmed/AOT deployment. Test SIGTERM/CTRL+C shutdown, readiness transition, and process exit behavior in the deployment environment.
 
 The host stack itself supports trimming-friendly static composition, but registrations, configuration binding, serializers, and plugin discovery added by the application may introduce warnings. Publish and smoke-test the actual RID-specific artifact. Emit startup, ready, stopping, and stopped telemetry; monitor worker throughput, failure count, queue depth, and shutdown duration without logging secrets or whole payloads.
+
+### Operational signals
+
+| Signal | Meaning/action | Privacy/cardinality rule |
+| --- | --- | --- |
+| Host started/stopping/stopped lifecycle events | Establishes deployment and graceful-shutdown timing | Include deployment-safe instance identity only |
+| Hosted-service startup duration/failure | Identifies services delaying readiness or failing host startup | Use stable service type/category; redact configuration values |
+| Background-service unhandled exception | Indicates lost work and, by default, host termination | Preserve exception and stable worker name; omit message payloads |
+| Shutdown duration and unfinished-work count | Validates termination grace and drain policy | Use bounded work-type labels, not job/customer IDs |
+
+### Troubleshooting
+
+| Symptom | Likely causes and diagnostics | Safe corrective action | Retry suitability |
+| --- | --- | --- | --- |
+| Host never becomes ready | Blocking/slow `StartAsync`, invalid startup options, DI failure, or dependency work before readiness; inspect startup logs and stacks | Move long work after startup, validate config early, and bound dependency initialization | Let the supervisor restart only after fixing deterministic startup failures |
+| Host exits after worker exception | Unhandled `BackgroundService` exception with stop-host behavior; inspect the preserved exception and failed work type | Fix/handle only expected failures, make work resumable, and retain stop-host supervision | Retry individual safe work through an owned policy; do not swallow fatal loops |
+| Shutdown exceeds grace period | Service ignores cancellation, long in-flight work, deadlock, or timeout mismatch | Propagate stopping tokens, checkpoint work, and align shutdown timeout below platform grace | Restart cannot safely replace missing checkpoint/idempotency |
+| Environment-specific config is wrong | Incorrect environment name, provider order, or deployment variables | Correct deployment configuration and restart the immutable artifact | Retry without config change repeats the failure |
 
 ## Avoid
 

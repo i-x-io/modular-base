@@ -6,6 +6,10 @@
 | --- | --- | --- |
 | `10.0.10` | Configuration contracts such as `IConfiguration` and `IConfigurationSection` | Approved foundation abstraction |
 
+| Documentation owner | Last reviewed | Review trigger |
+| --- | --- | --- |
+| IX | 2026-07-27 | Package-version, target-framework, configuration-provider precedence, or platform configuration change |
+
 ## Decision and scope
 
 Use these contracts at application boundaries to consume hierarchical configuration independent of its provider. This is an abstraction package, not a provider or object binder. Providers and host builders supply the configuration root; consumers should normally receive a narrowly scoped options type instead.
@@ -40,6 +44,14 @@ public sealed class PaymentEndpoint(IConfiguration configuration)
 
 This package supplies contracts and section/key access only. It does not add JSON, environment-variable, secret-store, or other providers, and it does not bind sections to objects.
 
+### Configuration contract reference
+
+| Concern | Purpose | Default behavior | Production guidance | Reload | Sensitivity | Failure behavior |
+| --- | --- | --- | --- | --- | --- | --- |
+| Provider order | Resolves duplicate keys | Later providers normally win | Document the authoritative source and override order | Provider-specific | Can select secret-bearing values | Wrong order silently selects an unintended value |
+| Required section/key | Defines presence requirements | Indexer returns `null` for missing keys | Use `GetRequiredSection`, then parse and validate leaves | New reads observe provider state | Key names can disclose topology | Missing required section throws; missing indexer key returns `null` |
+| Reload support | Announces provider changes | Not guaranteed by the abstraction | Enable only for settings with safe application semantics | Provider/change-token-specific | Reload callbacks must not log values | Consumers may remain stale when the provider cannot reload |
+
 ## Enterprise implementation guidance
 
 - Make provider precedence explicit: providers added later normally override values from earlier providers for the same key. Document which source is authoritative for each setting.
@@ -47,9 +59,15 @@ This package supplies contracts and section/key access only. It does not add JSO
 - Use colon-delimited keys (`Feature:Limit`) as the portable hierarchy contract; environment-variable providers commonly map `__` to `:`.
 - Give every operational setting an owner, safe default, validation rule, and reload expectation. Treat missing and empty values as different states when the domain does.
 
+### Upgrade and rollback
+
+Keep this abstraction aligned with the host and concrete configuration packages used by the application. On upgrade, compile reusable libraries against the new contracts and exercise provider precedence, missing-section, reload-token, and environment-override behavior. No data migration is required. Roll back the package set together if a contract or provider interaction regresses; configuration source contents remain unchanged.
+
 ## Integration with the catalog
 
 [Configuration.Binder](microsoft-extensions-configuration-binder.md) turns sections into objects. [Options.ConfigurationExtensions](microsoft-extensions-options-configurationextensions.md) binds sections into DI-managed options. [Hosting](microsoft-extensions-hosting.md) provides the standard application configuration pipeline.
+
+Use the [abstraction-versus-runtime selection guide](../package-guidance/package-selection.md#microsoft-abstractions-and-runtime-implementations) to decide whether a direct reference belongs in a reusable library or only at the composition root. See the [supply-chain entry](../package-guidance/supply-chain.md#microsoft-extensions-configuration-abstractions).
 
 ## Security, performance, AOT, trimming, and operations
 

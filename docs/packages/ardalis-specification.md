@@ -1,5 +1,7 @@
 # Ardalis.Specification
 
+> **Owner:** `IX` · **Last reviewed:** `2026-07-27` · **Review trigger:** Package version, target framework, Ardalis evaluator contract, or EF Core query-pipeline change.
+
 ## Catalog entry
 
 | Package | Exact version | Role | Status |
@@ -55,9 +57,13 @@ Treat each specification as production query code:
 
 Do not attempt to merge arbitrary specifications. The upstream FAQ notes that includes, ordering, paging, projections, caching, and post-processing can conflict; create one explicit specification for the workflow instead. Cache tags are metadata for a cache-capable repository or decorator, not a cache implementation supplied by the core package.
 
+### Upgrade and rollback
+
+Upgrade the core and EF adapter together when both are used. Before changing `9.3.1`, compile every custom specification/evaluator and regression-test criteria, include ordering, projections, paging, cache metadata, and post-processing; then execute representative specifications through the pinned EF/Npgsql stack. This package has no schema or persistent-state migration. Roll back by restoring both Ardalis pins and redeploying the prior application artifact; do not roll back only the core package while leaving a newer adapter loaded.
+
 ## Integration with the catalog
 
-Use [Ardalis.Specification.EntityFrameworkCore](ardalis-specification-entityframeworkcore.md) only in EF infrastructure. Align execution with [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md), the Npgsql provider catalog entry, and [MR.EntityFrameworkCore.KeysetPagination](mr-entityframeworkcore-keysetpagination.md) for seek paging.
+Use [Ardalis.Specification.EntityFrameworkCore](ardalis-specification-entityframeworkcore.md) only in EF infrastructure. Align execution with [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md), the Npgsql provider catalog entry, and [MR.EntityFrameworkCore.KeysetPagination](mr-entityframeworkcore-keysetpagination.md) for seek paging. See the package-selection guide's [PostgreSQL data-access boundary](../package-guidance/package-selection.md#postgresql-data-access) and the [supply-chain entry](../package-guidance/supply-chain.md#ardalis-specification).
 
 ## Security, performance, AOT, trimming, and operations
 

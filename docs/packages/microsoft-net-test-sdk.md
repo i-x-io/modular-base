@@ -8,6 +8,9 @@
 | Pinned version | `18.8.1` |
 | Status | Approved test-only dependency for the VSTest alternative |
 | Role | VSTest host integration for test discovery and execution |
+| Owner | IX |
+| Last reviewed | 2026-07-27 |
+| Review trigger | Test SDK, .NET SDK/VSTest runner, xUnit adapter, target-framework, or CI test-host change |
 
 ## Decision and scope
 
@@ -42,9 +45,13 @@ Keep the test SDK, xUnit framework variant, adapter, and collectors on a tested 
 
 Use repository-relative result locations, avoid machine-specific paths, and separate VSTest jobs from MTP jobs because their options and extension models differ.
 
+### Upgrade and rollback
+
+Treat `Microsoft.NET.Test.Sdk`, `xunit.runner.visualstudio`, the xUnit framework, and any VSTest collector as a compatibility set. After changing the central pins, compare discovered and executed test counts from CLI and supported IDEs, exercise TRX publication, and run a bounded diagnostic invocation for a known discovery failure. Roll back the complete validated set if the host fails to start, tests disappear, or result contracts change; this test-only package requires no application migration.
+
 ## Integration with the catalog
 
-This SDK is required by the VSTest alternative described in [xunit.runner.visualstudio](xunit-runner-visualstudio.md), with optional VSTest coverage from [coverlet.collector](coverlet-collector.md). It is not needed by the preferred MTP run in [xunit.v3](xunit-v3.md). The repository-wide .NET 10 `global.json` selects MTP, so a VSTest alternative requires an intentional runner-selection change and a separately validated run configuration rather than package references alone.
+This SDK is required by the VSTest alternative described in [xunit.runner.visualstudio](xunit-runner-visualstudio.md), with optional VSTest coverage from [coverlet.collector](coverlet-collector.md). It is not needed by the preferred MTP run in [xunit.v3](xunit-v3.md). The repository-wide .NET 10 `global.json` selects MTP, so a VSTest alternative requires an intentional runner-selection change and a separately validated run configuration rather than package references alone. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage) and the [Microsoft.NET.Test.Sdk supply-chain entry](../package-guidance/supply-chain.md#microsoft-net-test-sdk).
 
 ## Security, performance, AOT, trimming, and operations
 

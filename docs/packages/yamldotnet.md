@@ -4,6 +4,10 @@
 
 `YamlDotNet` **18.1.0** — direct catalog package; YAML parser/emitter and object serialization/deserialization library with a native `net10.0` asset. The catalog owns the version for C# 14 projects.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+**Review trigger:** `YamlDotNet` version changes, target-framework changes, or serializer/parser default and security-limit changes.
+
 ## Decision and scope
 
 Use for controlled YAML configuration, documents, and interchange where YAML is required. YAML parsed from untrusted parties needs a dedicated input, schema, and resource policy. Deserialization creates typed objects; it does not provide semantic validation or make a document trustworthy.
@@ -50,13 +54,40 @@ Use a separately configured `SerializerBuilder` for output, usually with the sam
 
 Deserialize into narrow DTOs, run structural checks, validate with `fluentvalidation.md`, and only then map to domain objects. Bound bytes before parsing and configure `WithMaximumRecursion(...)` for the workload; define policies for aliases, duplicate keys, multiple documents, unknown properties, tags, and type converters. Include file/line context in operator-facing errors while redacting document values and secrets. For configuration, parse and validate a candidate fully before atomically replacing the last known good snapshot.
 
+### Configuration reference
+
+| Setting | Purpose | Default behavior | Production guidance | Reload | Sensitive | Failure behavior |
+| --- | --- | --- | --- | --- | --- | --- |
+| Naming convention | Maps YAML keys to CLR members | Library member naming | Fix one convention per contract | Rebuild serializer | No | Keys do not bind as intended |
+| `WithDuplicateKeyChecking()` | Rejects duplicate mapping keys | Must be explicitly enabled | Enable for configuration/security-sensitive input | Rebuild deserializer | No | Parse fails with location context |
+| `WithEnforceRequiredMembers()` / `WithEnforceNullability()` | Enforces DTO contract | Must be explicitly enabled | Enable for strict configuration DTOs | Rebuild deserializer | No | Deserialization fails before activation |
+| `IgnoreUnmatchedProperties()` | Allows unknown keys | Unknown properties fail by default | Enable only for an explicit forward-compatible import contract | Rebuild deserializer | No | Unknown keys are silently ignored when enabled |
+| `WithMaximumRecursion(...)` | Bounds nesting | Library-defined limit | Set from a tested workload/input policy | Rebuild serializer/deserializer | No | Excessive nesting is rejected |
+
+### Upgrade and rollback
+
+Review parser, naming, nullability, required-member, and security-limit release notes. Parse the full accepted/rejected fixture corpus with both versions and validate a candidate configuration before activation. Roll back the central pin while retaining the last known good configuration.
+
 ## Integration with the catalog
 
 Use `fluentvalidation.md` for semantic validation and `fluentresults.md` to represent expected configuration/document errors. Do not use `scrutor.md` scanning to discover arbitrary YAML target types. Keep secret resolution outside YAML deserialization so configuration files contain references rather than secret values where possible.
 
+See the [`YamlDotNet` supply-chain entry](../package-guidance/supply-chain.md#yamldotnet).
+
 ## Security, performance, AOT, trimming, and operations
 
 YAML aliases, deep nesting, numerous collection items, and large scalars require workload-specific limits. Avoid broad `object` graphs, attacker-controlled tags, and polymorphic type selection; register only narrowly scoped converters for known types. Treat emitted YAML as data requiring context-appropriate encoding if embedded elsewhere. Reflection-based object mapping can be trim/AOT-sensitive; publish-test every DTO, naming convention, attribute, and converter used in production. Monitor parse latency, rejection reasons, reload success, and retained configuration version without logging document bodies.
+
+Observe bytes, parse/validation latency, rejection reason, reload success/failure, active configuration version, and last-known-good age. Never record YAML bodies, secret values, unredacted scalar snippets, or file paths that expose tenant/user data.
+
+### Troubleshooting
+
+| Symptom | Likely cause | Diagnostic | Correction | Retry? |
+| --- | --- | --- | --- | --- |
+| Deserialization rejects a new key | Strict unmatched-property behavior or wrong naming convention | Inspect redacted key and parser location against schema/version | Update schema deliberately or use a separate tolerant import profile | No |
+| Duplicate/null/required member failure | Input violates strict DTO contract | Use location/type/member diagnostics without logging values | Correct source or approved DTO migration | No |
+| Reload leaves old configuration active | Candidate parse or semantic validation failed | Inspect reload result/version and redacted failure class | Fix candidate; preserve last known good snapshot | Retry after source changes |
+| CPU/memory spikes | Oversized/deep/alias-heavy input | Compare byte, nesting, collection, and latency limits | Reject earlier and tighten recursion/input policies | No |
 
 ## Avoid
 

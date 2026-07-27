@@ -6,6 +6,10 @@
 | --- | --- | --- | --- |
 | `FastEndpoints.Security` | `8.2.0` | FastEndpoints JWT issuance/configuration conveniences and generated access-control permissions | Centrally pinned; catalog-only until an API project consumes it |
 
+- Owner: IX
+- Last reviewed: 2026-07-27
+- Review trigger: FastEndpoints.Security/JWT bearer version, target framework, identity-provider claim contract, or authorization behavior changes.
+
 ## Decision and scope
 
 Use this package only when FastEndpoints-specific JWT or permission-generation conveniences are needed. ASP.NET Core authentication and authorization middleware remains authoritative for production token validation and policy execution.
@@ -71,12 +75,29 @@ For production integrations with an external identity provider, prefer explicit 
 
 A typical rollout is to define stable capability names, generate and review their codes, map identity-provider claims to those codes, require them on endpoints, then exercise anonymous, expired, malformed, insufficient, and sufficient-token cases in the integration suite.
 
+| Setting / method | Purpose | Default behavior | Production guidance | Reload / sensitivity / failure behavior |
+| --- | --- | --- | --- | --- |
+| `SigningKey` | Signs/validates locally issued symmetric tokens in the convenience path | Must be supplied for that path | Obtain from an approved secret provider; prefer external OIDC/OAuth issuance for federation | Treat as secret; key changes require a coordinated rotation and invalidate unmatched tokens |
+| `PermissionsClaimType` / `ScopeClaimType` | Selects claims read by endpoint authorization helpers | FastEndpoints conventions apply | Change only to match the issuer contract | Startup-only; mismatch yields authenticated callers with 403 responses |
+| `ScopeParser` | Parses multiple scopes from the configured claim | Built-in parsing convention | Override only for an issuer-specific, tested format | Startup-only; a parser change changes authorization semantics |
+| `PermissionsAll()` / `ScopesAll()` | Requires every listed capability | `Permissions()` / `Scopes()` use any-of behavior | Choose explicitly during authorization design | Endpoint metadata; wrong choice grants too much or denies valid callers |
+
+### Upgrade and rollback
+
+Upgrade this package with the FastEndpoints family and revalidate generated permission values, claim types/parsers, any-of/all-of semantics, token issuance helpers, and the ASP.NET Core authentication scheme. Coordinate any identity-provider mapping change before deploying the application.
+
+Rollback the package family and application authorization metadata together. Preserve prior permission-to-role mappings until the restored application is serving traffic; rotating signing material or claim contracts during rollback requires an explicit overlap window rather than silently accepting invalid tokens.
+
 ## Integration with the catalog
 
 - [FastEndpoints](fastendpoints.md) applies endpoint security metadata and defaults endpoints to protected.
 - [FastEndpoints.Generator](fastendpoints-generator.md) generates `AccessControl()` permission members.
 - [Microsoft.AspNetCore.Authentication.JwtBearer](microsoft-aspnetcore-authentication-jwtbearer.md) validates external access tokens.
+- Central transitive pinning is disabled: FastEndpoints.Security 8.2.0 declares JWT bearer 10.0.9 for `net10.0`. Keep the direct versionless JWT bearer reference when the application requires the catalog's 10.0.10 servicing pin or directly configures its APIs; choose exactly one registration owner for each bearer scheme.
 - [FastEndpoints.OpenApi](fastendpoints-openapi.md) describes JWT security in the API contract; it does not replace token validation.
+- Use the [API authentication ownership decision](../package-guidance/package-selection.md#api-authentication-ownership) before selecting this convenience layer instead of direct JWT bearer registration.
+- Follow the [FastEndpoints, JWT, OpenAPI, and Scalar recipe](../recipes/fastendpoints-jwt-openapi-scalar.md) for the complete secure pipeline.
+- Review [FastEndpoints.Security supply-chain metadata](../package-guidance/supply-chain.md#fastendpoints-security) before approval or upgrade.
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -85,6 +106,17 @@ A typical rollout is to define stable capability names, generate and review thei
 - Keep scope and permission claim parsing deterministic; a custom parser changes authorization semantics.
 - Keep authorization decisions server-side. Token contents are caller-controlled until signature and validation succeed, and OpenAPI declarations do not enforce access.
 - Never log tokens, claims with sensitive data, or signing keys. Record only non-sensitive authorization outcomes and correlation IDs.
+
+### Operational signals and troubleshooting
+
+Monitor bounded counts of authentication failures, authorization denials, and endpoint policy names; distinguish 401 from 403. Never record bearer tokens, signing keys, complete claim sets, or permission values that reveal sensitive tenancy/business data.
+
+| Symptom | Likely cause and diagnostic | Safe corrective action | Retry? |
+| --- | --- | --- | --- |
+| Every protected call returns 401 | Authentication scheme/signing configuration or middleware order is wrong; inspect sanitized handler diagnostics | Restore the selected scheme, trusted keys/issuer, and middleware order | Only after obtaining/configuring a valid token |
+| Validly authenticated caller gets 403 | Claim type, parser, permission mapping, or any/all semantics differs from the issuer contract | Align the reviewed claim mapping or caller entitlement | Only after entitlement/configuration changes |
+| `AccessControl()` appears to have no effect | The call generated a member but did not apply it to the endpoint | Use `Apply.ToThisEndpoint` or explicitly require the generated permission | No |
+| Tokens fail during key rotation | Issuer and validator do not share an overlap window or metadata/key refresh has not completed | Use a coordinated rotation with both valid keys available for the planned overlap | Retry after trusted metadata refresh, with bounded backoff |
 
 ## Avoid
 

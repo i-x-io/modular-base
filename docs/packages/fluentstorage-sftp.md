@@ -8,6 +8,9 @@
 | Pinned version | `8.0.16` |
 | Role | SSH.NET-backed SFTP implementation of FluentStorage `IStore` |
 | Status | Approved for managed SFTP interchange; isolate it from object-store abstractions when protocol semantics matter |
+| Owner | IX |
+| Last reviewed | 2026-07-27 |
+| Review trigger | Any `FluentStorage.SFTP`, SSH.NET, target-framework, server SSH policy/host key, cipher/KEX, retry, path, quota, or partner-protocol change |
 
 ## Decision and scope
 
@@ -23,16 +26,17 @@ Reference the provider without a version; the central catalog supplies `8.0.16` 
 </ItemGroup>
 ```
 
-Prefer private-key authentication. This factory example configures authentication only; host-key verification is a separate requirement discussed below:
+Prefer private-key authentication. The public FluentStorage factory does not expose host-key validation for every client it creates, so the following authentication-only example is **local-development/test only**. It must not be copied into a production integration:
 
 ```csharp
 using FluentStorage;
 using FluentStorage.Storage;
 using Renci.SshNet;
 
-var key = new PrivateKeyFile("/run/secrets/sftp-client-key");
+// LOCAL/TEST ONLY: this factory does not establish production host-key trust.
+var key = new PrivateKeyFile("./test-fixtures/sftp-client-key");
 IStore store = SftpStorage.FromPrivateKey(
-    host: "sftp.partner.example",
+    host: "localhost",
     port: 22,
     username: "modular-base",
     keyFiles: key);
@@ -40,7 +44,15 @@ IStore store = SftpStorage.FromPrivateKey(
 
 The simple password factory is a compatibility option only; retrieve any password through a secret manager. Dispose the store at host shutdown and each returned input/read stream after the operation.
 
-Production setup must validate host identity. Obtain the expected SHA-256 host-key fingerprint over a separately trusted channel and treat a mismatch as a hard failure. SSH.NET exposes `HostKeyReceived`, but the pinned FluentStorage provider's `FromClient` factory also constructs a second `SshClient` from the same `ConnectionInfo` for command operations without exposing that client for a host-key handler. Do not claim complete host-key pinning through the public provider factory without an integration test of every used operation; use a reviewed native SSH.NET adapter or an upstream fix when this is a hard security requirement. Provision a restricted server account/root directory and test permissions for list, create, rename, read, and delete. Use the shared `SetObject`, `OpenRead`, `ListObjects`, and `DeleteObject` workflow from [FluentStorage](fluentstorage.md); for partner exchange, upload to a unique staging name and call `MoveObject(staging, final, overwrite: false, cancellationToken)` only after the upload stream is closed and any required checksum is verified.
+Production setup must validate host identity before any file operation. Obtain the expected SHA-256 host-key fingerprint over a separately trusted channel and treat a mismatch as a hard failure. SSH.NET exposes `HostKeyReceived`; when host-key pinning is required, use a reviewed native SSH.NET adapter that registers that handler on **every** SSH client it creates before connecting, or wait for an upstream FluentStorage fix that provides the same guarantee. Do not deploy the public FluentStorage factory as a production SFTP client until an integration test proves validation coverage for every operation the integration uses. Provision a restricted server account/root directory and test permissions for list, create, rename, read, and delete. Use the shared `SetObject`, `OpenRead`, `ListObjects`, and `DeleteObject` workflow from [FluentStorage](fluentstorage.md); for partner exchange, upload to a unique staging name and call `MoveObject(staging, final, overwrite: false, cancellationToken)` only after the upload stream is closed and any required checksum is verified.
+
+| Setting | Required/typical value | Operational note |
+| --- | --- | --- |
+| Host/port | Approved DNS name and explicit port (normally 22) | Validate routing and never bypass host identity because DNS resolves. |
+| Host-key fingerprint | Pinned SHA-256 fingerprint obtained out of band | Treat changes as a controlled partner/security event, not an automatic retry. |
+| Authentication | Private key plus secret-managed passphrase where needed | Restrict file permissions, rotation and server account scope; avoid password defaults. |
+| Remote root/staging | Authorized chroot/root and unique staging convention | Validate segments and publish only after close/checksum; do not expose arbitrary paths. |
+| Timeout/retry budget | SSH connect/operation timeout plus provider’s three attempts | Do not multiply retries; define reconciliation for upload/rename uncertainty. |
 
 ## Enterprise implementation guidance
 
@@ -49,11 +61,20 @@ Production setup must validate host identity. Obtain the expected SHA-256 host-k
 - This provider contains a retry policy that retries `Exception` three times in its source. Do not add a broad Polly/Microsoft resilience policy around every operation; doing so multiplies attempts and may repeat non-idempotent append or transfer work. Use a narrowly classified outer policy only with an explicit overall timeout and reconciliation plan.
 - Trace sanitized server identity, remote root/prefix, operation, bytes, duration, SSH failure class and correlation ID. Do not trace credentials, private-key material, full sensitive paths, or payloads.
 
+### Upgrade and rollback
+
+Upgrade `FluentStorage.SFTP`, core FluentStorage, and SSH.NET together. Compile the private-key/client construction and integration-test every used operation against the partner/server: allowed host-key algorithms, pinning coverage, authentication, chroot/path permissions, nested directories, large transfers, cancellation/timeouts, provider attempt count, staging rename, duplicate recovery, and server limits. Coordinate host-key or cipher/KEX policy changes separately from a library rollout.
+
+Rollback the prior package graph and SSH configuration without accepting an old/unknown host key or silently switching authentication. Drain transfers, retain staging files, and reconcile remote size/checksum/final-name state before replay. Files already published or partially uploaded are external state; follow the agreed partner retention/acknowledgement protocol rather than deleting them automatically.
+
 ## Integration with the catalog
 
 - Shared stream ownership, path construction, and general retry guidance: [FluentStorage](fluentstorage.md).
 - Object-store providers have materially different semantics: [AWS](fluentstorage-aws.md), [Azure Blobs](fluentstorage-azure-blobs.md), [GCP](fluentstorage-gcp.md), and [MinIO](fluentstorage-minio.md).
 - Coordinate outer resilience only with a documented budget alongside this provider’s built-in retry behavior.
+- Selection boundary: [Storage abstraction and provider SDKs](../package-guidance/package-selection.md#storage-abstraction-and-provider-sdks).
+- End-to-end workflow: [Portable storage upload and download](../recipes/fluentstorage-portable-transfer.md).
+- Provenance and dependency review: [FluentStorage.SFTP supply-chain entry](../package-guidance/supply-chain.md#fluentstorage-sftp).
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -62,6 +83,19 @@ SFTP has real remote directories. The provider ensures directories for relevant 
 For reliable partner delivery, write to a unique staging name, close/dispose the stream to complete the upload, then use an agreed server-side atomic rename/publish step where supported. Do not use `ObjectExists` then write as a concurrency control. Validate seek/range behavior, large file limits, timeout handling, and retry effects against the specific server. No trimming/Native-AOT guarantee is documented.
 
 SFTP servers vary in whether rename-without-overwrite is atomic and how they expose fsync/durability. Confirm the actual server behavior and partner pickup convention; do not promise atomic publication solely because `MoveObject` returned successfully. Keep recursive listings bounded because this provider walks directory trees client-side.
+
+### Operational signals
+
+Measure connection/authentication failures, operations, duration, bytes, provider attempts, active transfers, directory-list counts, staging-file age/count, rename conflicts, remote quota/free-space failures and unknown outcomes. Log only a sanitized server identity/root and failure class/correlation ID. Alert on host-key mismatch immediately and on sustained authentication/connectivity failures, latency, attempt multiplication, stale staging files, quota pressure, or acknowledgement backlog; never emit credentials, key material, payloads, or sensitive full paths.
+
+### Troubleshooting
+
+| Symptom | Likely cause | Diagnostic | Correction | Retry? |
+| --- | --- | --- | --- | --- |
+| Host-key mismatch/algorithm negotiation failure | Server key rotated unexpectedly or SSH policy/cipher/KEX incompatibility | Compare observed fingerprint/algorithm with the independently approved value and coordinated server change | Verify out of band, update pin/policy through change control, or restore compatible server policy | No automatic retry or trust-on-first-use |
+| Authentication failure | Wrong user/key/passphrase, expired/disabled account, or server auth policy change | Inspect sanitized SSH failure class and server auth logs; verify key fingerprint and account status | Rotate/restore the approved key/account/policy through secret management | No; retry after correction only |
+| Permission/no-such-path/quota error | Wrong chroot/root, missing parent, filesystem permissions, quota or disk full | Check sanitized remote root/path, account permissions, server free space/quota and SFTP status | Correct authorized path/permissions or capacity; create parents deliberately | No until condition is corrected |
+| Timeout during upload/rename | Network interruption or server completed work before response was lost | Inspect provider attempt count; compare staging/final remote size/checksum and partner acknowledgement | Reconcile and either resume/re-upload staging or publish exactly once per protocol | Only after state inspection proves the operation idempotent |
 
 ## Avoid
 

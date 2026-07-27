@@ -1,5 +1,7 @@
 # EntityFrameworkCore.Exceptions.PostgreSQL
 
+> **Owner:** `IX` · **Last reviewed:** `2026-07-27` · **Review trigger:** Package, EF Core, Npgsql provider, PostgreSQL error-mapping, or target-framework change.
+
 ## Catalog entry
 
 | Package | Exact version | Role | Status |
@@ -54,9 +56,13 @@ Keep constraints authoritative: a preflight uniqueness query may improve a messa
 
 Define unique/foreign-key constraints in the EF model when you need `ConstraintName` and `ConstraintProperties`; upstream notes those fields are not populated for indexes that exist only in the database or were created using `MigrationBuilder.Sql`. Map only explicitly recognized constraints to public application errors. Allow connectivity, authentication, syntax, timeout, serialization, and unknown failures to follow the normal infrastructure-failure path. If a deadlock or transient failure is retried, make the full unit of work idempotent and follow the Npgsql/EF execution-strategy policy.
 
+### Upgrade and rollback
+
+Upgrade this provider-specific processor with its compatible EF Core/Npgsql major line. Before promotion, trigger every application-mapped PostgreSQL constraint and deadlock case and verify the concrete exception type, metadata, public translation, and retry decision. The package owns no schema, but constraint renames in accompanying migrations can change diagnostic metadata. Roll back the package and application translation together; database migrations require their own forward-fix or restore procedure.
+
 ## Integration with the catalog
 
-Use with [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md), [Microsoft.EntityFrameworkCore.Relational](microsoft-entityframeworkcore-relational.md), and the cataloged Npgsql provider. Keep resulting application errors independent of [Ardalis specifications](ardalis-specification.md).
+Use with [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md), [Microsoft.EntityFrameworkCore.Relational](microsoft-entityframeworkcore-relational.md), and the cataloged Npgsql provider. Keep resulting application errors independent of [Ardalis specifications](ardalis-specification.md). See [PostgreSQL data-access selection](../package-guidance/package-selection.md#postgresql-data-access), the [EF Core/PostgreSQL recipe](../recipes/efcore-npgsql-exception-mapping.md), and the [supply-chain entry](../package-guidance/supply-chain.md#entityframeworkcore-exceptions-postgresql).
 
 ## Security, performance, AOT, trimming, and operations
 

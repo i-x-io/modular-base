@@ -2,6 +2,12 @@
 
 This index is maintained manually from [`Directory.Packages.props`](../../Directory.Packages.props). Keep it 1:1 with the central catalog: every catalog package must have exactly one entry here and one package guide.
 
+Supporting references are maintained outside this one-to-one package index:
+
+- [Package selection guide](../package-guidance/package-selection.md) — ownership boundaries and supported package combinations.
+- [Supply-chain reference](../package-guidance/supply-chain.md) — objective identity, dependency, lifecycle, advisory, and provenance facts.
+- [Illustrated recipes](../recipes/README.md) — explained multi-package composition workflows.
+
 ## Core utilities, validation, mail, and resilience.
 
 | Package | Pinned version | Status |

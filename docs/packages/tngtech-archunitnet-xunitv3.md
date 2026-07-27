@@ -8,6 +8,9 @@
 | Pinned version | `0.13.3` |
 | Status | Approved direct architecture-test-only dependency |
 | Role | ArchUnitNET assertions integrated with xUnit v3 |
+| Owner | IX |
+| Last reviewed | 2026-07-27 |
+| Review trigger | ArchUnitNET extension/core, xUnit v3, compiler/bytecode, target-framework, or architecture-policy change |
 
 ## Decision and scope
 
@@ -56,9 +59,13 @@ Treat each rule as an architectural contract with a clear owner and remediation 
 
 Run the authoritative architecture job in Debug: upstream recommends `dotnet test -c Debug` because Release optimization can alter bytecode details. A Release run may be supplementary, but it must not replace the Debug merge gate.
 
+### Upgrade and rollback
+
+Upgrade this extension only after confirming its transitive `TngTech.ArchUnitNET` core and xUnit v3 assertion dependencies remain compatible with the repository test stack. Re-run every rule in Debug and inject one known forbidden dependency to verify direction, scope, and diagnostic output; compiler or target-framework changes deserve the same check because the library analyzes binaries. Roll back the central pin and any rule API changes together. No production data migration is involved, but a rollback is incomplete until the intentional violation still fails.
+
 ## Integration with the catalog
 
-This extension belongs to the MTP-based [xunit.v3](xunit-v3.md) stack and does not replace the direct xUnit framework reference. Do not add a direct `TngTech.ArchUnitNET` reference merely because the extension brings it transitively. Use [AwesomeAssertions](awesomeassertions.md) for behavioral assertions; architecture rules are a different test boundary.
+This extension belongs to the MTP-based [xunit.v3](xunit-v3.md) stack and does not replace the direct xUnit framework reference. Do not add a direct `TngTech.ArchUnitNET` reference merely because the extension brings it transitively. Use [AwesomeAssertions](awesomeassertions.md) for behavioral assertions; architecture rules are a different test boundary. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage) and the [ArchUnitNET xUnit v3 supply-chain entry](../package-guidance/supply-chain.md#tngtech-archunitnet-xunitv3).
 
 ## Security, performance, AOT, trimming, and operations
 

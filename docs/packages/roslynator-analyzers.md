@@ -4,6 +4,10 @@
 
 `Roslynator.Analyzers` **4.15.0** — universal catalog analyzer supplied through a shared `GlobalPackageReference` with private analyzer assets.
 
+- **Owner:** IX
+- **Last reviewed:** 2026-07-27
+- **Review trigger:** Review when the analyzer pin, `RCSxxxx` catalog/default severities, generated-code scope, or overlap with SDK/Meziantou/Sonar policy changes.
+
 ## Decision and scope
 
 Use as a broad supplementary static-analysis set for future C# projects. It supplies `RCSxxxx` diagnostics and code fixes. It is not a formatter, a replacement for SDK analyzers, or a reason to introduce a custom analyzer for existing rule coverage; the separate Roslynator formatting analyzer and command-line tool are not part of this package decision.
@@ -38,15 +42,26 @@ dotnet_diagnostic.RCS1085.severity = none
 
 Prefer per-ID settings over `dotnet_analyzer_diagnostic.category-roslynator.severity` when adopting or baselining rules. Category-wide changes can enable or suppress a large, changing surface during an upgrade.
 
+| Setting | Catalog guidance |
+| --- | --- |
+| `dotnet_diagnostic.RCSxxxx.severity` | Preferred rule-specific control; document non-default suppressions. |
+| `dotnet_analyzer_diagnostic.category-roslynator.severity` | Avoid for upgrades and baselines because category membership changes. |
+| Path-scoped `.editorconfig` sections | Use only for a defined generated or compatibility boundary. |
+| `PrivateAssets="all"` | Preserve so analyzer assets stay build-only. |
+
 ## Enterprise implementation guidance
 
 Introduce rules in small batches: build the solution, export or record the emitted `RCSxxxx` IDs, identify overlap with SDK, Meziantou, and Sonar diagnostics, and choose one authoritative rule for each policy. Fix high-confidence correctness findings first. For subjective refactorings, start at suggestion, collect examples, then promote only after the team agrees on the intended semantics.
 
 Review each code fix as a source change and run affected tests; do not bulk-apply fixes across public APIs, expression trees, generated code, serialization models, or performance-sensitive paths without targeted review. CI needs no separate Roslynator CLI here: `dotnet build` loads the NuGet analyzer and the repository converts warnings to errors. If a team separately adopts `Roslynator.DotNet.Cli`, manage and pin that tool independently rather than assuming it is supplied by this analyzer package.
 
+### Upgrade and rollback
+
+Upgrade the global reference without a category-wide severity change. Build representative projects, diff `RCSxxxx` IDs/default severities and code-fix output, check rule overlap, and compare clean-build time. If the version adds unreviewed policy, produces unsafe fixes, breaks a supported compiler host, or causes unacceptable build cost, restore `4.15.0` and its lock-file resolution. Retain independently reviewed fixes, but remove upgrade-only suppressions and do not introduce the CLI as an alternate rollback path.
+
 ## Integration with the catalog
 
-Roslynator uses the same global analyzer integration as `meziantou-analyzer.md` and `sonaranalyzer-csharp.md`. SDK analyzer settings are in `Directory.Build.props`; `ModularBase.globalconfig` owns repository defaults; `.editorconfig` overrides matching source paths. Central package management owns version `4.15.0`, and `PrivateAssets=all` prevents the analyzer from flowing through produced packages.
+Roslynator uses the same global analyzer integration as `meziantou-analyzer.md` and `sonaranalyzer-csharp.md`. SDK analyzer settings are in `Directory.Build.props`; `ModularBase.globalconfig` owns repository defaults; `.editorconfig` overrides matching source paths. Central package management owns version `4.15.0`, and `PrivateAssets=all` prevents the analyzer from flowing through produced packages. Review its [supply-chain record](../package-guidance/supply-chain.md#roslynator-analyzers) before upgrading.
 
 ## Security, performance, AOT, trimming, and operations
 

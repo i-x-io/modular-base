@@ -1,5 +1,7 @@
 # MR.EntityFrameworkCore.KeysetPagination
 
+> **Owner:** `IX` · **Last reviewed:** `2026-07-27` · **Review trigger:** Package, EF Core/Npgsql translation, cursor contract, target-framework, or ordering/index-policy change.
+
 ## Catalog entry
 
 | Package | Exact version | Role | Status |
@@ -58,13 +60,19 @@ Make cursors opaque and validate ordering values, direction, sort definition, sc
 
 Calculate a total count from the filtered base query before calling `KeysetPaginate`, because pagination adds ordering and seek predicates. Create a composite index aligned to the stable filters and keyset order, for example `(tenant_id, published_at DESC, id DESC)`, then inspect PostgreSQL plans with representative values. A prebuilt definition should be a long-lived immutable field, not rebuilt per request.
 
+### Upgrade and rollback
+
+Before changing `1.6.0`, compile every prebuilt keyset definition against the pinned EF provider and regression-test generated SQL, duplicate/null sort values, both directions, projected references, and existing cursor versions. Do not silently change sort keys or cursor serialization in the same deployment. The package owns no schema, but an accompanying index change does. Roll back the application/package while retaining backward cursor decoding where the public contract requires it; reverse an index migration only through its reviewed database plan.
+
 ## Integration with the catalog
 
-Compose pagination on [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md) queries or [Ardalis specifications](ardalis-specification.md) before execution. Test PostgreSQL translation with [Microsoft.EntityFrameworkCore.Relational](microsoft-entityframeworkcore-relational.md); InMemory is not acceptable evidence.
+Compose pagination on [Microsoft.EntityFrameworkCore](microsoft-entityframeworkcore.md) queries or [Ardalis specifications](ardalis-specification.md) before execution. Test PostgreSQL translation with [Microsoft.EntityFrameworkCore.Relational](microsoft-entityframeworkcore-relational.md); InMemory is not acceptable evidence. See [relational test fidelity](../package-guidance/package-selection.md#relational-test-fidelity), [PostgreSQL data-access selection](../package-guidance/package-selection.md#postgresql-data-access), and the [supply-chain entry](../package-guidance/supply-chain.md#mr-entityframeworkcore-keysetpagination).
 
 ## Security, performance, AOT, trimming, and operations
 
 Cursors are not authorization grants and must not expose database internals. Reapply tenant, authorization, and soft-delete predicates before pagination even when those values are protected inside the cursor. Keyset pagination avoids offset traversal instability as preceding rows shift, but it does not provide an immutable snapshot by itself; changes to ordered values can still move rows between pages. AOT/trimming compatibility is unverified.
+
+Observe page-query duration, returned rows, direction, cursor-decode failures, and the PostgreSQL plan/index used, tagged only with bounded route/query-definition names. If pages repeat or skip rows, compare the cursor's full ordered values and scope with the current definition, then verify a unique final key and call `EnsureCorrectOrder` for backward traversal. Such contract errors are not transient and must not be retried blindly.
 
 ## Avoid
 
