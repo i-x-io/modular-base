@@ -1,5 +1,0 @@
-#nullable enable
-IX.Modularity.Analyzers.DocumentationAndRecordAnalyzer
-IX.Modularity.Analyzers.DocumentationAndRecordAnalyzer.DocumentationAndRecordAnalyzer() -> void
-override IX.Modularity.Analyzers.DocumentationAndRecordAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
-override IX.Modularity.Analyzers.DocumentationAndRecordAnalyzer.SupportedDiagnostics.get -> System.Collections.Immutable.ImmutableArray<Microsoft.CodeAnalysis.DiagnosticDescriptor!>
