@@ -14,13 +14,14 @@ environment and invokes the same NUKE targets that run locally.
 - central package management and committed lock files;
 - nullable reference types, warnings as errors, deterministic builds, public
   API analysis, banned APIs, and private analyzer dependencies;
-- a real package and a 24-test Microsoft Testing Platform test suite;
+- a real package, a 24-test Microsoft Testing Platform product suite, and 37
+  tests for the enterprise build infrastructure;
 - package, symbols-package, metadata, vulnerability, and CycloneDX SBOM
   validation;
 - pinned `pre-commit`, Markdownlint CLI2, Gitleaks, Typos, JSON-schema,
   actionlint, zizmor, and Conventional Commits hooks;
-- focused pull-request validation, trusted auto-merge, Dependabot, scheduled
-  maintenance, issue forms, and release automation; and
+- focused pull-request validation, API-only labeling, trusted auto-merge,
+  Dependabot, issue forms, and release automation; and
 - MinVer-derived prereleases for every merged pull request plus explicit stable
   releases selected by a `RELEASE:` pull-request title.
 
@@ -60,6 +61,10 @@ graph. The build intentionally exposes only outcome-oriented targets:
 
 Generated product output is written below `artifacts/`. The running NUKE host
 uses `build/bin` and `build/obj`, keeping it outside cleanable product output.
+
+The production workflow set is intentionally limited to `Pull request`,
+`Pull request labels`, `Auto-merge`, and `Release`. Provider-neutral build and
+release logic belongs in NUKE rather than additional workflow YAML.
 
 ## Install the Git hooks
 

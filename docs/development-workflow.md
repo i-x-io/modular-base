@@ -72,9 +72,9 @@ Choose one change type:
 Create a short-lived branch from current `main`:
 
 ```sh
-git fetch upstream
+git fetch origin
 git switch main
-git pull --ff-only upstream main
+git pull --ff-only origin main
 git switch -c feat/123-explicit-module-dependencies
 ```
 
@@ -142,8 +142,9 @@ objects rather than duplicating path strings or product project names:
 - `[Solution]` loads the `.slnx` as a repository graph without generating
   hardcoded project accessors;
 - `[GitRepository]` supplies the endpoint, owner, repository, URL, and commit;
-- `[Parameter]` exposes only configuration and intentional lock regeneration;
-- `[Secret]` protects the short-lived GitHub/package and release credentials;
+- `[Parameter]` exposes configuration, intentional lock regeneration, and the
+  two credentials required only by `Publish`;
+- `[Secret]` redacts the short-lived GitHub/package and release credentials;
 - `BuildPaths`, `RepositoryModel`, `RepositoryIdentity`, `BuildPolicy`, and
   `ToolchainVersions` centralize paths, graph roles, repository-derived values,
   immutable policy, and versions;
@@ -225,11 +226,13 @@ Draft pull requests are encouraged for early design feedback, but automation
 does not merge them. Resolve every review conversation. Do not approve your own
 change when another maintainer is available.
 
-The focused `Pull request` workflow has separate validation, metadata-policy,
-and dependency-review jobs, followed by one required `Pull request gate`. It
-also listens to `merge_group`, so repositories using a merge queue validate the
-combined commit that would reach `main`. Pull-request-only jobs are skipped for
-merge groups; the complete NUKE validation reruns.
+The focused `Pull request` workflow has a `Validate` job and a
+pull-request-only `Dependency review` job, followed by one required
+`Pull request gate`. Pull-request metadata policy is part of the authoritative
+NUKE `CI` target rather than a parallel YAML job. The workflow also listens to
+`merge_group`, so the merge queue validates the combined commit that would
+reach `main`. Dependency Review is skipped for merge groups; the complete NUKE
+validation reruns and the aggregate gate accounts for the event-specific skip.
 
 After the workflow succeeds, the trusted `Auto-merge` workflow resolves the
 same pull request and invokes GitHub's merge operation with the exact checked
@@ -239,7 +242,10 @@ download, cache, or execute pull-request-controlled code or artifacts.
 
 The separate `Pull request labels` workflow classifies branch type and changed
 areas through the GitHub API. It intentionally uses `pull_request_target` but
-never checks out or executes pull-request content.
+never checks out or executes pull-request content. Labels are synchronized on
+open, reopen, update, and ready-for-review events. A maintainer can rerun it for
+an existing pull request through `workflow_dispatch` with the pull-request
+number.
 
 ## Dependency updates
 
@@ -301,9 +307,10 @@ credential creates protected tags and releases; the separate job-scoped token
 publishes the package. Provisioning, rotation, minimum permissions, and the tag
 ruleset are documented in [GitHub governance](github-governance.md).
 
-After the first stable package is published, set and maintain
-`PackageValidationBaselineVersion` so SDK package validation checks binary and
-API compatibility against an intentional released baseline.
+The initial stable package `v0.1.0` is now available as a potential SDK package
+validation baseline. Before setting `PackageValidationBaselineVersion`, define
+how CI retrieves that GitHub Packages version with a least-privilege credential
+and how an intentional breaking release advances the baseline.
 
 ## Exceptional and maintenance operations
 

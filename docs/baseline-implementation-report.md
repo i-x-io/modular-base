@@ -6,7 +6,8 @@ Report date: 2026-07-28
 
 The repository is now an executable vanilla C# library baseline rather than an
 empty policy catalog. It contains a shipping `IX.Modularity` project, a
-cross-platform 24-test suite, locked dependencies, deterministic packaging,
+cross-platform 24-test product suite, 37 build-infrastructure tests, locked
+dependencies, deterministic packaging,
 typed NUKE orchestration, managed Git hooks, hardened GitHub workflows,
 templates, release automation, and a documented governance model. The release
 contract has been reset to a repository-wide lockstep model so additional
@@ -30,7 +31,7 @@ documented or centrally versioned.
 | Compilation | Nullable enabled, warnings and analyzer findings as errors, deterministic portable symbols, documentation output. |
 | Code policy | EditorConfig, banned APIs, private global analyzers, project-scoped public API analyzer. |
 | Product | `IX.Modularity` contracts, validated identifiers/descriptors, ordered and duplicate-safe explicit DI registration. |
-| Tests | xUnit v3 on Microsoft Testing Platform with 24 tests and a non-zero discovery guard. |
+| Tests | xUnit v3 on Microsoft Testing Platform with 24 product tests, 37 build-infrastructure tests, and non-zero discovery guards. |
 | Restore | Central package management, source mapping, NuGet audit, committed locks for product, test, and build graphs. |
 | Packaging | MinVer versioning, README/LICENSE/XML docs, symbols package, repository metadata, SDK package validation. |
 | Package inspection | Exact artifact count, required entries, repository URL, package version, and runtime dependency allowlist. |
@@ -162,13 +163,19 @@ features, labels, and bootstrap order are documented in
 
 ## Release acceptance evidence
 
-The first release through the reconciled contract must demonstrate that the
-pull-request gate passed, the `v<semver>` tag targets the merged commit, all
-packable projects published at the same version, the GitHub release has the
-correct prerelease/latest classification, every package and evidence file is
-attached, attestations exist, and a clean consumer can restore the packages.
-Historical component-tag releases and package versions are intentionally not
-part of this new contract.
+The first stable release through the reconciled contract completed on
+2026-07-28. [`v0.1.0`](https://github.com/i-x-io/modular-base/releases/tag/v0.1.0)
+targets the protected merge-queue commit
+`c0deee6f8ee7dcc78791c44c51ce5c5d9c1dea90`. The draft, ready-for-review, and
+merge-group gates passed; `IX.Modularity` `0.1.0` was published to GitHub
+Packages; and the release contains the package, symbols package, CycloneDX
+SBOM, schema-v2 release plan and manifest, and checksums.
+
+SLSA provenance and CycloneDX attestations were independently downloaded and
+verified against `.github/workflows/release.yml`, `refs/heads/main`, the merge
+commit, and the package digest. Historical component-tag release, package,
+artifact, and cache state was removed before the controlled rollout. Workflow
+run history was retained for auditability.
 
 ## Remaining work and deliberate deferrals
 
@@ -176,7 +183,7 @@ The baseline is usable, but these items remain:
 
 | Priority | Item | Trigger or fix |
 | --- | --- | --- |
-| P1 after the first intentional stable release | Package compatibility baseline. | Set `PackageValidationBaselineVersion` to that release after deciding how CI retrieves the GitHub Packages baseline without exposing a broad credential. |
+| P1 | Package compatibility baseline. | Evaluate `v0.1.0` as `PackageValidationBaselineVersion` after deciding how CI retrieves the GitHub Packages baseline without exposing a broad credential and how intentional breaks advance it. |
 | P1 credential hardening | Replace the broad CLI bootstrap credential with a repository-scoped fine-grained token or organization-owned App. | Verify the new identity on a release, rotate the old credential, and update the tag-ruleset actor. |
 | P1 with a second maintainer | Independent ownership enforcement. | The team and `CODEOWNERS` exist; require one code-owner review after a second active maintainer joins. |
 | P1 when coverage has a decision use | MTP-native coverage and threshold. | Add an open-source MTP integration and ratchet a meaningful threshold; do not add a vanity percentage. |
@@ -195,12 +202,15 @@ Locally, the implemented baseline has demonstrated:
 - build project compilation without warnings or errors;
 - locked restore of product, tests, and build tooling;
 - clean strict Release compilation;
-- 24 discovered and passing MTP tests;
+- 24 discovered and passing product tests plus 37 passing build tests;
 - package and symbols-package generation and semantic inspection;
 - vulnerability audit of the solution and build graph;
 - a non-empty CycloneDX JSON SBOM; and
 - schema, actionlint, and strict zizmor validation of GitHub files.
 
 Local acceptance is `dotnet nuke CI --configuration Release` followed by
-all-file `pre-commit` validation. Remote release acceptance is performed only
-after the refactor has passed the protected pull-request workflow.
+all-file `pre-commit` validation. Remote acceptance is complete for the stable
+path: the protected pull request, ready-for-review rerun, merge-queue rerun,
+NUKE `Publish`, GitHub release, package publication, attestations, and evidence
+retention all passed. A normal merged pull request should be used next to smoke
+test the prerelease classification in production.

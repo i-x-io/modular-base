@@ -88,7 +88,7 @@ applicable jobs succeed.
 
 ## Release tag ruleset and credential
 
-Create an active tag ruleset named `repository release tags` targeting:
+Create an active tag ruleset named `release tags` targeting:
 
 ```text
 v*
@@ -134,6 +134,10 @@ Each release must contain:
   evidence; and
 - GitHub provenance and SBOM attestations.
 
+Validation diagnostics are retained for 14 days. The complete package, SBOM,
+plan, manifest, and checksum evidence produced by a release is retained as one
+Actions artifact for 30 days in addition to the release assets.
+
 Ordinary merges must be marked prerelease and must not become the latest
 release. Only `RELEASE:` merges are stable and update the latest-release
 pointer.
@@ -153,7 +157,7 @@ action SHA pinning, actionlint, zizmor, package inspection, and SBOM generation.
 Add CodeQL default setup after verifying its merge-queue check name, then make
 that exact check required if desired.
 
-## Bootstrap and reconciliation
+## Reconciliation procedure
 
 1. Push the reviewed automation to `main` before enabling automatic release.
 2. Run a test pull request so GitHub records `Pull request gate`.
@@ -170,3 +174,26 @@ that exact check required if desired.
 Rulesets remain configured in GitHub rather than synchronized from a
 token-bearing repository script. Record material settings changes in an issue
 or ADR so external policy remains auditable.
+
+## Current reconciliation status
+
+The enterprise-pipeline rollout was reconciled on 2026-07-28 through
+[pull request #15](https://github.com/i-x-io/modular-base/pull/15). The external
+state was verified as follows:
+
+| Control | Verified state |
+| --- | --- |
+| Default branch | `main`; squash-only, automatic head-branch deletion, auto-merge enabled. |
+| Branch ruleset | Active `main` ruleset; merge queue enabled; exact required check is `Pull request gate`; deletion, force pushes, and non-linear history are blocked. |
+| Tag ruleset | Active `release tags` ruleset targeting `v*`; creation, update, deletion, and non-fast-forward changes are restricted to the release identity. |
+| Release credential | `RELEASE_TOKEN` is installed; NUKE derives repository identity and the GitHub Packages endpoint from `[GitRepository]`. |
+| Workflow set | `Pull request`, `Pull request labels`, `Auto-merge`, and `Release` are active; Dependabot remains enabled as GitHub-managed automation. |
+| Stable release | [`v0.1.0`](https://github.com/i-x-io/modular-base/releases/tag/v0.1.0) targets merge commit `c0deee6f8ee7dcc78791c44c51ce5c5d9c1dea90` and is the latest stable release. |
+| Published evidence | Package, symbols package, CycloneDX SBOM, schema-v2 plan and manifest, checksums, SLSA provenance, CycloneDX attestation, and retained Actions evidence were verified. |
+| Labeling | The API-only labeler successfully synchronized branch/path labels without checking out pull-request content. |
+
+The stable `RELEASE:` path, draft exclusion, ready-for-review validation, and
+merge-group validation have production evidence. The ordinary-prerelease path
+is covered by build tests but still needs a controlled remote smoke release.
+Direct-push and conflicting-tag failures are policy invariants and should be
+tested only in a disposable repository or other non-production fixture.

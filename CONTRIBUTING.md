@@ -112,7 +112,12 @@ The pull request must:
 
 Use squash merge. Do not push directly to `main`, force-push protected refs, or
 manually create release tags. NUKE derives the release plan from MinVer and the
-merged pull-request title; GitHub automation owns the immutable tag and release.
+merged pull-request title; GitHub automation owns the protected tag and the
+reconciled release.
+
+The API-only labeler applies branch-type and changed-area labels from protected
+default-branch configuration. Do not add workflow steps that check out or run
+pull-request code under `pull_request_target`.
 
 The complete process, target graph, package policy, and exceptional workflows
 are documented in the [development workflow](docs/development-workflow.md).
