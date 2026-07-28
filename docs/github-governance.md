@@ -162,8 +162,8 @@ treated as complete in this baseline.
 
 ## Teams, ownership, and labels
 
-Do not add a placeholder `CODEOWNERS` entry that points to a nonexistent team.
-When `i-x-io/maintainers` exists and has at least two active members, add:
+The `i-x-io/maintainers` team owns the repository-wide policy, build,
+workflow, and public API surfaces through `.github/CODEOWNERS`:
 
 ```text
 * @i-x-io/maintainers
@@ -172,8 +172,10 @@ When `i-x-io/maintainers` exists and has at least two active members, add:
 /src/IX.Modularity/PublicAPI.*.txt @i-x-io/maintainers
 ```
 
-Then enable code-owner review without making release automation unable to
-maintain its pull request.
+Keep mandatory code-owner review disabled while the team has only one active
+human member, because self-approval cannot provide independent review. Enable
+one required code-owner approval as soon as a second active maintainer joins,
+without making release automation unable to maintain its pull request.
 
 Create and consistently use at least these labels: `bug`, `enhancement`,
 `triage`, `security`, `dependencies`, `dotnet`, `github-actions`, `pre-commit`,
@@ -196,7 +198,7 @@ order:
    request.
 6. Create and activate the `main` ruleset with recorded check names.
 7. Enable the security features and private reporting.
-8. Create labels and, once the team exists, `CODEOWNERS`.
+8. Verify labels, team membership, and `CODEOWNERS` resolution.
 9. Open a non-release test pull request and exercise the merge queue.
 10. Merge a controlled release pull request and verify package consumption.
 
