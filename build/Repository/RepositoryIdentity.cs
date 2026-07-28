@@ -15,6 +15,10 @@ internal sealed record RepositoryIdentity(
     {
         ArgumentNullException.ThrowIfNull(repository);
 
+        RequireValue(repository.Identifier, "Git repository identifier");
+        RequireValue(repository.Endpoint, "Git endpoint");
+        RequireValue(repository.HttpsUrl, "Git HTTPS URL");
+        RequireValue(repository.Commit, "Git commit");
         string[] identifierParts = repository.Identifier.Split(
             '/',
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -24,9 +28,6 @@ internal sealed record RepositoryIdentity(
                 $"Repository identifier '{repository.Identifier}' must use the '<owner>/<name>' form.");
         }
 
-        RequireValue(repository.Endpoint, "Git endpoint");
-        RequireValue(repository.HttpsUrl, "Git HTTPS URL");
-        RequireValue(repository.Commit, "Git commit");
         string owner = identifierParts[0];
         return new(
             repository.Endpoint,
