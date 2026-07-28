@@ -14,6 +14,8 @@ Logging records diagnostic events. Metrics measure numeric observations. Tracing
 
 Logs are not an audit trail by default. Exceptions record failure information but do not replace an operational event. `ILogger` is an abstraction; a logging provider is application/infrastructure configuration.
 
+Unexpected exceptions may be logged once at the boundary with enough context to act. Intermediate reusable layers should not log and rethrow the same exception unless each event adds independently actionable context. Never copy exception text, secrets, or sensitive payloads into caller-facing result messages; record safe error codes and structured context instead.
+
 ## Normative rules
 
 - Libraries accept or depend on `ILogger` abstractions only where operational signals are part of the capability; they do not configure providers or build a service provider.

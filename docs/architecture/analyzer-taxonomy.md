@@ -12,6 +12,9 @@ This is the single diagnostic contract for `IX.Modularity.Analyzers`. The analyz
 | `IXM1004` | Public service type requires complete XML documentation | A user-authored public service type lacks complete XML documentation; report the type declaration identifier. A service ends in `Service`, or is an interface derived from an `I*Service` interface. | Warning / error | Add a non-empty summary and applicable type-parameter documentation. |
 | `IXM1005` | Public service member requires complete XML documentation | A member of a service interface lacks complete XML documentation; report the member declaration identifier. | Warning / error | Add a summary plus applicable type parameters, parameters, return value, and property value documentation. |
 | `IXM2001` | Data objects should be records | A user-authored, externally visible data object is syntactically eligible when it is a non-abstract, non-static, non-record class with no base type other than `object`; report the type identifier. The analyzer does not infer immutability. | Info / suggestion | Consider a `record`; retain the class and suppress locally after review when a class-shaped contract is intentional. |
+| `IXM3001` | Service operation must return FluentResults | An externally visible ordinary method declared by a service type does not return `Result`, `Result<T>`, or one of their `Task`/`ValueTask` wrappers; report the interface-owned contract once. | Warning / error | Return an approved FluentResults shape; assess a public signature migration as a breaking API change. |
+| `IXM3002` | Business failure must use a coded error | A direct FluentResults failure uses a string, base `Error`, an uncoded/invalid concrete error, or `Result.Try`; report the direct failure boundary. | Warning / error | Use a concrete `Error` subtype with its own `public const string Code` in lowercase snake case. |
+| `IXM3003` | Broad exception catch must rethrow | An untyped catch or exact `System.Exception` catch has a reachable path that does not end with bare `throw;`. | Warning / error | Preserve the exception with bare `throw;`; translate only a specific, documented expected outcome. |
 
 ## Scope and exclusions
 
@@ -21,7 +24,9 @@ Complete member documentation means a non-empty `<summary>` and each applicable 
 
 ## Configuration contract
 
-`IXM1001`–`IXM1005` default to warning in the package and are set to error by repository policy. `IXM2001` defaults to info and is set to suggestion. A package consumer can configure the diagnostics according to its own compatibility policy; it should not claim this repository's enforcement level unless it adopts the same settings.
+`IXM1001`–`IXM1005` and `IXM3001`–`IXM3003` default to warning in the package and are set to error by repository policy. `IXM2001` defaults to info and is set to suggestion. A package consumer can configure the diagnostics according to its own compatibility policy; it should not claim this repository's enforcement level unless it adopts the same settings.
+
+`IXM3001`–`IXM3003` enforce only syntactically and semantically visible structure. They cannot determine whether a business failure is genuinely expected, a specific exception translation is honest, a message is safe, or a state transition is failure-atomic; those are review obligations.
 
 ## Sources
 

@@ -14,6 +14,8 @@ A domain models business meaning. An entity has continuity of identity; a value 
 
 DDD vocabulary is a design aid, not a mandate for repositories, event sourcing, CQRS, or microservices. A DTO transports data; it is not automatically an entity or value object. A bounded context is a meaning boundary, not a namespace convention.
 
+Expected domain and application decisions, such as invalid input, a missing business object, or a rejected state transition, are returned as coded failed results at a service boundary. Cancellation, broken invariants, programming faults, corrupt state, and unexpected infrastructure failures remain exceptions. A specific exception may be translated only when it fully and honestly represents a documented expected outcome.
+
 ## Normative rules
 
 - Use domain terms in public names only when they represent stable consumer semantics.

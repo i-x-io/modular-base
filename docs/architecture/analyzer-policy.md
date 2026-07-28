@@ -12,9 +12,11 @@ The analyzer reads the compiler-visible `IXModularityProjectRole` property only 
 
 ## Severity and suppression
 
-`IXM1001` through `IXM1005` are repository errors. `IXM2001` is a suggestion. The definitive settings appear in both [`ModularBase.globalconfig`](../../ModularBase.globalconfig) and [`.editorconfig`](../../.editorconfig); the latter also controls source/test-specific magic-string severity for Sonar `S1192`.
+`IXM1001` through `IXM1005` and `IXM3001` through `IXM3003` are repository errors. `IXM2001` is a suggestion. The definitive settings appear in both [`ModularBase.globalconfig`](../../ModularBase.globalconfig) and [`.editorconfig`](../../.editorconfig); the latter also controls source/test-specific magic-string severity for Sonar `S1192`.
 
 Do not suppress an `IXM100x` diagnostic merely to publish an undocumented public contract. Correct the XML documentation, reduce the public surface, or record a narrow, reviewed exception at the declaration with a justification and expiry/review date. `IXM2001` is a syntactic class-shaped data-object suggestion, not an immutability inference. Suppress it locally after review when mutable lifecycle, identity, EF/proxy/framework/interop, or another class contract is intentional; a suggestion is not permission to change a public type's semantics without compatibility review.
+
+`IXM3001` requires an approved FluentResults return shape. `IXM3002` permits a narrow local suppression only for an indirect factory or collection the analyzer cannot prove safe; it never approves string-only or uncoded failures. `IXM3003` should normally be fixed by removing a broad catch or using bare `throw;`. Reviewers, not the analyzer, decide whether a specific caught exception is an expected outcome, whether a translation is complete and safe, and whether state remains failure-atomic.
 
 ## Enforcement boundaries
 

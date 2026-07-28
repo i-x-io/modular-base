@@ -190,8 +190,8 @@ public sealed partial class DocumentationIntegrityTests
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)];
 
-        Assert.Equal(6, diagnosticIds.Length);
-        Assert.Equal(6, DescriptorIdRegex.Count(analyzerSource));
+        Assert.Equal(9, diagnosticIds.Length);
+        Assert.Equal(9, DescriptorIdRegex.Count(analyzerSource));
         Assert.True(HelpLinkFactoryRegex.IsMatch(analyzerSource), "Analyzer descriptors must derive each help link from HelpLinkBase, the diagnostic ID, and the .md suffix.");
 
         Match helpLinkBaseMatch = Assert.Single(HelpLinkBaseRegex.Matches(analyzerSource));
@@ -215,6 +215,19 @@ public sealed partial class DocumentationIntegrityTests
         Assert.Equal(diagnosticIds, GetDiagnosticIdsFromArchitecturePage("docs/architecture/analyzer-taxonomy.md"), StringComparer.Ordinal);
     }
 
+    [Theory]
+    [InlineData(".editorconfig")]
+    [InlineData("ModularBase.globalconfig")]
+    public void Result_diagnostics_are_errors_in_repository_configuration(string configurationFile)
+    {
+        Dictionary<string, string> settings = ReadConfigurationSettings(configurationFile);
+
+        foreach (string diagnosticId in new[] { "IXM3001", "IXM3002", "IXM3003" })
+        {
+            Assert.Equal("error", settings[$"dotnet_diagnostic.{diagnosticId}.severity"]);
+        }
+    }
+
     private static Dictionary<string, MarkdownFile> LoadMarkdownFiles()
     {
         IEnumerable<string> paths = EnumerateFilesSafely(Path.Combine(s_repositoryRoot, "docs"), "*.md")
@@ -224,6 +237,20 @@ public sealed partial class DocumentationIntegrityTests
             ToRepositoryRelativePath,
             ParseMarkdownFile,
             StringComparer.Ordinal);
+    }
+
+    private static Dictionary<string, string> ReadConfigurationSettings(string configurationFile)
+    {
+        string path = Path.Combine(s_repositoryRoot, configurationFile);
+        EnsureRepositoryPathIsSafe(path, $"repository configuration '{configurationFile}'");
+
+        return File.ReadLines(path)
+            .Select(static line => line.Trim())
+            .Where(static line => line.Length > 0 && !line.StartsWith('#'))
+            .Select(static line => line.Split('=', 2, StringSplitOptions.TrimEntries))
+            .Where(static parts => parts.Length == 2)
+            .GroupBy(static parts => parts[0], StringComparer.Ordinal)
+            .ToDictionary(static group => group.Key, static group => group.Last()[1], StringComparer.Ordinal);
     }
 
     private static MarkdownFile ParseMarkdownFile(string path)
@@ -429,19 +456,25 @@ public sealed partial class DocumentationIntegrityTests
 
     private static string[] GetDiagnosticIdsFromReleaseEntries()
     {
-        string releasePath = Path.Combine(s_repositoryRoot, "src", "IX.Modularity.Analyzers", "AnalyzerReleases.Shipped.md");
-        EnsureRepositoryPathIsSafe(releasePath, "analyzer release entries");
-        return GetDiagnosticIds(AnalyzerReleaseEntryRegex.Matches(File.ReadAllText(releasePath)));
+        string releaseDirectory = Path.Combine(s_repositoryRoot, "src", "IX.Modularity.Analyzers");
+        string shippedPath = Path.Combine(releaseDirectory, "AnalyzerReleases.Shipped.md");
+        string unshippedPath = Path.Combine(releaseDirectory, "AnalyzerReleases.Unshipped.md");
+        EnsureRepositoryPathIsSafe(shippedPath, "shipped analyzer release entries");
+        EnsureRepositoryPathIsSafe(unshippedPath, "unshipped analyzer release entries");
+
+        return GetDiagnosticIds(
+            AnalyzerReleaseEntryRegex.Matches(File.ReadAllText(shippedPath)).Cast<Match>()
+                .Concat(AnalyzerReleaseEntryRegex.Matches(File.ReadAllText(unshippedPath)).Cast<Match>()));
     }
 
     private static string[] GetDiagnosticIdsFromArchitecturePage(string relativePath)
     {
         string path = Path.Combine(s_repositoryRoot, relativePath);
         EnsureRepositoryPathIsSafe(path, $"architecture documentation '{relativePath}'");
-        return GetDiagnosticIds(ArchitectureDiagnosticEntryRegex.Matches(File.ReadAllText(path)));
+        return GetDiagnosticIds(ArchitectureDiagnosticEntryRegex.Matches(File.ReadAllText(path)).Cast<Match>());
     }
 
-    private static string[] GetDiagnosticIds(MatchCollection matches)
+    private static string[] GetDiagnosticIds(IEnumerable<Match> matches)
     {
         return [.. matches
             .Select(static match => match.Groups["id"].Value)
@@ -477,7 +510,11 @@ public sealed partial class DocumentationIntegrityTests
             {
                 entries = Directory.EnumerateFileSystemEntries(directory).ToArray();
             }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            catch (IOException exception)
+            {
+                throw new InvalidDataException($"Unable to enumerate repository directory '{directory}'.", exception);
+            }
+            catch (UnauthorizedAccessException exception)
             {
                 throw new InvalidDataException($"Unable to enumerate repository directory '{directory}'.", exception);
             }
@@ -536,7 +573,11 @@ public sealed partial class DocumentationIntegrityTests
         {
             return File.GetAttributes(path);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (IOException exception)
+        {
+            throw new InvalidDataException($"Unable to inspect {description} path '{path}'.", exception);
+        }
+        catch (UnauthorizedAccessException exception)
         {
             throw new InvalidDataException($"Unable to inspect {description} path '{path}'.", exception);
         }

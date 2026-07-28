@@ -20,6 +20,8 @@ A NuGet package version, assembly identity, and API surface are related but dist
 - Packable libraries maintain `PublicAPI.Shipped.txt` and `PublicAPI.Unshipped.txt` with `#nullable enable`.
 - Additions require tests, complete documentation, and a reviewed baseline update; removals and signature changes require an explicit compatibility and versioning decision.
 - Avoid public vendor types unless the package deliberately owns that integration boundary.
+- Changing a public service operation from a raw return type to `Result` or `Result<T>` is a breaking API change. Plan it through the normal compatibility and semantic-versioning process.
+- A published business-error code is a compatibility contract. Do not repurpose it for a different meaning; callers must not branch on explanatory messages.
 
 ## Library-focused examples
 
@@ -37,7 +39,7 @@ Rewriting shipped baseline history to conceal a break, relying on a major versio
 
 ## Analyzer and build enforcement
 
-Public API analyzers run for packable projects and pack requires baseline files. `IXM1001`–`IXM1005` enforce complete public data/interface/service documentation. `CS1591` remains disabled because these focused rules define the repository contract.
+Public API analyzers run for packable projects and pack requires baseline files. `IXM1001`–`IXM1005` enforce complete public data/interface/service documentation. `IXM3001` enforces service result shapes; it does not make a migration compatible. `CS1591` remains disabled because these focused rules define the repository contract.
 
 ## Authoritative references
 

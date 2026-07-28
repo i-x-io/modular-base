@@ -25,6 +25,8 @@ Every future project declares exactly one `IXModularityProjectRole` value. The v
 
 `Testing` is reusable test support; `Test` executes tests. `ArchitectureTest` is a `Test` specialization used only to validate architectural constraints. `Analyzer` and `SourceGenerator` are compiler tooling roles; they are not normal runtime dependencies.
 
+Service-owning `Library`, `Contracts`, `Abstractions`, `Adapter`, and `Integration` projects may reference FluentResults to publish the approved result contract. This is a deliberate narrow package exception, not a relaxation of neutral-role boundaries.
+
 `Analyzer` produces analyzer assets consumed by the compiler, and `SourceGenerator` produces compiler-time generated source. Their project references to compiler-tool peers use explicit analyzer-loading metadata and must never become runtime assembly references. Their normal test projects may reference the implementation as a test subject, but that does not change consumer package behavior.
 
 ## Adaptive layouts

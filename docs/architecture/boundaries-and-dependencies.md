@@ -25,6 +25,8 @@ Project references describe implementation relationships; NuGet dependencies des
 
 A `Library` can depend on an `Abstractions` port; an `Adapter` can implement it using a vendor SDK. An `Integration` package can offer a registration extension without making the core library build a service provider.
 
+Externally visible service operations return FluentResults for expected outcomes. Reusable libraries return typed coded errors and propagate exceptional failures; the outer application or transport boundary maps those errors to HTTP, messages, or UI states. Do not put status codes, controller results, middleware, or transport envelopes in service contracts.
+
 ## Anti-patterns
 
 An abstractions package that references a database provider, a core package that references its adapter, circular project references, and making a normal library consume analyzer assemblies at runtime are forbidden.
