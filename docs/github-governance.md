@@ -37,7 +37,7 @@ organization uses an action allowlist, permit only:
 Keep the repository default `GITHUB_TOKEN` permission at read-only and allow
 workflows to request narrower write scopes explicitly. Do not allow Actions to
 create or approve pull requests with the default token; release automation uses
-a dedicated GitHub App so its pull request triggers normal CI.
+the separate `RELEASE_TOKEN` secret so its pull request triggers normal CI.
 
 Fork pull requests must never receive repository secrets. Current pull-request
 validation workflows use the `pull_request` event with read permissions. The
@@ -104,49 +104,41 @@ Create an active tag ruleset named `IX.Modularity release tags` targeting:
 IX.Modularity-v*
 ```
 
-Restrict creation, update, and deletion, and block force updates. Add only the
-dedicated release GitHub App as an always-allowed bypass actor. People,
-administrator roles, the default Actions token, and Dependabot should not
-create or rewrite release tags.
+Restrict creation, update, and deletion, and block force updates. While the
+workflow uses a user token, add only the `i-x-io/maintainers` team as an
+always-allowed bypass actor; the token owner must be a current member. Do not
+add an administrator-role, default Actions token, or Dependabot bypass. A
+maintainer has the technical ability to create a matching tag but must still
+use the release workflow so the tag, changelog, GitHub release, and package
+cannot diverge.
 
-For a time-bounded first-release bootstrap where App creation still requires an
-interactive organization-owner step, the `i-x-io/maintainers` team may be a
-temporary always-allowed actor while `RELEASE_TOKEN` is in use. Track that
-exception in an issue and replace the team bypass with the App installation as
-soon as the App is available. Do not use a blanket administrator-role bypass.
+## Release token
 
-## Release GitHub App
-
-Create or reuse an organization-owned GitHub App dedicated to release
-automation. Install it only on `i-x-io/modular-base` and grant repository
-permissions:
-
-- Contents: read and write;
-- Issues: read and write; and
-- Pull requests: read and write.
-
-It does not need administration, Actions, checks, members, secrets, or package
-permissions. Add the App as the release-tag ruleset bypass actor.
-
-Configure repository Actions values:
-
-| Kind | Name | Value |
-| --- | --- | --- |
-| Variable | `RELEASE_APP_ID` | The numeric GitHub App ID. |
-| Secret | `RELEASE_APP_PRIVATE_KEY` | The current PEM private key. |
-
-The workflow exchanges these credentials for a short-lived installation token
-and explicitly limits the token to this repository and the three permissions
-above. Rotate the private key according to the organization's credential
-policy and remove the old key after a successful release run.
-
-The workflow also accepts `RELEASE_TOKEN` as a controlled bootstrap fallback.
-Prefer a fine-grained personal access token limited to this repository with
+Release Please uses the repository Actions secret `RELEASE_TOKEN`. Prefer a
+fine-grained personal access token limited to `i-x-io/modular-base`, with
 Contents, Issues, and Pull requests read/write permissions and the shortest
-practical expiration. The workflow always prefers the App when
-`RELEASE_APP_ID` is present. Record the token owner and expiry privately,
-remove the secret after App cutover, and never pass this broader token to NUKE
-or package publication.
+practical expiration. Record its owner and expiry privately and rotate it
+before expiration.
+
+GitHub CLI cannot mint a new personal access token. It can install an existing
+authenticated credential without printing it:
+
+```sh
+gh auth token | gh secret set RELEASE_TOKEN --repo i-x-io/modular-base
+```
+
+The active `gh` credential may be used for the controlled first-release
+bootstrap. A dedicated fine-grained token is preferable for ongoing operation
+because a normal CLI credential commonly has broader account scopes. Never
+write either value to a file, command log, workflow output, or committed
+configuration.
+
+The release workflow passes `RELEASE_TOKEN` only to Release Please. Its normal
+job token remains read-only for repository contents and gains only
+`packages: write`; NUKE receives that separate job token for package
+publication. Replacing the user token with a short-lived organization-owned
+GitHub App is an optional credential-hardening follow-up, not a second active
+authentication path in the workflow.
 
 The built-in job token publishes the package because the release job requests
 `packages: write`. It is passed to NUKE only for the publish step and is masked
@@ -233,12 +225,12 @@ It is deliberately informational and is not a required status check.
 The new remote has no default branch until the first push. Bootstrap in this
 order:
 
-1. Review and push the complete baseline to `main`; the release job is safely
-   skipped until `RELEASE_APP_ID` exists.
+1. Review and push the complete baseline to `main` before enabling release
+   automation.
 2. Let every workflow run once so GitHub records its check names.
 3. Configure repository merge settings and Actions SHA enforcement.
-4. Create the release App, variables, secret, and tag ruleset.
-5. Manually dispatch `Release` to create or update the first release pull
+4. Install `RELEASE_TOKEN` through standard input and create the tag ruleset.
+5. Push or manually dispatch `Release` to create or update the first release pull
    request.
 6. Create and activate the `main` ruleset with recorded check names.
 7. Enable the security features and private reporting.
