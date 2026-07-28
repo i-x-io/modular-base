@@ -68,7 +68,7 @@ public static class Example
 
 ## Enterprise implementation guidance
 
-Each concrete business error derives from `Error` and declares its own `public const string Code` using lowercase snake case. The code is the stable machine-readable contract; the message is explanatory text only. Callers branch on the concrete error type or code, never on `Error.Message`. Keep error messages safe for clients and protected diagnostic detail in structured telemetry or the preserved exception chain. A boundary may map its own errors to HTTP, messaging, or UI states; reusable services must not introduce transport envelopes or status codes.
+Each concrete business error derives from `Error` and declares its own `public const string Code` using lowercase snake case. The code is the stable machine-readable contract; the message is explanatory text only. Callers branch on the concrete error type or code, never on `Error.Message`. Keep error messages safe for clients and protected diagnostic detail in structured telemetry or the preserved exception chain. A boundary maps its own errors once to HTTP, messaging, or UI states; reusable services must not introduce transport envelopes or status codes. Every public error code needs a stable, safe boundary mapping. Treat a missing or unknown code as a server-side mapping defect, not a client failure; a boundary may use that mapping to distinguish rejection from retry decisions.
 
 Compose operations with `Bind`/`Map` and preserve all meaningful `Result.Errors`. Do not use string-only `Result.Fail`, directly instantiate the unclassified `Error` for a business failure, or call `Result.Try`: its broad internal catch cannot prove that every translated exception is a documented expected outcome. The analyzer verifies direct, statically visible construction; factories, exception translation, message safety, and state changes still need review.
 
@@ -96,6 +96,7 @@ Do not wrap every exception as a generic failure, translate cancellation, use `R
 
 - [ ] Test success, expected failure, and unexpected exception paths.
 - [ ] Assert every concrete public business error has an own `public const string Code` in lowercase snake case.
+- [ ] Assert every public error code has a stable, safe boundary mapping; unknown codes fail as server-side mapping defects.
 - [ ] Assert expected failures preserve all meaningful errors and unexpected exceptions, including cancellation, propagate.
 - [ ] Verify failed `Result<T>` paths never access `Value`.
 - [ ] Confirm logs and serialized errors contain no secrets or personal data.

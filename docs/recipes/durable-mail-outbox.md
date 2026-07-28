@@ -45,10 +45,14 @@ public interface IMailOutbox
         TimeSpan leaseDuration,
         CancellationToken cancellationToken);
 
+    Task MarkSubmissionStartedAsync(
+        Guid id,
+        string leaseToken,
+        CancellationToken cancellationToken);
+
     Task MarkSubmittedAsync(
         Guid id,
         string leaseToken,
-        string smtpResponse,
         CancellationToken cancellationToken);
 
     Task DeferAsync(
@@ -72,7 +76,7 @@ public interface IMailOutbox
 }
 ```
 
-An enqueue operation inserts the business change and an immutable mail intent in one database transaction. `ClaimDueAsync` must atomically select due rows and assign a unique lease token so concurrent workers cannot submit the same claim; every update compares both the row ID and lease token. Expired leases recover a crashed worker. Store a template identifier and bounded, non-secret render data instead of bodies when policy requires late rendering or reduced sensitive-data retention.
+An enqueue operation inserts the business change and an immutable mail intent in one database transaction. `ClaimDueAsync` must atomically select due rows and assign a unique lease token so concurrent workers cannot submit the same claim; every update compares both the row ID and lease token. `MarkSubmissionStartedAsync` durably records the transition immediately before network submission. Lease recovery distinguishes a pre-submission claim from `SubmissionStarted`: an expired `SubmissionStarted` lease transitions to outcome-unknown and reconciliation, and **must not** be blindly resent. If `MarkSubmissionStartedAsync` fails, no network side effect occurred. Store a template identifier and bounded, non-secret render data instead of bodies when policy requires late rendering or reduced sensitive-data retention.
 
 ## Make transport outcomes explicit
 
@@ -96,7 +100,7 @@ public sealed class MailDeliveryException(
 
 public interface IMailTransport
 {
-    Task<string> SubmitAsync(OutboxMail mail, CancellationToken cancellationToken);
+    Task SubmitAsync(OutboxMail mail, CancellationToken cancellationToken);
 }
 ```
 
@@ -122,7 +126,7 @@ public sealed record SmtpSettings(
 
 public sealed class MailKitTransport(SmtpSettings settings) : IMailTransport
 {
-    public async Task<string> SubmitAsync(
+    public async Task SubmitAsync(
         OutboxMail mail,
         CancellationToken cancellationToken)
     {
@@ -175,9 +179,21 @@ public sealed class MailKitTransport(SmtpSettings settings) : IMailTransport
                 "smtp_authentication",
                 exception);
         }
-        catch (Exception exception) when (
-            exception is ServiceNotConnectedException or ServiceNotAuthenticatedException
-                or IOException)
+        catch (ServiceNotConnectedException exception)
+        {
+            throw new MailDeliveryException(
+                DeliveryDisposition.Retry,
+                "smtp_connect_or_auth",
+                exception);
+        }
+        catch (ServiceNotAuthenticatedException exception)
+        {
+            throw new MailDeliveryException(
+                DeliveryDisposition.Retry,
+                "smtp_connect_or_auth",
+                exception);
+        }
+        catch (IOException exception)
         {
             throw new MailDeliveryException(
                 DeliveryDisposition.Retry,
@@ -187,9 +203,8 @@ public sealed class MailKitTransport(SmtpSettings settings) : IMailTransport
 
         try
         {
-            string response = await client.SendAsync(message, cancellationToken);
+            await client.SendAsync(message, cancellationToken);
             await client.DisconnectAsync(quit: true, cancellationToken);
-            return response;
         }
         catch (SmtpCommandException exception) when ((int)exception.StatusCode >= 500)
         {
@@ -198,15 +213,25 @@ public sealed class MailKitTransport(SmtpSettings settings) : IMailTransport
                 $"smtp_{(int)exception.StatusCode}",
                 exception);
         }
-        catch (OperationCanceledException exception)
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (SmtpCommandException exception)
         {
             throw new MailDeliveryException(
                 DeliveryDisposition.OutcomeUnknown,
-                "smtp_submission_cancelled",
+                "smtp_submission_interrupted",
                 exception);
         }
-        catch (Exception exception) when (
-            exception is SmtpCommandException or SmtpProtocolException or IOException)
+        catch (SmtpProtocolException exception)
+        {
+            throw new MailDeliveryException(
+                DeliveryDisposition.OutcomeUnknown,
+                "smtp_submission_interrupted",
+                exception);
+        }
+        catch (IOException exception)
         {
             throw new MailDeliveryException(
                 DeliveryDisposition.OutcomeUnknown,
@@ -225,9 +250,9 @@ public sealed class MailKitTransport(SmtpSettings settings) : IMailTransport
 }
 ```
 
-MimeKit constructs structured addresses, a deterministic RFC message ID derived from the durable outbox ID, and the MIME body before any network call. Invalid address data becomes a permanent record failure instead of terminating the worker. Before it opens a socket, `RequireTransportSecurity` permits only mandatory `StartTls` or implicit-TLS `SslOnConnect`; it rejects `None`, `Auto`, and `StartTlsWhenAvailable`, so a server cannot downgrade this worker to plaintext. MailKit then connects, authenticates, submits, and disconnects in that order. The example creates one client per item for a clear ownership boundary; a production worker may reuse one connected client for a bounded sequential batch, but must discard it after protocol or I/O failure and must never use one `SmtpClient` concurrently. Obtain credentials from an approved secret provider, prefer provider-supported OAuth2 where required, keep normal certificate validation enabled, and validate all settings at startup.
+MimeKit constructs structured addresses, a deterministic RFC message ID derived from the durable outbox ID, and the MIME body before any network call. Invalid address data becomes a permanent record failure instead of terminating the worker. Before it opens a socket, `RequireTransportSecurity` permits only mandatory `StartTls` or implicit-TLS `SslOnConnect`; it rejects `None`, `Auto`, and `StartTlsWhenAvailable`, so a server cannot downgrade this worker to plaintext. MailKit then connects, authenticates, submits, and disconnects in that order. The SMTP response is discarded: it is transport detail, not durable outbox data. The example creates one client per item for a clear ownership boundary; a production worker may reuse one connected client for a bounded sequential batch, but must discard it after protocol or I/O failure and must never use one `SmtpClient` concurrently. Obtain credentials from an approved secret provider, prefer provider-supported OAuth2 where required, keep normal certificate validation enabled, and validate all settings at startup.
 
-The catch boundary deliberately treats cancellation during `SendAsync` as unknown: the provider may have accepted the message before the client observed the response. Refine permanent-versus-transient SMTP classification against the chosen provider's documented status codes. A stable `Message-Id` helps reconciliation but does not make arbitrary SMTP providers idempotent.
+Transport cancellation is never translated. The worker also treats cancellation after SMTP acceptance but before `MarkSubmittedAsync` completes as outcome-unknown. In either case it attempts a bounded independent finalization before rethrowing the original cancellation, because the provider may have accepted the message without a durable submitted record. It rethrows the original cancellation only if finalization succeeds; if finalization fails, that real persistence exception escapes rather than being swallowed. Refine permanent-versus-transient SMTP classification against the chosen provider's documented status codes. A stable `Message-Id` helps reconciliation but does not make arbitrary SMTP providers idempotent.
 
 ## Run the leased worker
 
@@ -259,9 +284,16 @@ public sealed class MailOutboxWorker(
             {
                 try
                 {
-                    string response = await transport.SubmitAsync(mail, stoppingToken);
+                    await outbox.MarkSubmissionStartedAsync(
+                        mail.Id, mail.LeaseToken, stoppingToken);
+                    await transport.SubmitAsync(mail, stoppingToken);
                     await outbox.MarkSubmittedAsync(
-                        mail.Id, mail.LeaseToken, response, stoppingToken);
+                        mail.Id, mail.LeaseToken, stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    await FinalizeUnknownOutcomeAsync(mail);
+                    throw;
                 }
                 catch (MailDeliveryException exception)
                 {
@@ -271,6 +303,7 @@ public sealed class MailOutboxWorker(
                         mail.Id,
                         exception.Disposition,
                         exception.FailureCode);
+                    continue;
                 }
             }
         }
@@ -304,23 +337,24 @@ public sealed class MailOutboxWorker(
             case DeliveryDisposition.OutcomeUnknown:
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    // The send may have reached SMTP. Persist that uncertainty even
-                    // though normal worker work is stopping; this budget is independent.
-                    using var finalization = new CancellationTokenSource(
-                        ShutdownFinalizationBudget);
+                    await FinalizeUnknownOutcomeAsync(mail, exception.FailureCode);
+                    return;
+                }
+
+                try
+                {
                     await outbox.MarkOutcomeUnknownAsync(
                         mail.Id,
                         mail.LeaseToken,
                         exception.FailureCode,
-                        finalization.Token);
-                    return;
+                        cancellationToken);
                 }
-
-                await outbox.MarkOutcomeUnknownAsync(
-                    mail.Id,
-                    mail.LeaseToken,
-                    exception.FailureCode,
-                    cancellationToken);
+                catch (OperationCanceledException)
+                    when (cancellationToken.IsCancellationRequested)
+                {
+                    await FinalizeUnknownOutcomeAsync(mail, exception.FailureCode);
+                    throw;
+                }
                 return;
 
             default:
@@ -328,12 +362,27 @@ public sealed class MailOutboxWorker(
         }
     }
 
+    private async Task FinalizeUnknownOutcomeAsync(
+        OutboxMail mail,
+        string failureCode = "smtp_submission_cancelled")
+    {
+        // The send may have reached SMTP. Persist that uncertainty even though
+        // normal worker work is stopping; this budget is independent.
+        using var finalization = new CancellationTokenSource(
+            ShutdownFinalizationBudget);
+        await outbox.MarkOutcomeUnknownAsync(
+            mail.Id,
+            mail.LeaseToken,
+            failureCode,
+            finalization.Token);
+    }
+
     private static TimeSpan RetryDelay(int attempts) =>
         TimeSpan.FromSeconds(Math.Min(300, 5 * Math.Pow(2, attempts)));
 }
 ```
 
-The worker claims before it sends and records the outcome only while it still owns the lease. Backoff is bounded; the repository must also cap attempts and move exhausted records to an observable terminal state. Host cancellation stops new work, while an interrupted in-flight submission follows the unknown-outcome path. When shutdown has already cancelled normal worker work, the unknown-outcome write gets an independent five-second finalization budget; it is deliberately not linked to `stoppingToken`, because that token is already cancelled. The write still fails visibly if its own budget expires. Even then, a hard crash after provider acceptance but before the database update can cause a later duplicate; reconcile provider events where available and make the business impact duplicate-tolerant. In production, add lease renewal when a bounded batch can exceed the lease, add jitter to retries, and make repository writes resilient without losing the lease compare-and-set invariant.
+The worker claims before it sends and records `SubmissionStarted` while it still owns the lease. Only after that transition succeeds does it contact SMTP. Backoff is bounded; the repository must also cap attempts and move exhausted records to an observable terminal state. Host cancellation stops new work, while an interrupted in-flight submission follows the unknown-outcome path. When cancellation has already interrupted the normal unknown-outcome write, the worker retries that one finalization with an independent five-second budget; it is deliberately not linked to `stoppingToken`, because that token is already cancelled. It rethrows the original cancellation after a successful finalization. If that finalization fails, its persistence exception remains visible. A failure of `MarkSubmittedAsync` after SMTP acceptance also remains a visible real exception; recovery sees `SubmissionStarted` and reconciles rather than retrying blindly. Even then, a hard crash after provider acceptance but before the database update can cause a later duplicate; reconcile provider events where available and make the business impact duplicate-tolerant. In production, add lease renewal when a bounded batch can exceed the lease, add jitter to retries, and make repository writes resilient without losing the lease compare-and-set invariant.
 
 ## Failure modes and operations
 
@@ -341,6 +390,7 @@ The worker claims before it sends and records the outcome only while it still ow
 | --- | --- | --- |
 | Oldest pending age and due depth rise | Worker, provider, or database is unavailable or throughput is insufficient | Alert on sustained age; inspect bounded failure codes and dependency telemetry |
 | Lease-expiration count rises | Workers crash, hang, or exceed the lease | Correlate shutdowns and duration; adjust batch/lease only after fixing stalls |
+| `SubmissionStarted` lease expires or `MarkSubmittedAsync` fails | SMTP may have accepted the message but the submitted update is absent or ambiguous | Transition to outcome-unknown, reconcile provider events and `Message-Id`, and do not resend blindly |
 | `OutcomeUnknown` records appear | Submission began but acknowledgement was not observed | Reconcile using provider events and `Message-Id`; do not auto-resend blindly |
 | Permanent rejection rate rises | Recipient/policy/data error or provider contract change | Quarantine, correct the source, and avoid retry loops |
 | Authentication or TLS failures rise | Credential, clock, trust, port, or provider-policy problem | Rotate/fix configuration; never bypass certificate validation |
@@ -360,7 +410,9 @@ Checks for the consuming application:
 - [ ] Run two workers and prove lease-token compare-and-set prevents concurrent submission.
 - [ ] Exercise crash-before-send, rejection, timeout during send, crash-after-acceptance, lease expiry, retry exhaustion, and graceful shutdown.
 - [ ] Assert `MailKitTransport` rejects `None`, `Auto`, and `StartTlsWhenAvailable`, and accepts only `StartTls` or `SslOnConnect` before `ConnectAsync`.
-- [ ] Cancel an in-flight send and verify `MarkOutcomeUnknownAsync` receives an independent, short finalization token rather than the cancelled worker token; verify an expired finalization budget remains observable.
+- [ ] Verify submitted records retain no raw SMTP response or other server response text.
+- [ ] Cancel an in-flight send, cancel `MarkSubmittedAsync` after a successful `SendAsync`, and cancel a normal `MarkOutcomeUnknownAsync` write, then verify each bounded finalization uses an independent token; successful finalization rethrows the original cancellation, while an expired finalization budget remains observable.
+- [ ] Force `MarkSubmissionStartedAsync` to fail and verify no SMTP call occurs; force `MarkSubmittedAsync` to fail after SMTP acceptance and verify recovery records/reconciles the expired `SubmissionStarted` lease without blindly resending.
 - [ ] Verify reconciliation and operator handling for unknown outcomes, bounces, and complaints.
 - [ ] Test the approved provider's TLS/authentication contract and confirm telemetry redaction.
 

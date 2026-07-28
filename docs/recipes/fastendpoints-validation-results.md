@@ -60,13 +60,13 @@ Represent expected failures as concrete error types with stable codes:
 ```csharp
 using FluentResults;
 
-public abstract class CatalogError(string message, string code) : Error(message)
-{
-    public string Code { get; } = code;
-}
+public abstract class CatalogError(string message) : Error(message);
 
 public sealed class DuplicateSkuError()
-    : CatalogError("A product with this SKU already exists.", "sku_already_exists");
+    : CatalogError("A product with this SKU already exists.")
+{
+    public const string Code = "sku_already_exists";
+}
 
 public sealed record ProductCreated(Guid Id, string Sku);
 
@@ -139,7 +139,7 @@ public sealed class CreateProductEndpoint(IProductService service)
         if (result.Errors is [DuplicateSkuError duplicate])
         {
             await Send.ResponseAsync(
-                new ApiError(duplicate.Code, duplicate.Message),
+                new ApiError(DuplicateSkuError.Code, duplicate.Message),
                 StatusCodes.Status409Conflict,
                 cancellationToken);
             return;

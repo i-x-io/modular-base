@@ -102,7 +102,7 @@ public sealed record OrderCreated(Guid Id, string Number);
 public sealed class DuplicateOrderNumberError()
     : Error("An order with this number already exists.")
 {
-    public string Code => "order_number_already_exists";
+    public const string Code = "order_number_already_exists";
 }
 
 public interface IOrderWriter

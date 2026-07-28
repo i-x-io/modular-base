@@ -10,3 +10,6 @@ IXM1003 | Documentation | Warning | Interface members require complete XML docum
 IXM1004 | Documentation | Warning | Public services require complete XML documentation.
 IXM1005 | Documentation | Warning | Service members require complete XML documentation.
 IXM2001 | Design | Info | Eligible class-shaped data objects should be records.
+IXM3001 | Design | Warning | Service operation must return FluentResults.
+IXM3002 | Design | Warning | Business failure must use a coded error.
+IXM3003 | Design | Warning | Broad exception catch must rethrow.

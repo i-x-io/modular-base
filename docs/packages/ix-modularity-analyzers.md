@@ -33,6 +33,7 @@ The package has no DI or runtime configuration. Consumers control analyzer loadi
 | `IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive"` | Retain the standard private-analyzer form | Keeps the analyzer asset available to the current project while the private reference prevents downstream propagation. |
 | `dotnet_diagnostic.IXM1001.severity` through `IXM1005` | `error` | Adopts the repository’s build-blocking documentation contract; the package descriptors themselves default these rules to warning. |
 | `dotnet_diagnostic.IXM2001.severity` | `suggestion` | Preserves the package’s nonblocking design recommendation; its descriptor defaults to info. |
+| `dotnet_diagnostic.IXM3001.severity` through `IXM3003` | `error` | Adopts the repository’s build-blocking result and exception-handling contract; the package descriptors themselves default these rules to warning. |
 
 Put shared severities in a checked-in `.globalconfig` or `.editorconfig`. Keep any exception narrow to the affected diagnostic and declaration; do not disable the entire analyzer family to accommodate one intentional class-shaped contract.
 
@@ -42,9 +43,9 @@ Adopt the package first in a library with an explicit documentation ownership mo
 
 ### Upgrade and rollback
 
-Upgrade in two stages. First, update the produced package version and review `AnalyzerReleases.Shipped.md` plus `AnalyzerReleases.Unshipped.md` for added, removed, or severity-changed diagnostics. Keep `ModularBase.globalconfig`, `.editorconfig`, the analyzer taxonomy, per-diagnostic help, tests, and package version aligned in the same release. Pack the candidate and inspect it before publishing: the analyzer DLL and symbols belong under `analyzers/dotnet/cs/`, while `lib/` and `ref/` must remain absent.
+The initial `0.1.0` package has not been published. Its shipped contract includes `IXM1001`–`IXM1005`, `IXM2001`, and `IXM3001`–`IXM3003`. Before publishing it, review `AnalyzerReleases.Shipped.md` for that complete contract and verify `AnalyzerReleases.Unshipped.md` contains only future work. Keep `ModularBase.globalconfig`, `.editorconfig`, the analyzer taxonomy, per-diagnostic help, tests, and package version aligned. Pack the candidate and inspect it before publishing: the analyzer DLL and symbols belong under `analyzers/dotnet/cs/`, while `lib/` and `ref/` must remain absent.
 
-Second, pin one consumer to the candidate version, restore, build, and classify every new diagnostic before rolling it out broadly. A new `IXM100x` failure normally requires completing documentation or narrowing public surface; an `IXM2001` result requires semantic review, not an automatic class-to-record conversion. Because `0.1.0` is the only shipped rule set currently recorded, any future upgrade must treat a diagnostic-ID reuse, changed default severity, or changed symbol-selection behavior as a contract change.
+Pin one consumer to the `0.1.0` candidate, restore, build, and classify every diagnostic before publishing. An `IXM100x` failure normally requires completing documentation or narrowing public surface; an `IXM2001` result requires semantic review, not an automatic class-to-record conversion; `IXM3001` requires a supported result return shape; `IXM3002` requires an own coded error; and `IXM3003` requires bare rethrow from broad catches. After publication, treat a diagnostic-ID reuse, changed default severity, or changed symbol-selection behavior as a contract change.
 
 Rollback by restoring the previously approved package version in the consumer or release manifest and rebuilding from a clean restore. If the upgrade also changed repository severity policy, revert those severity entries with the package pin so the previous diagnostic contract is restored as one unit. Do not use blanket `NoWarn` or project-wide `none` severities as a rollback: they hide whether the prior analyzer is loaded and leave documentation enforcement weakened.
 
@@ -68,7 +69,7 @@ Do not reference the package as a runtime assembly, package it under `lib/` or `
 - [ ] Compile a minimal consumer and confirm `IXM1001`–`IXM1005` and `IXM3001`–`IXM3003` load at the configured severity.
 - [ ] Confirm `IXM2001` remains an info/suggestion diagnostic.
 - [ ] Verify generated, inherited, implicit, and non-user-authored symbols do not produce the documentation diagnostics.
-- [ ] Compare `AnalyzerReleases.Shipped.md`, the analyzer taxonomy, help pages, descriptor defaults, and consumer severity configuration before approving an upgrade.
+- [ ] Before publishing `0.1.0`, compare the complete shipped `IXM1001`–`IXM1005`, `IXM2001`, and `IXM3001`–`IXM3003` contract with the analyzer taxonomy, help pages, descriptor defaults, and consumer severity configuration.
 - [ ] Exercise rollback by restoring the last approved package pin and severity policy, then confirm the previous diagnostic set and severities on a clean build.
 
 ## Sources

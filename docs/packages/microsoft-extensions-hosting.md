@@ -75,6 +75,7 @@ public sealed class QueueWorker(
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
             logger.LogInformation("Queue worker received the host shutdown signal.");
+            throw;
         }
     }
 }
