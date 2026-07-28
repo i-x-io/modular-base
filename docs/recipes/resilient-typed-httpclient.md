@@ -9,8 +9,7 @@ The example disables retries for unsafe HTTP methods. A command may opt back int
 ## Required packages
 
 Use central package management for the Web host. The following Web SDK block is
-a standalone application illustration outside this repository's enforced
-project graph:
+a consuming-application example using the centrally managed package version:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">

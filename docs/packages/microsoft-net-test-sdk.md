@@ -18,12 +18,12 @@ Use only when a future configuration deliberately selects the VSTest alternative
 
 ## Recommended registration and use
 
-Configure a `Test` or `ArchitectureTest` project with `IsTestProject=true` and versionless references:
+Configure a non-packable test project with standard SDK metadata and versionless references:
 
 ```xml
 <PropertyGroup>
   <IsTestProject>true</IsTestProject>
-  <IXModularityProjectRole>Test</IXModularityProjectRole>
+  <IsPackable>false</IsPackable>
 </PropertyGroup>
 <ItemGroup>
   <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -32,7 +32,7 @@ Configure a `Test` or `ArchitectureTest` project with `IsTestProject=true` and v
 </ItemGroup>
 ```
 
-The root `global.json` currently selects MTP. Before using this alternative, obtain architecture approval for a coherent VSTest repository/run configuration and select `VSTest` through .NET 10's `test.runner` setting (or remove the MTP selection). Then use VSTest syntax consistently:
+The root `global.json` currently selects MTP. Before using this alternative, make an explicit project-level decision for a coherent VSTest repository/run configuration and select `VSTest` through .NET 10's `test.runner` setting (or remove the MTP selection). Then use VSTest syntax consistently:
 
 ```bash
 dotnet test --logger "trx;LogFileName=tests.trx" \
@@ -66,7 +66,7 @@ The SDK starts test hosts and loads test assemblies and adapters. Restore only f
 
 ## Verification checklist
 
-- [ ] The project is marked as a test project, has an allowed test role, and uses only versionless package references.
+- [ ] The project sets `IsTestProject=true` and `IsPackable=false` and uses only versionless package references.
 - [ ] The xUnit v3 framework and adapter are present, and the repository/run configuration explicitly selects VSTest.
 - [ ] CLI and supported IDEs discover the same focused `[Fact]` test.
 - [ ] CI produces bounded TRX output and optional diagnostics without sensitive values.

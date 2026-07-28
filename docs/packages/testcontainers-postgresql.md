@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `Testcontainers.PostgreSql` |
 | Pinned version | `4.13.0` |
-| Status | Direct; approved only for test-role projects that require disposable PostgreSQL infrastructure |
+| Status | Direct; approved only for test projects that require disposable PostgreSQL infrastructure |
 | Role | Disposable PostgreSQL containers for integration tests |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
@@ -18,11 +18,17 @@ Use when an integration test must exercise real PostgreSQL protocol, SQL, transa
 
 ## Recommended registration and use
 
-Add versionless references only to a `Test` or `ArchitectureTest` project with `IsTestProject=true`:
+Add versionless references only to a non-packable test project:
 
 ```xml
-<PackageReference Include="xunit.v3" />
-<PackageReference Include="Testcontainers.PostgreSql" />
+<PropertyGroup>
+  <IsTestProject>true</IsTestProject>
+  <IsPackable>false</IsPackable>
+</PropertyGroup>
+<ItemGroup>
+  <PackageReference Include="xunit.v3" />
+  <PackageReference Include="Testcontainers.PostgreSql" />
+</ItemGroup>
 ```
 
 Own the container through xUnit's asynchronous lifecycle, pin the image, and obtain the dynamically allocated connection string only after startup:
@@ -46,7 +52,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
 }
 ```
 
-Apply application-owned migrations or a minimal schema after `StartAsync`, then open a fresh client connection per test/operation. The image above is an example pin: select one supported by the application, validate it, and update it deliberately.
+Apply application-owned migrations or a minimal schema after `StartAsync`, then open a fresh client connection per test/operation. The image above is an example version tag: select one supported by the application, validate it, and update it deliberately. Tags can be moved by registries; use an approved digest reference when immutable image identity is required.
 
 ## Enterprise implementation guidance
 

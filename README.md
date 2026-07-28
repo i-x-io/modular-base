@@ -1,49 +1,53 @@
 # ModularBase
 
-ModularBase centralizes the SDK, package, analyzer, source, build, and architecture policies for future `IX.Modularity.*` libraries. `IX.Modularity.slnx` currently contains three projects: the packable compiler-tooling package [`src/IX.Modularity.Analyzers`](src/IX.Modularity.Analyzers/IX.Modularity.Analyzers.csproj), its non-packable analyzer test project [`test/IX.Modularity.Analyzers.Tests`](test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj), and the non-packable architecture test project [`test/IX.Modularity.Architecture.Tests`](test/IX.Modularity.Architecture.Tests/IX.Modularity.Architecture.Tests.csproj). It contains no runtime or application library.
+ModularBase is a baseline for future `IX.Modularity.*` libraries. It centralizes the .NET SDK version, common build and analyzer settings, package versions, NuGet source policy, package guidance, and local dependency-review tools.
 
-Start with the [documentation index](docs/README.md), which routes to every
-documentation branch.
+[`IX.Modularity.slnx`](IX.Modularity.slnx) is intentionally empty. The repository does not currently contain source projects, test projects, custom analyzers, architecture tests, runtime libraries, or applications.
 
-Useful direct links include the [architecture policy index](docs/architecture/README.md), the [package catalog](docs/packages/README.md), the [package-selection guidance](docs/package-guidance/README.md), the [illustrated recipes](docs/recipes/README.md), and the [analyzer index](docs/architecture/analyzer-index.md). The repository documents library policy and illustrative composition workflows; it deliberately does not include permanent sample applications or application projects.
+Start with the [documentation index](docs/README.md). The main documentation branches are the [package catalog](docs/packages/README.md), [package-selection guidance](docs/package-guidance/README.md), and [composition recipes](docs/recipes/README.md).
 
-## Current repository state
+## Shared baseline
 
-The repository pins the .NET SDK to `10.0.302` in [`global.json`](global.json), with roll-forward disabled and prerelease SDKs disallowed. Its shared C# policy targets `net10.0`, uses C# `14.0`, enables nullable reference types and implicit usings, and treats warnings as errors.
+The repository provides:
 
-The `Analyzer` project produces packable compiler tooling; the `Test` project verifies that analyzer; and the `ArchitectureTest` project validates repository architecture and documentation rules. Build, restore, test, audit, outdated-package scanning, and SBOM generation operate on this populated solution. No project is a runtime or application library.
+- an exact .NET SDK requirement of `10.0.302`, with roll-forward and prerelease SDKs disabled;
+- shared .NET 10 and C# 14 build settings, nullable reference types, deterministic output, and warnings as errors;
+- central package versions and private, build-only third-party analyzers;
+- NuGet.org-only package source mapping and vulnerability auditing;
+- a banned-symbol policy supplied to projects through `BannedSymbols.txt`;
+- package selection and integration documentation; and
+- pinned local CycloneDX and outdated-package tools.
 
-Each project declares one direct `IXModularityProjectRole` metadata value: `Analyzer`, `Test`, or `ArchitectureTest`. The role controls its allowed dependency direction and packability. See [architecture terminology](docs/architecture/terminology.md), [architectural rules](docs/architecture/architectural-rules.md), and [project structure](docs/architecture/project-structure.md) for the definitions and requirements.
+Future projects inherit the applicable settings from `Directory.Build.props`, `Directory.Packages.props`, `ModularBase.globalconfig`, and `.editorconfig`. Packable projects must declare and include their own package README rather than relying on a repository-wide package-readme default.
 
-## Repository commands
+## Adding and validating a project
 
-Use the repository `Makefile` as the public build interface:
+Install exactly .NET SDK `10.0.302`, then create a project and add it to the solution. For example:
 
 ```sh
-make
-make validate
-make tool-restore
-make build CONFIGURATION=Debug
-make test CONFIGURATION=Debug
+dotnet new classlib --name IX.Modularity.Example --output src/IX.Modularity.Example
+dotnet sln IX.Modularity.slnx add src/IX.Modularity.Example/IX.Modularity.Example.csproj
 ```
 
-`make` validates the repository and restores its pinned local tools. The remaining targets are `restore`, `format`, `build`, `test`, `audit`, `outdated`, and `sbom`. Configuration is restricted to `Debug` or `Release` and defaults to `Release`.
+The shared configuration enables NuGet lock files. Generate a new project's initial `packages.lock.json` with an unlocked restore, inspect it, and commit it with the project:
 
-[`eng/Build.proj`](eng/Build.proj) remains an internal orchestration detail. Invoke it through `make`, not directly.
+```sh
+dotnet restore IX.Modularity.slnx -p:RestoreLockedMode=false
+```
 
-`make test CONFIGURATION=Debug` is the authoritative ArchUnit bytecode check. `Release` remains a supported configuration for every target, including `make test CONFIGURATION=Release`.
+After the lock file exists, use the standard .NET commands directly:
 
-See the architecture policies for the operational contract:
+```sh
+dotnet tool restore
+dotnet restore IX.Modularity.slnx --locked-mode
+dotnet format IX.Modularity.slnx --verify-no-changes --no-restore
+dotnet build IX.Modularity.slnx --configuration Release --no-restore
+dotnet test IX.Modularity.slnx --configuration Release --no-build
+dotnet pack IX.Modularity.slnx --configuration Release --no-build
+dotnet outdated IX.Modularity.slnx
+dotnet CycloneDX IX.Modularity.slnx
+```
 
-- [Package catalog and implementation guides](docs/packages/README.md)
-- [Package selection and supply-chain guidance](docs/package-guidance/README.md)
-- [Illustrated package recipes](docs/recipes/README.md)
-- [Dependency policy](docs/architecture/dependency-policy.md)
-- [Code quality policy](docs/architecture/code-quality-policy.md)
-- [Build and SBOM](docs/architecture/build-and-sbom.md)
-- [Architecture terminology](docs/architecture/terminology.md)
-- [Architectural rules](docs/architecture/architectural-rules.md)
-- [Project structure](docs/architecture/project-structure.md)
-- [Package documentation schema](docs/architecture/package-documentation-schema.md)
-- [Architecture policy index](docs/architecture/README.md)
-- [Analyzer policy and diagnostics](docs/architecture/analyzer-index.md)
+NuGet auditing is enabled during restore. Review audit findings and generated dependency reports rather than treating successful command completion alone as evidence of package safety.
+
+Because the solution is currently empty, restore, build, and format commands may complete without evaluating meaningful product code, while test may have no runnable configuration. Those results are not repository validation until at least one project is present.

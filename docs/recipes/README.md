@@ -1,17 +1,14 @@
-# Illustrated package recipes
+# Package composition recipes
 
 These recipes compose packages from the central catalog into focused workflows.
 They are explanatory documentation, not permanent sample applications. Every
 `PackageReference` omits `Version` because `Directory.Packages.props` remains
 the version authority.
 
-A repository-oriented project block declares exactly one direct
-`IXModularityProjectRole` and follows the enforced dependency graph. A block
-without that role is labeled immediately as an external or standalone
-application illustration and is not presented as a project in this repository.
-See the [dependency policy](../architecture/dependency-policy.md) and
-[project structure](../architecture/project-structure.md) for the authoritative
-rules and role definitions.
+Project blocks use standard .NET SDK properties and illustrate how a consuming
+application can separate reusable code, infrastructure integrations, hosts, and
+tests. Those boundaries are design guidance, not repository-specific project
+roles or custom analyzer enforcement.
 
 - [Secure FastEndpoints API](fastendpoints-jwt-openapi-scalar.md) composes JWT
   validation, endpoint authorization, OpenAPI generation, and Scalar.

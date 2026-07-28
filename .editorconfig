@@ -180,18 +180,8 @@ dotnet_diagnostic.IDE0320.severity = error
 dotnet_diagnostic.IDE0330.severity = error
 dotnet_diagnostic.IDE0350.severity = error
 
-# Repository analyzer policy. IXM diagnostics are emitted by the produced
-# IX.Modularity.Analyzers package; the source scope controls magic-string debt.
+# Selected analyzer policy; the source scope controls magic-string debt.
 dotnet_diagnostic.CS1591.severity = none
-dotnet_diagnostic.IXM1001.severity = error
-dotnet_diagnostic.IXM1002.severity = error
-dotnet_diagnostic.IXM1003.severity = error
-dotnet_diagnostic.IXM1004.severity = error
-dotnet_diagnostic.IXM1005.severity = error
-dotnet_diagnostic.IXM2001.severity = suggestion
-dotnet_diagnostic.IXM3001.severity = error
-dotnet_diagnostic.IXM3002.severity = error
-dotnet_diagnostic.IXM3003.severity = error
 dotnet_diagnostic.CA1200.severity = error
 dotnet_diagnostic.CA1845.severity = error
 dotnet_diagnostic.CA1846.severity = error

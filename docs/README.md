@@ -4,7 +4,12 @@ This documentation governs the future `IX.Modularity.*` library repository. It i
 
 ## Documentation branches
 
-- [Architecture policy](architecture/README.md) — architecture, analyzer, build, quality, and taxonomy policy.
 - [Package catalog](packages/README.md) — central package entries and package-specific decision guides.
 - [Package guidance](package-guidance/README.md) — package selection, ownership boundaries, and objective supply-chain facts.
-- [Illustrated recipes](recipes/README.md) — explained, multi-package workflows using the centrally pinned catalog.
+- [Composition recipes](recipes/README.md) — explained, multi-package workflows using the centrally pinned catalog.
+
+## Common tasks
+
+- **Select a package:** start with the [package-selection guide](package-guidance/package-selection.md), then read the package-specific guide from the [catalog](packages/README.md).
+- **Add or upgrade a package:** update the pin in [`Directory.Packages.props`](../Directory.Packages.props), then keep the catalog entry, package guide, and supply-chain record synchronized.
+- **Review a package:** use the [supply-chain reference](package-guidance/supply-chain.md) alongside the package-specific guide to assess identity, dependencies, lifecycle, advisories, and provenance.

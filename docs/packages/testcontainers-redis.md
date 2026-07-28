@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `Testcontainers.Redis` |
 | Pinned version | `4.13.0` |
-| Status | Direct; approved only for test-role projects that require disposable Redis infrastructure |
+| Status | Direct; approved only for test projects that require disposable Redis infrastructure |
 | Role | Disposable Redis containers for integration tests |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
@@ -18,11 +18,17 @@ Use when integration tests require the actual Redis protocol, expiry, serializat
 
 ## Recommended registration and use
 
-Add versionless references only to a `Test` or `ArchitectureTest` project with `IsTestProject=true`:
+Add versionless references only to a non-packable test project:
 
 ```xml
-<PackageReference Include="xunit.v3" />
-<PackageReference Include="Testcontainers.Redis" />
+<PropertyGroup>
+  <IsTestProject>true</IsTestProject>
+  <IsPackable>false</IsPackable>
+</PropertyGroup>
+<ItemGroup>
+  <PackageReference Include="xunit.v3" />
+  <PackageReference Include="Testcontainers.Redis" />
+</ItemGroup>
 ```
 
 Use xUnit's asynchronous lifecycle, a reviewed image pin, and the post-start connection string:
@@ -46,7 +52,7 @@ public sealed class RedisFixture : IAsyncLifetime
 }
 ```
 
-The image is an example deterministic pin; align it with the supported production major/minor and validate upgrades. Construct the test-owned Redis client after startup, use a unique key prefix per test, assert value and TTL behavior, and delete the prefix during cleanup.
+The image is an example version tag; align it with the supported production major/minor and validate upgrades. Tags can be moved by registries, so use an approved digest reference when immutable image identity is required. Construct the test-owned Redis client after startup, use a unique key prefix per test, assert value and TTL behavior, and delete the prefix during cleanup.
 
 ## Enterprise implementation guidance
 

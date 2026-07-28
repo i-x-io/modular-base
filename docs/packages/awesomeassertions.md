@@ -14,15 +14,21 @@
 
 ## Decision and scope
 
-Use in test and architecture-test projects to make expected behavior and failures readable. It complements xUnit's execution model; it does not create fixtures, replace production validation, or justify assertions against implementation details.
+Use in test projects to make expected behavior and failures readable. It complements xUnit's execution model; it does not create fixtures, replace production validation, or justify assertions against implementation details.
 
 ## Recommended registration and use
 
-Reference the centrally pinned package without a project-local version, and only from a project whose role is `Test` or `ArchitectureTest` and which sets `IsTestProject=true`:
+Reference the centrally pinned package without a project-local version from a non-packable test project:
 
 ```xml
-<PackageReference Include="xunit.v3" />
-<PackageReference Include="AwesomeAssertions" />
+<PropertyGroup>
+  <IsTestProject>true</IsTestProject>
+  <IsPackable>false</IsPackable>
+</PropertyGroup>
+<ItemGroup>
+  <PackageReference Include="xunit.v3" />
+  <PackageReference Include="AwesomeAssertions" />
+</ItemGroup>
 ```
 
 Import `AwesomeAssertions` and assert the smallest observable contract. Configure graph equivalency explicitly when ordering, exclusions, or member mappings matter:
@@ -61,7 +67,7 @@ Upgrade the central pin in a focused change, then compile every custom assertion
 
 ## Integration with the catalog
 
-Use with [xunit.v3](xunit-v3.md) for the preferred MTP test stack and with the Testcontainers guides for integration assertions. The central version and test-role restriction are owned by `Directory.Packages.props` and `Directory.Build.targets`; `PackageReference` entries omit `Version` under Central Package Management, while `ProjectReference` entries are source-project dependencies governed by documented role and boundary rules. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage) and the [AwesomeAssertions supply-chain entry](../package-guidance/supply-chain.md#awesomeassertions).
+Use with [xunit.v3](xunit-v3.md) for the preferred MTP test stack and with the Testcontainers guides for integration assertions. `Directory.Packages.props` owns the version, so `PackageReference` entries omit `Version` under Central Package Management. Keep the reference in a project explicitly marked as a non-packable test project. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage) and the [AwesomeAssertions supply-chain entry](../package-guidance/supply-chain.md#awesomeassertions).
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -76,7 +82,7 @@ Failure formatting can traverse large graphs and print subject values. Never ass
 
 ## Verification checklist
 
-- [ ] The `PackageReference` omits `Version` under Central Package Management and is limited to a `Test` or `ArchitectureTest` project; any `ProjectReference` is a source-project dependency governed separately by the documented role and boundary rules.
+- [ ] The `PackageReference` omits `Version` under Central Package Management, and the project sets `IsTestProject=true` and `IsPackable=false`.
 - [ ] Comparison rules make ordering, time, culture, and exclusions explicit where relevant.
 - [ ] A deliberately failing test produces useful diagnostics without sensitive values.
 - [ ] The test runs through the project's selected xUnit v3 runner stack.

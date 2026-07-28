@@ -15,7 +15,7 @@ Use it when compiler tooling must parse C# source, inspect C# syntax, or create 
 
 ## Recommended registration and use
 
-Reference it versionlessly from `Analyzer`, `SourceGenerator`, or compiler-tool test projects. Prefer symbols/semantic models for rules and use C# syntax only where the diagnostic contract explicitly requires source location or syntax form.
+Reference it versionlessly and privately from analyzer, source-generator, or compiler-tool test projects. Prefer symbols and semantic models for rules, and use C# syntax only where the diagnostic contract explicitly requires source location or syntax form.
 
 | Test compilation setting | Catalog guidance |
 | --- | --- |
@@ -26,7 +26,7 @@ Reference it versionlessly from `Analyzer`, `SourceGenerator`, or compiler-tool 
 
 ## Enterprise implementation guidance
 
-Set deterministic parse and compilation options in tests. Test triggering and non-triggering snippets, diagnostic IDs, locations, messages, severities, generated-code exclusion, and role-sensitive behavior. Keep the package version aligned with the common Roslyn API.
+Set deterministic parse and compilation options in tests. Test triggering and non-triggering snippets, diagnostic IDs, locations, messages, severities, and generated-code exclusion. Keep the package version aligned with the common Roslyn API.
 
 ### Upgrade and rollback
 
@@ -34,7 +34,7 @@ Upgrade with `Microsoft.CodeAnalysis.Common` and `Microsoft.CodeAnalysis.Analyze
 
 ## Integration with the catalog
 
-`Directory.Packages.props` owns `5.6.0` with the companion Roslyn packages. The produced `IX.Modularity.Analyzers` package consumes it only at build/package time and exposes no C# compiler API as public runtime surface. Its [supply-chain record](../package-guidance/supply-chain.md#microsoft-codeanalysis-csharp) identifies the approved source and upstream.
+`Directory.Packages.props` owns `5.6.0` with the companion Roslyn packages. Projects that build compiler tooling opt in with a versionless private reference and must keep Roslyn APIs out of their public runtime surface. Its [supply-chain record](../package-guidance/supply-chain.md#microsoft-codeanalysis-csharp) identifies the approved source and upstream.
 
 ## Security, performance, AOT, trimming, and operations
 

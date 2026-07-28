@@ -16,7 +16,7 @@ Use this package for DI-integrated outbound HTTP clients. It provides factory-ma
 
 ## Recommended registration and use
 
-With Central Package Management, `PackageReference` entries omit `Version` because `Directory.Packages.props` is the package-version authority. `ProjectReference` entries express source-project dependencies and remain governed by project-role and boundary policy:
+With Central Package Management, `PackageReference` entries omit `Version` because `Directory.Packages.props` is the package-version authority. `ProjectReference` entries express source-project dependencies; the consuming solution remains responsible for keeping those dependencies within its intended boundaries:
 
 ```xml
 <PackageReference Include="Microsoft.Extensions.Http" />

@@ -7,8 +7,7 @@ Use this recipe when a business transaction must record an email intent durably 
 ## Required catalog packages
 
 The catalog supplies versions centrally. The following Worker SDK block is a
-standalone application illustration outside this repository's enforced project
-graph:
+consuming-application example using those centrally managed versions:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Worker">

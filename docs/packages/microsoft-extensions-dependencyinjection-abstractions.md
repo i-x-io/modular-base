@@ -43,7 +43,7 @@ public static class PaymentServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(endpoint);
 
         services.AddSingleton(new PaymentOptions(endpoint));
-        services.AddSingleton<IPaymentClock, SystemPaymentClock>();
+        services.AddSingleton(TimeProvider.System);
         services.AddScoped<IPaymentGateway, PaymentGateway>();
         return services;
     }
@@ -51,16 +51,10 @@ public static class PaymentServiceCollectionExtensions
 
 public sealed record PaymentOptions(Uri Endpoint);
 
-public interface IPaymentClock { DateTimeOffset UtcNow { get; } }
-internal sealed class SystemPaymentClock : IPaymentClock
-{
-    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
-}
-
 public interface IPaymentGateway { DateTimeOffset CreatedAt { get; } }
-internal sealed class PaymentGateway(IPaymentClock clock) : IPaymentGateway
+internal sealed class PaymentGateway(TimeProvider timeProvider) : IPaymentGateway
 {
-    public DateTimeOffset CreatedAt => clock.UtcNow;
+    public DateTimeOffset CreatedAt => timeProvider.GetUtcNow();
 }
 ```
 

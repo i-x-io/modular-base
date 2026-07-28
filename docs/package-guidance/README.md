@@ -7,13 +7,12 @@ These references complement the one-package-at-a-time guides in the
   registration or runtime concern and the combinations the catalog supports.
 - [Supply-chain reference](supply-chain.md) records exact-version, source-backed
   identity, dependency, lifecycle, advisory, and provenance facts for every
-  catalog entry and the repository-produced analyzer.
+  external catalog entry.
 
 `Directory.Packages.props` remains the source of truth for package IDs and pinned
-versions. These pages do not authorize a new dependency, replace a package guide,
-or override the repository's [dependency policy](../architecture/dependency-policy.md).
-Use [project structure](../architecture/project-structure.md) to determine which
-project role may own an approved dependency.
+versions. A central version does not add or approve a dependency: each consuming
+project decides what it needs and adds a versionless `PackageReference`. These
+pages help with that decision but do not replace the package-specific guidance.
 
 Research was last accessed on **2026-07-27**. Context7 was consulted first for
 each package family, but its service returned `Monthly quota exceeded` before any

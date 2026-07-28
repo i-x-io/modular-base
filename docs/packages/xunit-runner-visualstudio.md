@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `xunit.runner.visualstudio` |
 | Pinned version | `3.1.5` |
-| Status | Catalog-only; available only for an architecture-approved VSTest alternative |
+| Status | Catalog-only; available only for a deliberately configured VSTest alternative |
 | Role | Visual Studio/VSTest adapter for xUnit v3 discovery and execution |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
@@ -18,18 +18,24 @@ Use only when a future configuration deliberately selects the VSTest xUnit v3 pa
 
 ## Recommended registration and use
 
-Configure only an allowed test-role project and keep all references versionless:
+Configure a non-packable test project with standard SDK metadata and keep all references versionless:
 
 ```xml
-<PackageReference Include="Microsoft.NET.Test.Sdk" />
-<PackageReference Include="xunit.v3" />
-<PackageReference Include="xunit.runner.visualstudio">
-  <PrivateAssets>all</PrivateAssets>
-  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-</PackageReference>
+<PropertyGroup>
+  <IsTestProject>true</IsTestProject>
+  <IsPackable>false</IsPackable>
+</PropertyGroup>
+<ItemGroup>
+  <PackageReference Include="Microsoft.NET.Test.Sdk" />
+  <PackageReference Include="xunit.v3" />
+  <PackageReference Include="xunit.runner.visualstudio">
+    <PrivateAssets>all</PrivateAssets>
+    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+  </PackageReference>
+</ItemGroup>
 ```
 
-The adapter is build/test tooling and should not flow transitively to consumers. The repository's current `global.json` selects MTP, so using this alternative first requires an architecture-approved VSTest repository/run configuration (`test.runner` set to `VSTest`, or the MTP selection removed). Then validate CLI and IDE discovery with the same minimal test:
+The adapter is build/test tooling and should not flow transitively to consumers. The repository's current `global.json` selects MTP, so using this alternative first requires a deliberately configured VSTest repository/run configuration (`test.runner` set to `VSTest`, or the MTP selection removed). Then validate CLI and IDE discovery with the same minimal test:
 
 ```csharp
 using Xunit;
@@ -70,7 +76,7 @@ The adapter loads test assemblies inside test infrastructure. Restore from appro
 
 ## Verification checklist
 
-- [ ] The project has an allowed test role, `IsTestProject=true`, and versionless private adapter assets.
+- [ ] The project sets `IsTestProject=true` and `IsPackable=false` and uses versionless private adapter assets.
 - [ ] The xUnit v3 framework and test SDK are present, and the repository/run configuration explicitly selects VSTest.
 - [ ] CLI and supported IDEs discover the same expected test count.
 - [ ] CI fails on zero/unexpected discovery and retains bounded TRX diagnostics.

@@ -8,9 +8,7 @@ Docker-backed tests are integration tests. They complement unit tests; they do n
 
 ## Required packages
 
-Use the repository-oriented
-`test/IX.Modularity.Infrastructure.Integration.Tests/IX.Modularity.Infrastructure.Integration.Tests.csproj`
-project with the repository's Microsoft Testing Platform selection:
+Use a dedicated integration test project with Microsoft Testing Platform:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -19,7 +17,6 @@ project with the repository's Microsoft Testing Platform selection:
     <IsTestProject>true</IsTestProject>
     <IsPackable>false</IsPackable>
     <OutputType>Exe</OutputType>
-    <IXModularityProjectRole>Test</IXModularityProjectRole>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
@@ -186,7 +183,7 @@ This is not an atomic dual-write. If the application requires consistency across
 Run the project only in a labeled Docker-capable integration job:
 
 ```bash
-dotnet test test/IX.Modularity.Infrastructure.Integration.Tests \
+dotnet test \
   -- --filter-query /[category=integration]
 ```
 

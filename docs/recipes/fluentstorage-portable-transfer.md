@@ -6,9 +6,7 @@ Use this recipe when application code needs a small upload/download boundary tha
 
 ## Required catalog packages
 
-The repository-oriented
-`src/IX.Modularity.Storage/IX.Modularity.Storage.csproj` library references the
-centrally pinned core package:
+A reusable storage library can reference the centrally managed core package:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -17,7 +15,6 @@ centrally pinned core package:
     <LangVersion>14.0</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <IXModularityProjectRole>Library</IXModularityProjectRole>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FluentStorage" />

@@ -2,10 +2,56 @@
 
 Use this guide before composing overlapping packages. A valid combination means
 the packages have distinct responsibilities; it does not replace the individual
-[package guides](../packages/README.md), the repository
-[dependency policy](../architecture/dependency-policy.md), or the project-role
-rules in [project structure](../architecture/project-structure.md). Sources were
-accessed on **2026-07-27**.
+[package guides](../packages/README.md). `Directory.Packages.props` is the version
+authority, but each consuming project decides which packages its behavior
+requires and adds those references explicitly. Sources were accessed on
+**2026-07-27**.
+
+## Validation and expected results
+
+| Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
+| --- | --- | --- | --- | --- | --- |
+| Validation rules | [`FluentValidation`](../packages/fluentvalidation.md) owns validator definitions and execution. | Reference it wherever code defines or invokes `IValidator<T>`. | FluentValidation may be used alone or with its DI companion. | Inputs or commands need explicit, reusable validation rules. | Treating validation as authorization, a uniqueness guarantee, or a transactional invariant. |
+| Validator discovery | [`FluentValidation.DependencyInjectionExtensions`](../packages/fluentvalidation-dependencyinjectionextensions.md) owns assembly scanning and Microsoft DI registration. | Reference it only where the service collection is composed; keep assembly selection and lifetimes explicit. | Combine with FluentValidation when scanner-based registration is useful. | The application wants conventional DI discovery instead of individual registrations. | Scanning arbitrary assemblies or giving validators lifetimes incompatible with their dependencies. |
+| Expected operation outcomes | [`FluentResults`](../packages/fluentresults.md) owns `Result` and `Result<T>` values. | Reference it wherever those result types are part of an implementation or contract. | Results can carry failures produced after validation; neither package depends on the other. | Callers must distinguish success from expected, actionable failure without exceptions. | Converting programming faults, cancellation, corrupt state, or infrastructure failures into ordinary failed results. |
+
+## API, OpenAPI, and versioning
+
+| Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
+| --- | --- | --- | --- | --- | --- |
+| FastEndpoints APIs | [`FastEndpoints`](../packages/fastendpoints.md) owns endpoint discovery, binding, execution, and endpoint metadata. | Reference it in projects that declare or compose FastEndpoints endpoints. | Pair with FastEndpoints OpenAPI, security, testing, or generator packages only for the selected capabilities. | The application chooses FastEndpoints as its HTTP endpoint framework. | Assuming the framework replaces ASP.NET Core authentication or authorization middleware. |
+| FastEndpoints documents | [`FastEndpoints.OpenApi`](../packages/fastendpoints-openapi.md) owns FastEndpoints-aware document registration. | Reference it where the FastEndpoints OpenAPI pipeline is composed. | Combine with FastEndpoints and optionally Scalar; let it own the document pipeline. | Generated documents must reflect FastEndpoints metadata and transformers. | Registering a second raw ASP.NET Core document for the same contract. |
+| Raw ASP.NET Core documents | [`Microsoft.AspNetCore.OpenApi`](../packages/microsoft-aspnetcore-openapi.md) owns `AddOpenApi` and `MapOpenApi`; [`Microsoft.OpenApi`](../packages/microsoft-openapi.md) supplies document model types. | Reference the ASP.NET Core package for a raw pipeline; add Microsoft.OpenApi directly only when code uses its types. | Combine with Scalar for a UI, or use separately from a deliberately distinct FastEndpoints document. | Minimal APIs or other ASP.NET Core endpoints need first-party document generation. | Adding Microsoft.OpenApi as though it registers or serves documents. |
+| Interactive API reference | [`Scalar.AspNetCore`](../packages/scalar-aspnetcore.md) owns the browser UI over an existing OpenAPI document. | Reference it in the web host that maps the UI. | Combine with either document-generation path and keep names/routes aligned. | Users need an interactive reference, normally in development or behind explicit protection. | Assuming Scalar generates the document or exposing it publicly without a security decision. |
+| HTTP contract versions | [`Asp.Versioning.Http`](../packages/asp-versioning-http.md) owns HTTP version readers and routing metadata. | Reference it where HTTP versioning is registered and mapped. | Combine with the chosen endpoint and document pipeline after defining one public reader strategy. | The external API contract needs multiple explicit versions. | Confusing HTTP API versions with document release labels or framework-specific endpoint versions. |
+
+## PostgreSQL queries, paging, and vectors
+
+| Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
+| --- | --- | --- | --- | --- | --- |
+| Reusable query intent | [`Ardalis.Specification`](../packages/ardalis-specification.md) owns provider-neutral specification models; [`Ardalis.Specification.EntityFrameworkCore`](../packages/ardalis-specification-entityframeworkcore.md) owns EF evaluation. | Reference the core package where specifications are defined and the EF companion where they are executed. | Combine both for EF-backed specifications after verifying compatibility with the selected EF/provider versions. | Several callers need the same bounded filters, ordering, projection, or paging intent. | Treating a specification as proof that a query is supported or efficient on PostgreSQL. |
+| PostgreSQL naming | [`EFCore.NamingConventions`](../packages/efcore-namingconventions.md) owns model-to-database naming conversion. | Reference and configure it in the EF Core PostgreSQL setup. | Combine with the Npgsql EF provider and migrations. | The schema deliberately uses a convention such as snake case. | Enabling it against an existing schema without reviewing the resulting migration. |
+| Constraint-error classification | [`EntityFrameworkCore.Exceptions.PostgreSQL`](../packages/entityframeworkcore-exceptions-postgresql.md) owns PostgreSQL-specific EF update exception classification. | Reference it where Npgsql EF options are configured. | Combine with the Npgsql EF provider; translate classified exceptions at the application boundary. | Known constraint failures must become explicit application outcomes. | Treating every database error as a safe or expected conflict. |
+| Keyset pagination | [`MR.EntityFrameworkCore.KeysetPagination`](../packages/mr-entityframeworkcore-keysetpagination.md) owns keyset predicate construction for EF queries. | Reference it where stable ordered pages are built. | Combine with EF Core and Npgsql; align the ordering with a supporting index. | Large or changing result sets need stable next/previous navigation. | Using a non-unique ordering or exposing an unsigned cursor as trusted input. |
+| Direct vector access | [`Pgvector`](../packages/pgvector.md) owns Npgsql vector mappings and vector values. | Reference it when direct Npgsql code stores or queries vectors. | Combine with Npgsql and a provisioned PostgreSQL `vector` extension. | SQL or low-level data access owns vector operations. | Omitting dimension checks, extension provisioning, or an explicit distance/index policy. |
+| EF vector access | [`Pgvector.EntityFrameworkCore`](../packages/pgvector.entityframeworkcore.md) owns EF model, migration, index, and LINQ integration. | Reference it where EF owns vector schema and queries. | Combine with Pgvector and the Npgsql EF provider, registering vector support in both data-source and EF options. | EF Core owns vector persistence and migrations. | Assuming the package supplies hybrid search, ranking policy, or extension deployment automatically. |
+
+## Mail and MIME
+
+| Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
+| --- | --- | --- | --- | --- | --- |
+| Message construction and parsing | [`MimeKit`](../packages/mimekit.md) owns MIME messages, addresses, bodies, headers, and attachments. | Reference it wherever messages are created or parsed. | Use alone for MIME processing or combine with MailKit for transport. | Correct structured MIME handling is required without a transport dependency. | Building MIME by string concatenation or expecting MimeKit to deliver messages. |
+| SMTP, IMAP, and POP | [`MailKit`](../packages/mailkit.md) owns protocol clients and connection/authentication lifecycles. | Reference it where mail transport is implemented. | Combine with MimeKit, whose message model MailKit consumes. | The application directly sends or receives mail through standard protocols. | Treating a successful SMTP call as an outbox, retry policy, or end-to-end delivery guarantee. |
+
+## Compiler and analyzer tooling
+
+| Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
+| --- | --- | --- | --- | --- | --- |
+| Compiler API | [`Microsoft.CodeAnalysis.Common`](../packages/microsoft-codeanalysis-common.md) owns language-neutral Roslyn APIs; [`Microsoft.CodeAnalysis.CSharp`](../packages/microsoft-codeanalysis-csharp.md) owns C# syntax and compilation APIs. | Reference them privately only in compiler-tooling implementations or isolated tests, keeping their versions aligned. | Combine Common and CSharp for C# tooling; add authoring analyzers for implementation feedback. | Building an analyzer, source generator, or compiler-based tool. | Shipping Roslyn assemblies as a normal runtime or transitive library dependency. |
+| Authoring diagnostics | [`Microsoft.CodeAnalysis.Analyzers`](../packages/microsoft-codeanalysis-analyzers.md) checks analyzer and generator implementations. | Reference it as a private build-time dependency in compiler-tooling projects. | Combine with the aligned Roslyn compiler API packages. | Compiler tooling needs standard Roslyn authoring guidance. | Treating authoring diagnostics as runtime behavior or mixing incompatible Roslyn versions. |
+| Repository-wide forbidden APIs | [`Microsoft.CodeAnalysis.BannedApiAnalyzers`](../packages/microsoft-codeanalysis-bannedapianalyzers.md) consumes the repository's `BannedSymbols.txt`. | It is already supplied globally; do not duplicate it in consuming projects. | Combine with other analyzers because it owns only explicit forbidden-symbol rules. | A symbol must be prohibited with a documented replacement. | Inventing a custom diagnostic when the standard banned-API mechanism expresses the rule. |
+| Public API baselines | [`Microsoft.CodeAnalysis.PublicApiAnalyzers`](../packages/microsoft-codeanalysis-publicapianalyzers.md) compares public symbols with project-owned baseline files. | Packable libraries opt in explicitly with a private analyzer reference and `PublicAPI.Shipped.txt`/`PublicAPI.Unshipped.txt`. | Combine with package validation for complementary source and binary compatibility checks. | A library treats its public API as a reviewed release contract. | Applying it indiscriminately to applications or assuming a central version activates it. |
+| Framework source generation | [`FastEndpoints.Generator`](../packages/fastendpoints-generator.md) owns FastEndpoints compile-time discovery and generated metadata. | Reference it privately in each project that declares the endpoints it must inspect. | Combine with FastEndpoints when source-generated startup, permissions, serialization, or AOT support is selected. | FastEndpoints needs its framework-specific generated artifacts. | Referencing it only from a host that cannot see endpoint declarations, or treating it as a general Roslyn authoring library. |
 
 ## Resilience and retry ownership
 

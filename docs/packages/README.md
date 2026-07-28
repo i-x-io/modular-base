@@ -2,13 +2,20 @@
 
 This index is maintained manually from [`Directory.Packages.props`](../../Directory.Packages.props). Keep it 1:1 with the central catalog: every catalog package must have exactly one entry here and one package guide.
 
-`Adoption` states whether and how a project may use a package. `Catalog mechanism` states only how the version or produced artifact enters the repository; a `PackageVersion` pin does not by itself authorize adoption. Package-specific role restrictions and composition requirements remain authoritative in the linked guide.
+`Adoption` states how a project may use a package:
+
+- **Direct** — reference the package when the project needs its primary capability.
+- **Companion** — reference the package only with the related primary package or integration described in its guide.
+- **Catalog-only** — the version is available for an explicit project-level choice, but the package is not part of the default baseline.
+- **Global analyzer** — the analyzer is injected repository-wide as a private, build-only dependency.
+
+`Catalog mechanism` states how the dependency enters the repository. `PackageVersion` centrally pins a version for project-level references; `GlobalPackageReference` applies the package repository-wide. A central pin does not by itself require a project to adopt the package. Package-specific constraints and composition requirements remain authoritative in the linked guide.
 
 Supporting references are maintained outside this one-to-one package index:
 
 - [Package selection guide](../package-guidance/package-selection.md) — ownership boundaries and supported package combinations.
 - [Supply-chain reference](../package-guidance/supply-chain.md) — objective identity, dependency, lifecycle, advisory, and provenance facts.
-- [Illustrated recipes](../recipes/README.md) — explained multi-package composition workflows.
+- [Composition recipes](../recipes/README.md) — explained multi-package composition workflows.
 
 ## Core utilities, validation, mail, and resilience
 
@@ -39,12 +46,6 @@ Supporting references are maintained outside this one-to-one package index:
 | [`Microsoft.CodeAnalysis.Analyzers`](microsoft-codeanalysis-analyzers.md) | `5.6.0` | Direct | PackageVersion |
 | [`Microsoft.CodeAnalysis.Common`](microsoft-codeanalysis-common.md) | `5.6.0` | Direct | PackageVersion |
 | [`Microsoft.CodeAnalysis.CSharp`](microsoft-codeanalysis-csharp.md) | `5.6.0` | Direct | PackageVersion |
-
-## Produced package: consumers opt in deliberately
-
-| Package | Version | Adoption | Catalog mechanism |
-| --- | ---: | --- | --- |
-| [`IX.Modularity.Analyzers`](ix-modularity-analyzers.md) | repository release version | Produced package | Produced here |
 
 ## Microsoft.Extensions foundation
 

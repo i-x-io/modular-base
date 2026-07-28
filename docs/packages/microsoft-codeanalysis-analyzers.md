@@ -11,7 +11,7 @@
 
 ## Decision and scope
 
-Use it only to build and validate repository-owned compiler tooling. It helps analyzer projects follow Roslyn analyzer authoring guidance; it is distinct from the analyzer package that consumers receive.
+Use it only to build and validate compiler tooling. It helps analyzer and source-generator projects follow Roslyn authoring guidance; it is not a runtime dependency for ordinary libraries.
 
 ## Recommended registration and use
 
@@ -34,7 +34,7 @@ Move this package with `Microsoft.CodeAnalysis.Common` and `Microsoft.CodeAnalys
 
 ## Integration with the catalog
 
-The central catalog owns version `5.6.0` alongside the Roslyn compiler APIs. It is approved only for `Analyzer` and `SourceGenerator` project roles described in [project structure](../architecture/project-structure.md). Review its [supply-chain record](../package-guidance/supply-chain.md#microsoft-codeanalysis-analyzers) before changing compiler-loaded tooling.
+The central catalog owns version `5.6.0` alongside the Roslyn compiler APIs. Reference it explicitly and privately only from projects that build analyzers or source generators. Review its [supply-chain record](../package-guidance/supply-chain.md#microsoft-codeanalysis-analyzers) before changing compiler-loaded tooling.
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -42,7 +42,7 @@ The package affects compiler-tool builds, not library runtime behavior. Analyzer
 
 ## Avoid
 
-Do not add it as a universal global analyzer, a runtime library dependency, or a substitute for tests of the produced analyzer’s diagnostics.
+Do not add it as a universal global analyzer, a runtime library dependency, or a substitute for tests of compiler-tool diagnostics.
 
 ## Verification checklist
 

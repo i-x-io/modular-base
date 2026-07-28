@@ -7,8 +7,8 @@ Use this recipe for settings that must be valid at startup, may reload while the
 ## Required catalog packages
 
 The ASP.NET Core shared framework supplies the web health-check endpoint. The
-following Web SDK block is a standalone application illustration outside this
-repository's enforced project graph:
+following Web SDK block is a consuming-application example using centrally
+managed versions:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">

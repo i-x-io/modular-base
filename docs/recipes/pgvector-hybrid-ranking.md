@@ -8,15 +8,12 @@ The example assumes that a controlled migration has already enabled the `vector`
 
 ## Required packages
 
-The repository-oriented
-`src/IX.Modularity.Search.Adapters.PostgreSql/IX.Modularity.Search.Adapters.PostgreSql.csproj`
-project owns this PostgreSQL-specific implementation:
+A PostgreSQL integration project can own this provider-specific implementation:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <IXModularityProjectRole>Adapter</IXModularityProjectRole>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Npgsql" />

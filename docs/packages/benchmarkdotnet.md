@@ -26,7 +26,7 @@ Reference it versionlessly in a dedicated non-packable benchmark project. Keep b
 
 ## Enterprise implementation guidance
 
-Benchmark representative public or internal library paths after correctness tests exist. Isolate I/O, network, clock, and environment variation. Review generated reports as evidence, not package artifacts. Do not run a benchmark suite as a substitute for `make test`.
+Benchmark representative public or internal library paths after correctness tests exist. Isolate I/O, network, clock, and environment variation. Review generated reports as evidence, not package artifacts. Do not run a benchmark suite as a substitute for correctness tests such as `dotnet test`.
 
 ### Upgrade and rollback
 
@@ -34,7 +34,7 @@ Upgrade the central pin in a dedicated change, restore the benchmark project, an
 
 ## Integration with the catalog
 
-`Directory.Packages.props` owns version `0.15.8`; the project file contains no version. Its intended use is governed by [performance and resource management](../architecture/performance-and-resource-management.md). Review its [supply-chain record](../package-guidance/supply-chain.md#benchmarkdotnet) before changing the pin.
+`Directory.Packages.props` owns version `0.15.8`; the project file contains no version. Keep benchmarks in a dedicated non-packable project and review the [supply-chain record](../package-guidance/supply-chain.md#benchmarkdotnet) before changing the pin.
 
 ## Security, performance, AOT, trimming, and operations
 

@@ -1,16 +1,17 @@
 # Package supply-chain reference
 
-This ledger covers all **89 external catalog entries** and the separately produced
-`IX.Modularity.Analyzers` package. `Directory.Packages.props` is authoritative for
-external pins. Facts were accessed on **2026-07-27**.
+This ledger covers all **89 external catalog entries**. `Directory.Packages.props`
+is authoritative for their pins. Facts were accessed on **2026-07-27**.
 
 For external packages, “dependencies” is the union of direct NuGet dependencies
 declared across target-framework groups. It is not a lock-file graph. “No advisory
 attached” means the exact NuGet registration supplied no vulnerability record at
 access time. It does not mean the package or its transitive graph is
-vulnerability-free. The repository keeps `NuGetAudit` enabled. That current
-restore-time result is the release gate. “NuGet.org repository-signed” establishes
-repository integrity. It does not establish a reproducible-build guarantee.
+vulnerability-free. The repository keeps `NuGetAudit` enabled. Once projects
+exist, a successful audited locked restore is required release evidence; the
+empty solution does not currently produce that evidence. “NuGet.org
+repository-signed” establishes repository integrity. It does not establish a
+reproducible-build guarantee.
 Context7 was attempted first for every family but was quota-exhausted. Exact NuGet
 metadata and official upstream sources were used.
 
@@ -43,7 +44,6 @@ objective facts below; the guide link opens the corresponding adoption guide.
 | | [Microsoft.CodeAnalysis.Analyzers](#microsoft-codeanalysis-analyzers) | [Package guide](../packages/microsoft-codeanalysis-analyzers.md) |
 | | [Microsoft.CodeAnalysis.Common](#microsoft-codeanalysis-common) | [Package guide](../packages/microsoft-codeanalysis-common.md) |
 | | [Microsoft.CodeAnalysis.CSharp](#microsoft-codeanalysis-csharp) | [Package guide](../packages/microsoft-codeanalysis-csharp.md) |
-| Produced package: consumers opt in deliberately | [IX.Modularity.Analyzers](#ix-modularity-analyzers) | [Package guide](../packages/ix-modularity-analyzers.md) |
 | Microsoft.Extensions foundation | [Microsoft.Extensions.Caching.StackExchangeRedis](#microsoft-extensions-caching-stackexchangeredis) | [Package guide](../packages/microsoft-extensions-caching-stackexchangeredis.md) |
 | | [Microsoft.Extensions.Configuration.Abstractions](#microsoft-extensions-configuration-abstractions) | [Package guide](../packages/microsoft-extensions-configuration-abstractions.md) |
 | | [Microsoft.Extensions.Configuration.Binder](#microsoft-extensions-configuration-binder) | [Package guide](../packages/microsoft-extensions-configuration-binder.md) |
@@ -357,20 +357,6 @@ objective facts below; the guide link opens the corresponding adoption guide.
 | Native dependencies | Direct native dependency: not officially documented; no native requirement is asserted from absence of metadata. |
 | Lifecycle / advisories | NuGet-listed stable; formal package-version support/EOL policy not officially documented. No advisory was attached to the exact NuGet registration at access; continue restore-time audit. |
 | Signing / provenance | Exact artifact verified with Microsoft author signature and NuGet.org repository signature; repository/commit provenance is carried in package metadata. |
-
-## Produced package: consumers opt in deliberately
-
-### ix-modularity-analyzers
-
-| Field | Objective fact |
-| --- | --- |
-| Package / pin | `IX.Modularity.Analyzers` `0.1.0`; the version is declared by the repository project rather than `Directory.Packages.props`. |
-| License / maintainer | `MIT`; declared author: ModularBase contributors. |
-| Upstream / source | This repository: [`src/IX.Modularity.Analyzers/IX.Modularity.Analyzers.csproj`](../../src/IX.Modularity.Analyzers/IX.Modularity.Analyzers.csproj). Publication feed/status is not officially documented. |
-| Build dependencies | Direct private build dependencies: `Microsoft.CodeAnalysis.Analyzers`, `Microsoft.CodeAnalysis.Common`, and `Microsoft.CodeAnalysis.CSharp`. The project is marked `DevelopmentDependency` and packages its analyzer under `analyzers/dotnet/cs`. |
-| Runtime / service / native dependencies | Not officially documented. The project metadata does not establish a runtime, external-service, or native dependency claim. |
-| Lifecycle / advisories | Formal support/EOL policy and package-specific public advisory feed are not officially documented. |
-| Signing / provenance | Repository source and build inputs are controlled here; published-artifact location and author/repository signature status are not officially documented. |
 
 ## Microsoft.Extensions foundation
 

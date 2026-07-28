@@ -15,17 +15,15 @@ Use only for packable libraries where public API compatibility is a release cont
 
 ## Recommended registration and use
 
-`Directory.Packages.props` owns the version, while `Directory.Build.targets` conditionally adds this versionless private reference and both baselines:
+`Directory.Packages.props` owns the version. Each participating packable project must explicitly add the versionless private reference and register both adjacent baseline files:
 
 ```xml
 <ItemGroup Condition="'$(IsPackable)' == 'true'">
   <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers"
                     PrivateAssets="all"
                     IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
-  <AdditionalFiles Include="$(MSBuildProjectDirectory)/PublicAPI.Shipped.txt"
-                   Condition="Exists('$(MSBuildProjectDirectory)/PublicAPI.Shipped.txt')" />
-  <AdditionalFiles Include="$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt"
-                   Condition="Exists('$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt')" />
+  <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+  <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
 </ItemGroup>
 ```
 
@@ -41,11 +39,11 @@ Create both files beside every packable project and enable nullable API tracking
 #nullable enable
 ```
 
-On an intentional API addition, use the RS0016/RS0036 code fix to generate the exact entry in `PublicAPI.Unshipped.txt`, then review it rather than hand-authoring a guessed signature. RS0017 reports deleted API entries; a deliberate removal is recorded in the unshipped file with the analyzer's `*REMOVED*` form. RS0048 catches missing or unregistered baseline files, and the repository also fails `Pack` if either file is absent.
+On an intentional API addition, use the RS0016/RS0036 code fix to generate the exact entry in `PublicAPI.Unshipped.txt`, then review it rather than hand-authoring a guessed signature. RS0017 reports deleted API entries; a deliberate removal is recorded in the unshipped file with the analyzer's `*REMOVED*` form. RS0048 catches missing or unregistered baseline files when the project enables the analyzer's required-file policy.
 
 | Setting or input | Catalog guidance |
 | --- | --- |
-| `dotnet_public_api_analyzer.require_api_files` | Keep enabled for governed packable projects so missing baselines fail visibly. |
+| `dotnet_public_api_analyzer.require_api_files` | Set to `true` in the participating project's analyzer configuration so missing baselines fail visibly. |
 | `PublicAPI.Shipped.txt` | Immutable release history; promote reviewed entries here during the release process, never to hide a break. |
 | `PublicAPI.Unshipped.txt` | Development delta for additions and explicit removals; review it with the source change. |
 | `#nullable enable` | Keep at the top of both files so nullability remains part of the API contract. |
@@ -69,7 +67,7 @@ Upgrade the analyzer in a dedicated policy change and build, test, and pack ever
 
 ## Integration with the catalog
 
-This project-scoped analyzer differs from the universal `GlobalPackageReference` analyzers. `Directory.Build.targets` activates it only when `IsPackable=true`; central package management supplies version `5.6.0`, and `PrivateAssets=all` prevents it from becoming a consumer dependency. The same targets add the two adjacent files as `AdditionalFiles` and validate them before pack. Common severity policy remains in `ModularBase.globalconfig` and `.editorconfig`. Review its [supply-chain record](../package-guidance/supply-chain.md#microsoft-codeanalysis-publicapianalyzers) before upgrading release tooling.
+This project-scoped analyzer differs from the universal `GlobalPackageReference` analyzers. Central package management supplies version `5.6.0`, while each participating project owns the explicit reference, `PrivateAssets=all` metadata, baseline registration, and required-file setting. Shared severity policy may remain in `ModularBase.globalconfig` and `.editorconfig`. Review its [supply-chain record](../package-guidance/supply-chain.md#microsoft-codeanalysis-publicapianalyzers) before upgrading release tooling.
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -84,10 +82,10 @@ Do not add the analyzer globally, install it in non-packable projects without an
 ## Verification checklist
 
 - [ ] Confirm every packable project owns `PublicAPI.Shipped.txt` and `PublicAPI.Unshipped.txt` with `#nullable enable`.
-- [ ] Confirm the conditional versionless `PackageReference` resolves central version `5.6.0` with `PrivateAssets=all`.
+- [ ] Confirm the project-local versionless `PackageReference` resolves central version `5.6.0` with `PrivateAssets=all`.
 - [ ] Add a temporary public member and verify RS0016 or RS0036 produces a reviewable unshipped entry.
 - [ ] Remove or change a baseline member and verify the build reports the compatibility diagnostic.
-- [ ] Run `dotnet pack` and confirm missing baseline files fail the repository's pack policy.
+- [ ] Remove one baseline registration temporarily and confirm the project's analyzer configuration reports the missing file.
 - [ ] Confirm non-packable projects do not reference or run this analyzer unless explicitly approved.
 
 ## Sources

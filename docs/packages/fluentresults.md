@@ -11,7 +11,7 @@
 
 ## Decision and scope
 
-Use FluentResults for expected, caller-actionable outcomes from externally visible service operations. `Library`, `Contracts`, `Abstractions`, `Adapter`, and `Integration` may intentionally expose this public dependency because the result shape is part of their service contract. This narrow exception does not authorize hosting, transport, persistence, or logging implementation dependencies in neutral roles. Do not use results to conceal programming faults, cancellation, corrupt state, broken invariants, or unexpected infrastructure failures.
+Use FluentResults for expected, caller-actionable outcomes from externally visible service operations. A project may intentionally expose this public dependency when the result shape is part of its service contract. That decision does not require or authorize unrelated hosting, transport, persistence, or logging dependencies. Do not use results to conceal programming faults, cancellation, corrupt state, broken invariants, or unexpected infrastructure failures.
 
 ## Recommended registration and use
 

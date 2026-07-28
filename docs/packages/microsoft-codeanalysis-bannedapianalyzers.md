@@ -68,7 +68,7 @@ Upgrade separately from policy-list edits so new analyzer behavior is distinguis
 
 ## Integration with the catalog
 
-The package is globally installed alongside the other analyzer packages. `BannedSymbols.txt` is passed through `AdditionalFiles`; it is data consumed by the analyzer, not a source file governed by `.editorconfig` path sections. `ModularBase.globalconfig` owns repository-wide analyzer options, while `.editorconfig` can scope RS0030 severity to matching source. The separate dynamic-keyword and source-reflection checks in `Directory.Build.targets` are complementary MSBuild enforcement, not part of this NuGet package. Review the analyzer's [supply-chain record](../package-guidance/supply-chain.md#microsoft-codeanalysis-bannedapianalyzers) before upgrading it.
+The package is globally installed alongside the other analyzer packages. `Directory.Build.props` passes `BannedSymbols.txt` through `AdditionalFiles`; it is data consumed by the analyzer, not a source file governed by `.editorconfig` path sections. `ModularBase.globalconfig` owns repository-wide analyzer options, while `.editorconfig` can scope RS0030 severity to matching source. This package and the root list are the complete forbidden-symbol mechanism; there is no custom companion enforcement. Review the analyzer's [supply-chain record](../package-guidance/supply-chain.md#microsoft-codeanalysis-bannedapianalyzers) before upgrading it.
 
 ## Security, performance, AOT, trimming, and operations
 

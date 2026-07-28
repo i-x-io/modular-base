@@ -6,7 +6,7 @@
 
 | Package | Exact version | Role | Status |
 | --- | ---: | --- | --- |
-| `Microsoft.EntityFrameworkCore.InMemory` | `10.0.10` | Non-relational in-process EF Core provider | Companion; cataloged and test-only by repository build policy |
+| `Microsoft.EntityFrameworkCore.InMemory` | `10.0.10` | Non-relational in-process EF Core provider | Companion; cataloged for test-only use |
 
 ## Decision and scope
 
@@ -14,9 +14,13 @@ Use only for intentionally narrow tests whose non-relational semantics are accep
 
 ## Recommended registration and use
 
-Reference it only from an authorized test project:
+Reference it only from a non-packable test project:
 
 ```xml
+<PropertyGroup>
+  <IsTestProject>true</IsTestProject>
+  <IsPackable>false</IsPackable>
+</PropertyGroup>
 <ItemGroup>
   <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
 </ItemGroup>
@@ -41,7 +45,7 @@ This can support an isolated application-service test where storage is merely a 
 
 ## Enterprise implementation guidance
 
-Keep package references in test projects; `Directory.Build.targets` enforces that policy. Label tests that use it so their limitations are visible, and retain a PostgreSQL integration-test layer for persistence contracts.
+Keep package references in projects explicitly marked with `IsTestProject=true` and `IsPackable=false`. Label tests that use it so their limitations are visible, and retain a PostgreSQL integration-test layer for persistence contracts.
 
 Avoid sharing one named InMemory store across tests because state leaks make tests order-dependent. If sharing is deliberate, control the same internal service provider and database root explicitly and reset state between tests. Prefer fakes/stubs at a narrower application port when the test does not need EF behavior at all.
 
@@ -66,7 +70,7 @@ The provider is not designed for production robustness or performance. It cannot
 
 ## Verification checklist
 
-- [ ] Confirm every reference is in a project with `IXModularityProjectRole=Test` or `ArchitectureTest` and `IsTestProject=true`.
+- [ ] Confirm every reference is in a project with `IsTestProject=true` and `IsPackable=false`.
 - [ ] Identify tests whose result depends on non-relational behavior.
 - [ ] Ensure test database names/state are isolated and tests remain order-independent.
 - [ ] Duplicate relational/provider assertions against disposable PostgreSQL.

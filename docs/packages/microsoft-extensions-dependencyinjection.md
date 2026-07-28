@@ -40,7 +40,7 @@ The following standalone provider is useful in a focused composition test. Produ
 using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
-services.AddSingleton<ISystemClock, SystemClock>();
+services.AddSingleton(TimeProvider.System);
 services.AddScoped<IOrderRepository, OrderRepository>();
 services.AddTransient<CreateOrderHandler>();
 
@@ -55,12 +55,6 @@ await using AsyncServiceScope scope = provider.CreateAsyncScope();
 var handler = scope.ServiceProvider.GetRequiredService<CreateOrderHandler>();
 await handler.HandleAsync(CancellationToken.None);
 
-public interface ISystemClock { DateTimeOffset UtcNow { get; } }
-public sealed class SystemClock : ISystemClock
-{
-    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
-}
-
 public interface IOrderRepository
 {
     Task SaveAsync(DateTimeOffset createdAt, CancellationToken cancellationToken);
@@ -74,10 +68,10 @@ public sealed class OrderRepository : IOrderRepository
 
 public sealed class CreateOrderHandler(
     IOrderRepository repository,
-    ISystemClock clock)
+    TimeProvider timeProvider)
 {
     public Task HandleAsync(CancellationToken cancellationToken) =>
-        repository.SaveAsync(clock.UtcNow, cancellationToken);
+        repository.SaveAsync(timeProvider.GetUtcNow(), cancellationToken);
 }
 ```
 

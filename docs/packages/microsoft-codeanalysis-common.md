@@ -2,7 +2,7 @@
 
 ## Catalog entry
 
-`Microsoft.CodeAnalysis.Common` **5.6.0** — centrally pinned Roslyn compiler API for `Analyzer` and `SourceGenerator` implementation or test projects.
+`Microsoft.CodeAnalysis.Common` **5.6.0** — centrally pinned Roslyn compiler API for analyzer, source-generator, and compiler-tool test projects.
 
 - **Adoption:** Direct
 - **Owner:** IX
@@ -20,7 +20,7 @@ Reference it versionlessly from a compiler-tool project. Use Roslyn semantic API
 | Build/package setting | Catalog guidance |
 | --- | --- |
 | `PrivateAssets="all"` | Prevent compiler APIs from becoming transitive consumer dependencies. |
-| Analyzer package path | Place the produced analyzer DLL under `analyzers/dotnet`, never `lib/` or `ref/`. |
+| Analyzer package path | Place an analyzer DLL under `analyzers/dotnet`, never `lib/` or `ref/`. |
 | Analyzer target framework | Target a framework supported by every intended compiler host; validate IDE and command-line loading. |
 | Roslyn package versions | Keep Common, CSharp, and authoring analyzers aligned; avoid APIs newer than the oldest supported host. |
 
@@ -34,7 +34,7 @@ Upgrade the aligned Roslyn set together and compile representative analyzer test
 
 ## Integration with the catalog
 
-The central catalog owns version `5.6.0`, shared with `Microsoft.CodeAnalysis.CSharp` and `Microsoft.CodeAnalysis.Analyzers`. Compiler-tool reference metadata is governed by [analyzer policy](../architecture/analyzer-policy.md); provenance is recorded in the [supply-chain reference](../package-guidance/supply-chain.md#microsoft-codeanalysis-common).
+The central catalog owns version `5.6.0`, shared with `Microsoft.CodeAnalysis.CSharp` and `Microsoft.CodeAnalysis.Analyzers`. Compiler-tool projects must reference it explicitly with private assets; provenance is recorded in the [supply-chain reference](../package-guidance/supply-chain.md#microsoft-codeanalysis-common).
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -42,7 +42,7 @@ Compiler analysis runs at build time, not in consumer runtime paths. Avoid compi
 
 ## Avoid
 
-Do not add it to a `Library`, `Contracts`, `Abstractions`, or application project; use reflection to discover symbols; or package it under `lib/` or `ref/` as a runtime dependency.
+Do not add it to an ordinary runtime library or application project, use reflection to discover symbols, or package it under `lib/` or `ref/` as a runtime dependency.
 
 ## Verification checklist
 

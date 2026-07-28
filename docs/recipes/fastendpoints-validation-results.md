@@ -6,15 +6,13 @@ This recipe separates malformed input from expected application outcomes. FastEn
 
 ## Required packages and project boundary
 
-The application service and its FluentResults contract belong in the
-repository-oriented
-`src/IX.Modularity.Catalog/IX.Modularity.Catalog.csproj` library project:
+The application service and its FluentResults contract can live in a reusable
+application library:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <IXModularityProjectRole>Library</IXModularityProjectRole>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FluentResults" />
@@ -22,8 +20,8 @@ repository-oriented
 </Project>
 ```
 
-The following Web SDK block is a standalone application illustration outside
-this repository's enforced project graph:
+The Web host references that application library and owns the transport-specific
+packages:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">
@@ -33,16 +31,14 @@ this repository's enforced project graph:
   <ItemGroup>
     <PackageReference Include="FastEndpoints" />
     <PackageReference Include="FluentValidation" />
-    <ProjectReference Include="../IX.Modularity.Catalog/IX.Modularity.Catalog.csproj" />
+    <ProjectReference Include="../Application/Application.csproj" />
   </ItemGroup>
 </Project>
 ```
 
-Both blocks use versions from `Directory.Packages.props`. The library's direct
-`Library` role permits its public FluentResults service contract. The standalone
-Web host consumes the public result types transitively through its
-`ProjectReference` to `IX.Modularity.Catalog`; it does not add a direct
-FluentResults package dependency. FastEndpoints already integrates
+Both blocks use versions from `Directory.Packages.props`. The Web host consumes
+the public result types transitively through its project reference; it does not
+add a direct FluentResults package dependency. FastEndpoints already integrates
 FluentValidation. The explicit `FluentValidation` reference makes the endpoint
 project's validator dependency intentional; no
 `FluentValidation.DependencyInjectionExtensions` reference or validator
@@ -51,7 +47,7 @@ scanning registration is needed for validators derived from
 
 ## Request validation
 
-In the standalone Web host, define an immutable transport request and a
+In the Web host, define an immutable transport request and a
 stateless validator:
 
 ```csharp
@@ -82,7 +78,7 @@ FastEndpoints discovers the validator and runs it after binding but before `Hand
 
 ## Application outcome model
 
-In `IX.Modularity.Catalog`, represent expected failures as concrete error types
+In the application library, represent expected failures as concrete error types
 with stable codes:
 
 ```csharp
@@ -139,7 +135,7 @@ public sealed class DemoProductService : IProductService
 
 ## HTTP translation and host composition
 
-Back in the standalone Web host, branch once on the result at the transport
+Back in the Web host, branch once on the result at the transport
 boundary:
 
 ```csharp
@@ -238,8 +234,8 @@ Observe validation rejection rate by rule code, expected outcome rate by typed e
 
 Authoring evidence:
 
-- [ ] The role-separated library and standalone Web fragments were not
-  recompiled after this documentation boundary correction.
+- [ ] The application-library and Web-host fragments were not recompiled after
+  this documentation boundary correction.
 - [ ] The deterministic service was not presented as a database integration test.
 
 Consuming-application checks:

@@ -18,16 +18,22 @@ Use only in a future configuration that deliberately selects VSTest as its test 
 
 ## Recommended registration and use
 
-Use versionless references in a `Test` or `ArchitectureTest` project with `IsTestProject=true`:
+Use standard SDK metadata and versionless references in a non-packable test project:
 
 ```xml
-<PackageReference Include="Microsoft.NET.Test.Sdk" />
-<PackageReference Include="xunit.v3" />
-<PackageReference Include="xunit.runner.visualstudio" />
-<PackageReference Include="coverlet.collector" />
+<PropertyGroup>
+  <IsTestProject>true</IsTestProject>
+  <IsPackable>false</IsPackable>
+</PropertyGroup>
+<ItemGroup>
+  <PackageReference Include="Microsoft.NET.Test.Sdk" />
+  <PackageReference Include="xunit.v3" />
+  <PackageReference Include="xunit.runner.visualstudio" />
+  <PackageReference Include="coverlet.collector" />
+</ItemGroup>
 ```
 
-The repository's current `global.json` selects `Microsoft.Testing.Platform`, so this command is not valid under the current default. Adopt the alternative only through an architecture-approved, coherent VSTest runner selection for the repository/run configuration (for .NET 10, select `VSTest` through `test.runner` or omit the MTP selection), then collect Cobertura output:
+The repository's current `global.json` selects `Microsoft.Testing.Platform`, so this command is not valid under the current default. Adopt the alternative only through a deliberate, coherent VSTest runner selection for the repository/run configuration (for .NET 10, select `VSTest` through `test.runner` or omit the MTP selection), then collect Cobertura output:
 
 ```bash
 dotnet test --collect:"XPlat Code Coverage" \

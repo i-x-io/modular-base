@@ -2,16 +2,15 @@
 
 ## Problem and boundary
 
-After recorded architecture/adoption approval, this recipe composes a protected FastEndpoints API with a live OpenAPI contract and a Scalar explorer. ASP.NET Core JWT bearer authentication owns token validation, ASP.NET Core authorization owns policy evaluation, FastEndpoints owns endpoint discovery and execution, `FastEndpoints.OpenApi` owns document generation, and Scalar only renders that document. The API does not issue tokens, and neither the OpenAPI description nor Scalar enforces access.
+After an explicit project-level adoption decision, this recipe composes a protected FastEndpoints API with a live OpenAPI contract and a Scalar explorer. ASP.NET Core JWT bearer authentication owns token validation, ASP.NET Core authorization owns policy evaluation, FastEndpoints owns endpoint discovery and execution, `FastEndpoints.OpenApi` owns document generation, and Scalar only renders that document. The API does not issue tokens, and neither the OpenAPI description nor Scalar enforces access.
 
 ## Required packages
 
-The following Web SDK block is a standalone application illustration outside
-this repository's enforced project graph. All four packages in the composition
-are catalog-only. Their central `PackageVersion` entries manage versions but do
-not approve consumption. Record explicit architecture/adoption approval for the
-complete composition, including the Scalar UI and route-exposure decision,
-before adding these references:
+The following Web SDK block is a consuming-application example. All four
+packages in the composition are catalog-only. Their central `PackageVersion`
+entries manage versions but do not approve consumption. Record an explicit
+project-level adoption decision for the complete composition, including the
+Scalar UI and route-exposure decision, before adding these references:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">
@@ -27,7 +26,7 @@ before adding these references:
 </Project>
 ```
 
-`FastEndpoints.Security` is intentionally absent: this boundary validates access tokens issued by an external OAuth/OIDC authority through ASP.NET Core's JWT bearer handler. Add the FastEndpoints security package only if its issuance or permission conveniences receive separate architecture/adoption approval.
+`FastEndpoints.Security` is intentionally absent: this boundary validates access tokens issued by an external OAuth/OIDC authority through ASP.NET Core's JWT bearer handler. Add the FastEndpoints security package only after a separate project-level adoption decision for its issuance or permission conveniences.
 
 ## Composition
 
@@ -145,7 +144,7 @@ Authoring evidence:
 
 Consuming-application checks:
 
-- [ ] Architecture/adoption approval is recorded for `FastEndpoints`, `FastEndpoints.OpenApi`, `Microsoft.AspNetCore.Authentication.JwtBearer`, and `Scalar.AspNetCore` before their references are added.
+- [ ] A project-level adoption decision is recorded for `FastEndpoints`, `FastEndpoints.OpenApi`, `Microsoft.AspNetCore.Authentication.JwtBearer`, and `Scalar.AspNetCore` before their references are added.
 - [ ] A valid issuer token with the expected audience and `orders.read` scope receives `200`.
 - [ ] Missing, expired, wrong-issuer, wrong-audience, and invalid-signature tokens receive `401`.
 - [ ] A valid token without the required scope receives `403`.
