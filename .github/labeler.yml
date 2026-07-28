@@ -76,7 +76,7 @@ release:
   - changed-files:
       - any-glob-to-any-file:
           - '.gitleaks.toml'
-          - '.markdownlint-cli2.jsonc'
+          - '.markdownlint.json'
           - '.pre-commit-config.yaml'
           - '_typos.toml'
 

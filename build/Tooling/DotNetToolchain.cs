@@ -106,19 +106,4 @@ internal sealed class DotNetToolchain(BuildPaths paths, ValidationPolicy validat
         }
     }
 
-    public void Publish(IReadOnlyCollection<string> packageFiles, Uri source, string token)
-    {
-        ArgumentNullException.ThrowIfNull(packageFiles);
-        ArgumentNullException.ThrowIfNull(source);
-        ArgumentException.ThrowIfNullOrWhiteSpace(token);
-        foreach (string packageFile in packageFiles)
-        {
-            _ = DotNetNuGetPush(settings => settings
-                .SetTargetPath(packageFile)
-                .SetSource(source.AbsoluteUri)
-                .SetApiKey(token)
-                .EnableSkipDuplicate()
-                .SetProcessWorkingDirectory(_paths.RootDirectory));
-        }
-    }
 }

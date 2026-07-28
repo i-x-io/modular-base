@@ -2,7 +2,7 @@
 
 ## Catalog entry
 
-`Meziantou.Analyzer` **3.0.132** — universal catalog analyzer supplied through a shared `GlobalPackageReference` with private analyzer assets.
+`Meziantou.Analyzer` **3.0.134** — universal catalog analyzer supplied through a shared `GlobalPackageReference` with private analyzer assets.
 
 - **Adoption:** Global analyzer
 - **Owner:** IX
@@ -18,7 +18,7 @@ Use as a repository-wide supplementary quality analyzer. The catalog's global re
 The repository already owns the registration in `Directory.Packages.props`; keep its version, private-assets boundary, and analyzer/build asset inclusion centralized:
 
 ```xml
-<GlobalPackageReference Include="Meziantou.Analyzer" Version="3.0.132"
+<GlobalPackageReference Include="Meziantou.Analyzer" Version="3.0.134"
                         PrivateAssets="all"
                         IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
 ```
@@ -61,7 +61,7 @@ Use code fixes as proposed refactorings, not as proof of semantic equivalence. R
 
 ### Upgrade and rollback
 
-Change the global pin in isolation, restore, and build representative projects before modifying severity configuration. Diff emitted `MAxxxx` IDs, default severities, code-fix output, and clean-build time, then resolve overlap with SDK, Roslynator, and Sonar rules. If new diagnostics cannot be triaged safely or build/IDE cost regresses, restore `3.0.132` and its lock-file resolution; keep any independently valid source fixes, but revert suppressions or baselines added only to accommodate the failed upgrade.
+Change the global pin in isolation, restore, and build representative projects before modifying severity configuration. Diff emitted `MAxxxx` IDs, default severities, code-fix output, and clean-build time, then resolve overlap with SDK, Roslynator, and Sonar rules. If new diagnostics cannot be triaged safely or build/IDE cost regresses, restore `3.0.134` and its lock-file resolution; keep any independently valid source fixes, but revert suppressions or baselines added only to accommodate the failed upgrade.
 
 ## Integration with the catalog
 
@@ -79,7 +79,7 @@ Do not add duplicate per-project references, enable overlapping rules without ch
 
 ## Verification checklist
 
-- [ ] Confirm restore resolves centrally pinned version `3.0.132` and no project duplicates the reference.
+- [ ] Confirm restore resolves centrally pinned version `3.0.134` and no project duplicates the reference.
 - [ ] Build a representative future project locally and in CI and confirm expected `MAxxxx` diagnostics appear.
 - [ ] Verify one scoped `.editorconfig` setting has the intended precedence over `ModularBase.globalconfig`.
 - [ ] Inspect a packed library and confirm no Meziantou analyzer asset flows to the package consumer.
@@ -87,6 +87,6 @@ Do not add duplicate per-project references, enable overlapping rules without ch
 
 ## Sources
 
-- [Meziantou.Analyzer 3.0.132 on NuGet](https://www.nuget.org/packages/Meziantou.Analyzer/3.0.132) (Accessed 2026-07-27)
+- [Meziantou.Analyzer 3.0.134 on NuGet](https://www.nuget.org/packages/Meziantou.Analyzer/3.0.134) (Accessed 2026-07-28)
 - [Meziantou.Analyzer installation, rules, and analysis modes](https://github.com/meziantou/Meziantou.Analyzer) (Accessed 2026-07-27)
 - [Microsoft: Configuration files for .NET code-analysis rules](https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/configuration-files) (Accessed 2026-07-27)

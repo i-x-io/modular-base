@@ -57,14 +57,15 @@ graph. The build intentionally exposes only outcome-oriented targets:
 | `Restore` | Restore tools and every managed project graph; pass `--update-locks` only for an intentional lock refresh. |
 | `Test` | Compile the repository, run every MTP suite, and reject missing tests. |
 | `CI` | Run `Test`, PR policy, formatting, package inspection, dependency audit, SBOM generation, repository checks, and history secret scanning. |
-| `Publish` | Run `CI` and `Test`, resolve the merged PR, plan and create the exact repository tag, repack all packages, publish them, and reconcile release evidence and assets. |
+| `PrepareRelease` | After `CI`, resolve the merged PR, create the exact local tag, repack all packages, and generate package-specific SBOMs plus immutable release evidence. Publication occurs only in the protected workflow job after attestation. |
 
 Generated product output is written below `artifacts/`. The running NUKE host
 uses `build/bin` and `build/obj`, keeping it outside cleanable product output.
 
-The production workflow set is intentionally limited to `Pull request`,
-`Pull request labels`, `Auto-merge`, and `Release`. Provider-neutral build and
-release logic belongs in NUKE rather than additional workflow YAML.
+The workflow set keeps pull-request validation, labels, merge automation,
+scheduled assurance, and release responsibilities separate. Provider-neutral
+build and release preparation belong in NUKE; protected publication and GitHub
+attestation remain isolated workflow responsibilities.
 
 ## Install the Git hooks
 

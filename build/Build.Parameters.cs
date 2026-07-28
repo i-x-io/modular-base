@@ -21,13 +21,9 @@ internal sealed partial class Build : NukeBuild
     [Parameter("Regenerates package locks instead of enforcing locked restore.")]
     private readonly bool UpdateLocks;
 
-    [Parameter("Short-lived GitHub token used to read pull requests and publish packages.")]
+    [Parameter("Short-lived GitHub token used only to read the merged pull request.")]
     [Secret]
     private readonly string? GitHubToken;
-
-    [Parameter("Credential allowed to create protected tags and GitHub releases.")]
-    [Secret]
-    private readonly string? ReleaseToken;
 
     private BuildPaths Paths => field ??= BuildPaths.Create(
         RootDirectory,
@@ -38,5 +34,5 @@ internal sealed partial class Build : NukeBuild
         Solution,
         Repository,
         GitHubActions.Instance,
-        new(Configuration, UpdateLocks, GitHubToken, ReleaseToken));
+        new(Configuration, UpdateLocks, GitHubToken));
 }

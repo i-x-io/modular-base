@@ -33,9 +33,10 @@
       "type": "string",
       "enum": [
         "CI",
-        "Publish",
+        "PrepareRelease",
         "Restore",
-        "Test"
+        "Test",
+        "UpdatePackageCatalog"
       ]
     },
     "Verbosity": {
@@ -115,12 +116,7 @@
         },
         "GitHubToken": {
           "type": "string",
-          "description": "Short-lived GitHub token used to read pull requests and publish packages",
-          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
-        },
-        "ReleaseToken": {
-          "type": "string",
-          "description": "Credential allowed to create protected tags and GitHub releases",
+          "description": "Short-lived GitHub token used only to read the merged pull request",
           "default": "Secrets must be entered via 'nuke :secrets [profile]'"
         },
         "Solution": {

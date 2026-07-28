@@ -16,17 +16,24 @@ internal sealed class PackageValidator(BuildPaths paths)
     {
         ArgumentNullException.ThrowIfNull(projects);
         ArgumentException.ThrowIfNullOrWhiteSpace(expectedCommit);
+        Dictionary<string, AbsolutePath> packageFiles = IndexBinaryPackages();
         PackageInspection[] inspections = [.. projects
             .OrderBy(project => project.PackageId, StringComparer.Ordinal)
-            .Select(project => Inspect(project, expectedCommit))];
+            .Select(project => Inspect(project, expectedCommit, packageFiles))];
         EnsureNoUnexpectedPackages(inspections);
         EnsureLockstepVersion(inspections);
         return inspections;
     }
 
-    private PackageInspection Inspect(PackageProject project, string expectedCommit)
+    private static PackageInspection Inspect(
+        PackageProject project,
+        string expectedCommit,
+        Dictionary<string, AbsolutePath> packageFiles)
     {
-        AbsolutePath package = GetSingleBinaryPackage(project.PackageId);
+        AbsolutePath package = packageFiles.TryGetValue(project.PackageId, out AbsolutePath? candidate)
+            ? candidate
+            : throw new InvalidDataException(
+                $"Expected one binary package for '{project.PackageId}' but found 0.");
         AbsolutePath symbols = GetSymbolsPackage(package);
         using ZipArchive archive = ZipFile.OpenRead(package);
         ValidateContents(archive, project);
@@ -109,16 +116,22 @@ internal sealed class PackageValidator(BuildPaths paths)
                 $"Package '{project.PackageId}' version '{versionText}' is not valid semantic versioning.");
     }
 
-    private AbsolutePath GetSingleBinaryPackage(string packageId)
+    private Dictionary<string, AbsolutePath> IndexBinaryPackages()
     {
         string[] files = [.. Directory
             .GetFiles(_paths.PackagesDirectory, "*.nupkg", SearchOption.TopDirectoryOnly)
-            .Where(path => !path.EndsWith(".snupkg", StringComparison.OrdinalIgnoreCase)
-                && string.Equals(ReadPackageId(path), packageId, StringComparison.Ordinal))];
-        return files.Length == 1
-            ? (AbsolutePath)files[0]
+            .Where(path => !path.EndsWith(".snupkg", StringComparison.OrdinalIgnoreCase))];
+        ILookup<string, string> byPackageId = files.ToLookup(
+            ReadPackageId,
+            StringComparer.Ordinal);
+        IGrouping<string, string>? duplicate = byPackageId.FirstOrDefault(group => group.Skip(1).Any());
+        return duplicate is null
+            ? byPackageId.ToDictionary(
+                group => group.Key,
+                group => (AbsolutePath)group.Single(),
+                StringComparer.Ordinal)
             : throw new InvalidDataException(
-                $"Expected one binary package for '{packageId}' but found {files.Length}.");
+                $"Expected one binary package for '{duplicate.Key}' but found {duplicate.Count()}.");
     }
 
     private static AbsolutePath GetSymbolsPackage(AbsolutePath binaryPackage)

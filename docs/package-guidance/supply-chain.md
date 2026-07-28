@@ -7,9 +7,9 @@ For external packages, “dependencies” is the union of direct NuGet dependenc
 declared across target-framework groups. It is not a lock-file graph. “No advisory
 attached” means the exact NuGet registration supplied no vulnerability record at
 access time. It does not mean the package or its transitive graph is
-vulnerability-free. The repository keeps `NuGetAudit` enabled. Once projects
-exist, a successful audited locked restore is required release evidence; the
-empty solution does not currently produce that evidence. “NuGet.org
+vulnerability-free. The repository keeps `NuGetAudit` enabled. A successful
+audited locked restore of the product, test, and build graphs is required
+release evidence. “NuGet.org
 repository-signed” establishes repository integrity. It does not establish a
 reproducible-build guarantee.
 Context7 was attempted first for every family but was quota-exhausted. Exact NuGet
@@ -1146,7 +1146,7 @@ objective facts below; the guide link opens the corresponding adoption guide.
 
 | Field | Objective fact |
 | --- | --- |
-| Package / pin | [`Meziantou.Analyzer 3.0.132`](https://www.nuget.org/packages/Meziantou.Analyzer/3.0.132); approved source: `nuget.org`; [exact registration](https://api.nuget.org/v3/registration5-gz-semver2/meziantou.analyzer/3.0.132.json). |
+| Package / pin | [`Meziantou.Analyzer 3.0.134`](https://www.nuget.org/packages/Meziantou.Analyzer/3.0.134); approved source: `nuget.org`; [exact registration](https://api.nuget.org/v3/registration5-gz-semver2/meziantou.analyzer/3.0.134.json). |
 | License / maintainer | `MIT`; NuGet author attribution: meziantou. |
 | Upstream | [official project/upstream](https://github.com/meziantou/Meziantou.Analyzer). |
 | Managed / external dependencies | No direct NuGet dependency declared for the applicable package groups. No external service is required by the package itself; host/transitive runtime requirements are not officially documented. |

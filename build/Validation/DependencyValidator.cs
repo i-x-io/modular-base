@@ -34,17 +34,36 @@ internal sealed class DependencyValidator(BuildPaths paths, CommandRunner comman
         }
     }
 
-    public async Task<string> GenerateSbomAsync(BuildUnit solution, BuildConfiguration configuration)
+    public async Task<IReadOnlyList<string>> GenerateSbomsAsync(
+        IReadOnlyCollection<PackageInspection> packages,
+        BuildConfiguration configuration)
     {
-        ArgumentNullException.ThrowIfNull(solution);
+        ArgumentNullException.ThrowIfNull(packages);
         _ = _paths.SbomDirectory.CreateOrCleanDirectory();
-        _ = await _commands.RunAsync(
-            "dotnet",
-            [
-                "CycloneDX", solution.Path, "--output-format", "Json", "--output",
-                _paths.SbomDirectory, "--filename", "bom.json", "--disable-package-restore",
-                "--configuration", configuration.ToString(),
-            ]).ConfigureAwait(false);
-        return SbomValidator.Validate(_paths.SbomDirectory);
+        var sboms = new List<string>(packages.Count);
+        foreach (PackageInspection package in packages)
+        {
+            AbsolutePath output = _paths.SbomDirectory / package.Project.PackageId;
+            _ = output.CreateOrCleanDirectory();
+            _ = await _commands.RunAsync(
+                "dotnet",
+                [
+                    "CycloneDX", package.Project.ProjectFile,
+                    "--output-format", "Json",
+                    "--output", output,
+                    "--filename", $"{package.Project.PackageId}.cdx.json",
+                    "--disable-package-restore",
+                    "--configuration", configuration.ToString(),
+                    "--exclude-dev",
+                    "--exclude-test-projects",
+                    "--set-name", package.Project.PackageId,
+                    "--set-version", package.Version.ToNormalizedString(),
+                    "--set-type", "Library",
+                    "--set-nuget-purl",
+                ]).ConfigureAwait(false);
+            sboms.Add(SbomValidator.Validate(output, package));
+        }
+
+        return sboms;
     }
 }

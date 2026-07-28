@@ -68,42 +68,45 @@ internal sealed class BuildPipeline(
             Environment.Repository.PackageProjects,
             Environment.Identity.Commit);
         await _dependencies.AuditAsync(Environment.Repository.RepositoryUnits).ConfigureAwait(false);
-        string sbom = await _dependencies.GenerateSbomAsync(
-            Environment.Repository.Solution,
+        IReadOnlyList<string> sboms = await _dependencies.GenerateSbomsAsync(
+            packageInspections,
             _parameters.Configuration).ConfigureAwait(false);
         await _repositoryValidator.ValidateAsync().ConfigureAwait(false);
-        _validationResult = new(packageInspections, sbom);
+        _validationResult = new(packageInspections, sboms);
         Log.Information(
             "Validated {PackageCount} packable project(s)",
             packageInspections.Count);
     }
 
-    public async Task PublishAsync()
+    public async Task PrepareReleaseAsync()
     {
         GitHubActions githubContext = _githubActions
-            ?? throw new InvalidOperationException("Publish may run only in GitHub Actions.");
+            ?? throw new InvalidOperationException("PrepareRelease may run only in GitHub Actions.");
         if (!string.Equals(githubContext.EventName, "push", StringComparison.Ordinal)
             || !string.Equals(githubContext.Ref, "refs/heads/main", StringComparison.Ordinal))
         {
-            throw new InvalidOperationException("Publish may run only for a push to main.");
+            throw new InvalidOperationException("PrepareRelease may run only for a push to main.");
         }
 
         Environment.Identity.RequireGitHubRepository(
             githubContext.Repository,
             githubContext.RepositoryOwner);
-        var credentials = PublishCredentials.Create(
-            _parameters.GitHubToken,
-            _parameters.ReleaseToken);
+        if (string.IsNullOrWhiteSpace(_parameters.GitHubToken))
+        {
+            throw new InvalidOperationException(
+                "GITHUB_TOKEN is required to resolve the merged pull request.");
+        }
+
+        string githubToken = _parameters.GitHubToken;
         ValidationResult validation = _validationResult
-            ?? throw new InvalidOperationException("Publish requires a completed CI validation.");
+            ?? throw new InvalidOperationException("PrepareRelease requires a completed CI validation.");
         PullRequestContext pullRequest = await _pullRequests.ResolveMergedAsync(
             Environment.Identity.Commit,
-            credentials.GitHubToken).ConfigureAwait(false);
+            githubToken).ConfigureAwait(false);
         EnforcePullRequestPolicy(pullRequest);
-        await _publisher.PublishAsync(
+        await _publisher.PrepareAsync(
             validation.Packages,
             pullRequest,
-            credentials,
             _parameters.Configuration,
             TimeProvider.System.GetUtcNow()).ConfigureAwait(false);
     }

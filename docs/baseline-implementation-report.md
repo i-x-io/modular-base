@@ -35,12 +35,12 @@ documented or centrally versioned.
 | Restore | Central package management, source mapping, NuGet audit, committed locks for product, test, and build graphs. |
 | Packaging | MinVer versioning, README/LICENSE/XML docs, symbols package, repository metadata, SDK package validation. |
 | Package inspection | Exact artifact count, required entries, repository URL, package version, and runtime dependency allowlist. |
-| Supply chain | Low-severity NuGet audit, dependency review, Dependabot, full-history Gitleaks, CycloneDX SBOM. |
+| Supply chain | Low-severity NuGet audit, dependency review, Dependabot, full-history Gitleaks, one validated CycloneDX SBOM per package, attestations, and immutable GitHub releases. |
 | Local workflow | Managed pre-commit, pre-push, and commit-message hooks with pinned revisions. |
 | Workflow linting | GitHub schemas, actionlint, and strict zizmor collection. |
-| CI | Focused Ubuntu pull-request and merge-group validation using the same NUKE `CI` target. |
-| Pull requests | Issue forms, PR template, branch pattern, issue linkage, conventional or explicit stable-release title, one aggregate gate, and trusted auto-merge. |
-| Releases | Typed multi-package NUKE release plan, MinVer prereleases on ordinary merges, `RELEASE:` stable promotion, protected repository tags, exact tag/package match, attestations, assets, and GitHub Packages publication. |
+| CI | Fixed Ubuntu 24.04 pull-request/merge-group validation, weekly assurance, Windows Server 2025 smoke coverage, and CodeQL default setup. |
+| Pull requests | Issue forms, PR template, branch pattern, issue linkage, one code-owner approval on the exact head, one aggregate gate, merge queue, and trusted auto-merge. |
+| Releases | Read-only NUKE preparation, isolated per-package attestation, protected-environment publication, strict stable-intent authorization, fail-closed duplicates, draft-first publication, and immutable releases. |
 
 ## Pre-commit research outcome
 
@@ -94,9 +94,10 @@ wrapper.
 Central MSBuild MinVer configuration remains authoritative for one lockstep
 version and the `v` repository tag prefix. NUKE inspects every produced
 package, creates a schema-v2 release plan, requires every final package to
-equal the tagged version, generates versioned evidence, and reconciles the
-GitHub release through Octokit. Focused workflows retain triggers, permissions,
-caches, merge orchestration, Dependency Review, attestations, and retention.
+equal the tagged version, regenerates an SBOM for each final package, and emits
+checksummed evidence. It performs no remote release mutation. Focused workflow
+jobs retain triggers, permissions, caches, merge orchestration, Dependency
+Review, attestations, protected publication, and retention.
 
 Reusable NUKE components should be extracted when a second repository needs
 the same stable contract. The current internal abstraction layer provides that
@@ -148,8 +149,8 @@ Checked-in automation covers:
 - one aggregate gate followed by an API-only trusted auto-merge controller;
 - API-only branch and changed-path labeling from protected configuration;
 - four Dependabot ecosystems with grouped updates and cooldowns;
-- one NUKE `Publish` call for plan, protected tag, validation, evidence, and
-  package publication after every merged pull request;
+- a read-only NUKE `PrepareRelease` call followed by no-checkout attestations
+  and an environment-protected publication job after every merged pull request;
 - generated release notes, prerelease/stable classification, release assets,
   provenance, and SBOM attestations;
 - structured bug/feature forms, private-security routing, and a PR template;
@@ -184,16 +185,16 @@ The baseline is usable, but these items remain:
 | Priority | Item | Trigger or fix |
 | --- | --- | --- |
 | P1 | Package compatibility baseline. | Evaluate `v0.1.0` as `PackageValidationBaselineVersion` after deciding how CI retrieves the GitHub Packages baseline without exposing a broad credential and how intentional breaks advance it. |
-| P1 credential hardening | Replace the broad CLI bootstrap credential with a repository-scoped fine-grained token or organization-owned App. | Verify the new identity on a release, rotate the old credential, and update the tag-ruleset actor. |
-| P1 with a second maintainer | Independent ownership enforcement. | The team and `CODEOWNERS` exist; require one code-owner review after a second active maintainer joins. |
+| P1 credential hardening | Replace the repository-scoped token and team-wide tag bypass with environment-scoped GitHub App credentials. | Install the App secret in both release environments, remove the repository secret, update the tag-ruleset actor, and verify one prerelease. |
 | P1 when coverage has a decision use | MTP-native coverage and threshold. | Add an open-source MTP integration and ratchet a meaningful threshold; do not add a vanity percentage. |
-| P1 security hardening | CodeQL default setup. | Confirm .NET 10 results and merge-queue check names, then make it required. |
+| P1 security follow-up | CodeQL required-check decision. | The initial .NET 10/Actions run passed with no open alert after test/false-positive triage; confirm merge-queue execution before requiring its exact checks. |
 | P2 release hardening | Package signing. | Choose a supported identity, verification policy, and consumer process; provenance and SBOM attestations are already emitted. |
 | P2 ecosystem signal | OpenSSF Scorecard. | Add only after permissions/findings ownership is assigned. |
 | As needed | `CODE_OF_CONDUCT.md`, discussions, project boards, wiki. | Add when community or planning ownership exists. |
 
-No `eng/` directory is planned. Build orchestration belongs in the conventional
-NUKE `build/` project and the thin root launchers.
+`eng/package-catalog.json` is generated from the central package file and guide
+headings; build orchestration remains in the conventional NUKE `build/`
+project and thin root launchers.
 
 ## Acceptance status
 
@@ -205,12 +206,13 @@ Locally, the implemented baseline has demonstrated:
 - 24 discovered and passing product tests plus 37 passing build tests;
 - package and symbols-package generation and semantic inspection;
 - vulnerability audit of the solution and build graph;
-- a non-empty CycloneDX JSON SBOM; and
+- one package-identity and runtime-dependency-validated CycloneDX JSON SBOM per package; and
 - schema, actionlint, and strict zizmor validation of GitHub files.
 
-Local acceptance is `dotnet nuke CI --configuration Release` followed by
-all-file `pre-commit` validation. Remote acceptance is complete for the stable
-path: the protected pull request, ready-for-review rerun, merge-queue rerun,
-NUKE `Publish`, GitHub release, package publication, attestations, and evidence
-retention all passed. A normal merged pull request should be used next to smoke
-test the prerelease classification in production.
+Local acceptance is `./build.sh CI --configuration Release` followed by
+all-file `pre-commit` validation. Historical remote acceptance is complete for
+the original stable path: the protected pull request, ready-for-review rerun,
+merge-queue rerun, GitHub release, package publication, attestations, and
+evidence retention all passed. After the redesigned workflow is merged and its
+environment secrets are installed, use a normal merged pull request to smoke
+test the new prepare/attest/protected-publish prerelease path.

@@ -7,22 +7,29 @@ on:
       - Pull request
     types:
       - completed
+  pull_request_review:
+    types:
+      - submitted
 
 permissions:
+  actions: read
   contents: write
   pull-requests: write
 
 concurrency:
-  group: auto-merge-${{ github.event.workflow_run.head_sha }}
+  group: auto-merge-${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha }}
   cancel-in-progress: true
 
 jobs:
   merge:
     name: Queue passing pull request
     if: >-
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'pull_request_review' &&
+       github.event.review.state == 'approved')
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Resolve eligible pull request
@@ -32,9 +39,11 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const run = context.payload.workflow_run;
-            let pullNumber = run.pull_requests?.[0]?.number ?? 0;
+            let pullNumber = context.payload.pull_request?.number
+              ?? run?.pull_requests?.[0]?.number
+              ?? 0;
 
-            if (!pullNumber) {
+            if (!pullNumber && run) {
               const associated = await github.rest.repos.listPullRequestsAssociatedWithCommit({
                 owner,
                 repo,
@@ -56,10 +65,54 @@ jobs:
               repo,
               pull_number: pullNumber,
             });
-            const eligible = pull.state === 'open' && !pull.draft && pull.base.ref === 'main';
+            const validatedHead = run?.head_sha ?? pull.head.sha;
+            if (pull.head.sha !== validatedHead) {
+              core.notice(`Pull request head ${pull.head.sha} no longer matches validated head ${validatedHead}.`);
+              core.setOutput('eligible', 'false');
+              return;
+            }
+
+            if (!run) {
+              const completed = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: 'pull-request.yml',
+                head_sha: pull.head.sha,
+                status: 'completed',
+                per_page: 100,
+              });
+              const passed = completed.data.workflow_runs.some(
+                candidate => candidate.event === 'pull_request'
+                  && candidate.conclusion === 'success'
+                  && candidate.head_sha === pull.head.sha,
+              );
+              if (!passed) {
+                core.notice(`No successful Pull request run exists for ${pull.head.sha}.`);
+                core.setOutput('eligible', 'false');
+                return;
+              }
+            }
+
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner,
+              repo,
+              pull_number: pull.number,
+              per_page: 100,
+            });
+            const latestReviews = new Map();
+            for (const review of reviews) {
+              if (review.user?.login) latestReviews.set(review.user.login, review);
+            }
+            const approved = [...latestReviews.values()].some(
+              review => review.state === 'APPROVED' && review.commit_id === validatedHead,
+            );
+            const eligible = pull.state === 'open'
+              && !pull.draft
+              && pull.base.ref === 'main'
+              && approved;
             core.setOutput('eligible', String(eligible));
             core.setOutput('number', String(pull.number));
-            core.setOutput('head-sha', pull.head.sha);
+            core.setOutput('head-sha', validatedHead);
 
       - name: Enable auto-merge or enter the merge queue
         if: steps.pull-request.outputs.eligible == 'true'

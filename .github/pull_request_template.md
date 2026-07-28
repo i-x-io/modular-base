@@ -18,6 +18,6 @@ List the exact local checks run and any relevant environment details.
 - [ ] The pull request title is a Conventional Commit and is suitable as the squash commit.
 - [ ] Public API changes update `PublicAPI.Unshipped.txt` and include compatibility reasoning.
 - [ ] Dependency changes include license, advisory, lock-file, and documentation review.
-- [ ] `dotnet nuke Validate --configuration Release` passes locally.
+- [ ] `./build.sh CI --configuration Release` (or `./build.ps1 CI`) passes locally.
 - [ ] Documentation and release notes are updated where behavior changed.
 - [ ] No secrets, generated build output, or unrelated changes are included.

@@ -1,0 +1,570 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "Directory.Packages.props",
+  "packages": [
+    {
+      "id": "AngleSharp",
+      "version": "1.6.0",
+      "referenceType": "central",
+      "guide": "docs/packages/anglesharp.md"
+    },
+    {
+      "id": "Ardalis.Specification",
+      "version": "9.3.1",
+      "referenceType": "central",
+      "guide": "docs/packages/ardalis-specification.md"
+    },
+    {
+      "id": "Ardalis.Specification.EntityFrameworkCore",
+      "version": "9.3.1",
+      "referenceType": "central",
+      "guide": "docs/packages/ardalis-specification-entityframeworkcore.md"
+    },
+    {
+      "id": "Asp.Versioning.Http",
+      "version": "10.0.0",
+      "referenceType": "central",
+      "guide": "docs/packages/asp-versioning-http.md"
+    },
+    {
+      "id": "AwesomeAssertions",
+      "version": "9.5.0",
+      "referenceType": "central",
+      "guide": "docs/packages/awesomeassertions.md"
+    },
+    {
+      "id": "BenchmarkDotNet",
+      "version": "0.15.8",
+      "referenceType": "central",
+      "guide": "docs/packages/benchmarkdotnet.md"
+    },
+    {
+      "id": "coverlet.collector",
+      "version": "10.0.1",
+      "referenceType": "central",
+      "guide": "docs/packages/coverlet-collector.md"
+    },
+    {
+      "id": "DeviceDetector.NET",
+      "version": "6.5.0",
+      "referenceType": "central",
+      "guide": "docs/packages/devicedetector-net.md"
+    },
+    {
+      "id": "EFCore.NamingConventions",
+      "version": "10.0.1",
+      "referenceType": "central",
+      "guide": "docs/packages/efcore-namingconventions.md"
+    },
+    {
+      "id": "EntityFrameworkCore.Exceptions.PostgreSQL",
+      "version": "10.0.1",
+      "referenceType": "central",
+      "guide": "docs/packages/entityframeworkcore-exceptions-postgresql.md"
+    },
+    {
+      "id": "Enums.NET",
+      "version": "5.0.0",
+      "referenceType": "central",
+      "guide": "docs/packages/enums-net.md"
+    },
+    {
+      "id": "FastEndpoints",
+      "version": "8.2.0",
+      "referenceType": "central",
+      "guide": "docs/packages/fastendpoints.md"
+    },
+    {
+      "id": "FastEndpoints.Generator",
+      "version": "8.2.0",
+      "referenceType": "central",
+      "guide": "docs/packages/fastendpoints-generator.md"
+    },
+    {
+      "id": "FastEndpoints.OpenApi",
+      "version": "8.2.0",
+      "referenceType": "central",
+      "guide": "docs/packages/fastendpoints-openapi.md"
+    },
+    {
+      "id": "FastEndpoints.Security",
+      "version": "8.2.0",
+      "referenceType": "central",
+      "guide": "docs/packages/fastendpoints-security.md"
+    },
+    {
+      "id": "FastEndpoints.Testing",
+      "version": "8.2.0",
+      "referenceType": "central",
+      "guide": "docs/packages/fastendpoints-testing.md"
+    },
+    {
+      "id": "FluentResults",
+      "version": "4.0.0",
+      "referenceType": "central",
+      "guide": "docs/packages/fluentresults.md"
+    },
+    {
+      "id": "FluentStorage",
+      "version": "8.0.16",
+      "referenceType": "central",
+      "guide": "docs/packages/fluentstorage.md"
+    },
+    {
+      "id": "FluentStorage.AWS",
+      "version": "8.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/fluentstorage-aws.md"
+    },
+    {
+      "id": "FluentStorage.Azure.Blobs",
+      "version": "8.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/fluentstorage-azure-blobs.md"
+    },
+    {
+      "id": "FluentStorage.Azure.Files",
+      "version": "8.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/fluentstorage-azure-files.md"
+    },
+    {
+      "id": "FluentStorage.GCP",
+      "version": "8.0.14",
+      "referenceType": "central",
+      "guide": "docs/packages/fluentstorage-gcp.md"
+    },
+    {
+      "id": "FluentStorage.Minio",
+      "version": "8.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/fluentstorage-minio.md"
+    },
+    {
+      "id": "FluentStorage.SFTP",
+      "version": "8.0.16",
+      "referenceType": "central",
+      "guide": "docs/packages/fluentstorage-sftp.md"
+    },
+    {
+      "id": "FluentValidation",
+      "version": "12.1.1",
+      "referenceType": "central",
+      "guide": "docs/packages/fluentvalidation.md"
+    },
+    {
+      "id": "FluentValidation.DependencyInjectionExtensions",
+      "version": "12.1.1",
+      "referenceType": "central",
+      "guide": "docs/packages/fluentvalidation-dependencyinjectionextensions.md"
+    },
+    {
+      "id": "Humanizer.Core",
+      "version": "3.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/humanizer-core.md"
+    },
+    {
+      "id": "MailKit",
+      "version": "4.17.0",
+      "referenceType": "central",
+      "guide": "docs/packages/mailkit.md"
+    },
+    {
+      "id": "Markdig",
+      "version": "1.3.2",
+      "referenceType": "central",
+      "guide": "docs/packages/markdig.md"
+    },
+    {
+      "id": "Meziantou.Analyzer",
+      "version": "3.0.134",
+      "referenceType": "global",
+      "guide": "docs/packages/meziantou-analyzer.md"
+    },
+    {
+      "id": "Microsoft.AspNetCore.Authentication.JwtBearer",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-aspnetcore-authentication-jwtbearer.md"
+    },
+    {
+      "id": "Microsoft.AspNetCore.Mvc.Testing",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-aspnetcore-mvc-testing.md"
+    },
+    {
+      "id": "Microsoft.AspNetCore.OpenApi",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-aspnetcore-openapi.md"
+    },
+    {
+      "id": "Microsoft.CodeAnalysis.Analyzers",
+      "version": "5.6.0",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-codeanalysis-analyzers.md"
+    },
+    {
+      "id": "Microsoft.CodeAnalysis.BannedApiAnalyzers",
+      "version": "5.6.0",
+      "referenceType": "global",
+      "guide": "docs/packages/microsoft-codeanalysis-bannedapianalyzers.md"
+    },
+    {
+      "id": "Microsoft.CodeAnalysis.Common",
+      "version": "5.6.0",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-codeanalysis-common.md"
+    },
+    {
+      "id": "Microsoft.CodeAnalysis.CSharp",
+      "version": "5.6.0",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-codeanalysis-csharp.md"
+    },
+    {
+      "id": "Microsoft.CodeAnalysis.PublicApiAnalyzers",
+      "version": "5.6.0",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-codeanalysis-publicapianalyzers.md"
+    },
+    {
+      "id": "Microsoft.EntityFrameworkCore",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-entityframeworkcore.md"
+    },
+    {
+      "id": "Microsoft.EntityFrameworkCore.Design",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-entityframeworkcore-design.md"
+    },
+    {
+      "id": "Microsoft.EntityFrameworkCore.InMemory",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-entityframeworkcore-inmemory.md"
+    },
+    {
+      "id": "Microsoft.EntityFrameworkCore.Relational",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-entityframeworkcore-relational.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Caching.StackExchangeRedis",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-caching-stackexchangeredis.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Configuration.Abstractions",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-configuration-abstractions.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Configuration.Binder",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-configuration-binder.md"
+    },
+    {
+      "id": "Microsoft.Extensions.DependencyInjection",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-dependencyinjection.md"
+    },
+    {
+      "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-dependencyinjection-abstractions.md"
+    },
+    {
+      "id": "Microsoft.Extensions.DependencyModel",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-dependencymodel.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Diagnostics.HealthChecks",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-diagnostics-healthchecks.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-diagnostics-healthchecks-abstractions.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Hosting",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-hosting.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Hosting.Abstractions",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-hosting-abstractions.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Http",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-http.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Http.Resilience",
+      "version": "10.8.0",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-http-resilience.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Logging.Abstractions",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-logging-abstractions.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Options",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-options.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Options.ConfigurationExtensions",
+      "version": "10.0.10",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-options-configurationextensions.md"
+    },
+    {
+      "id": "Microsoft.Extensions.Resilience",
+      "version": "10.8.0",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-resilience.md"
+    },
+    {
+      "id": "Microsoft.Extensions.TimeProvider.Testing",
+      "version": "10.8.0",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-extensions-timeprovider-testing.md"
+    },
+    {
+      "id": "Microsoft.NET.Test.Sdk",
+      "version": "18.8.1",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-net-test-sdk.md"
+    },
+    {
+      "id": "Microsoft.OpenApi",
+      "version": "2.11.0",
+      "referenceType": "central",
+      "guide": "docs/packages/microsoft-openapi.md"
+    },
+    {
+      "id": "Microsoft.VisualStudio.Threading.Analyzers",
+      "version": "18.7.23",
+      "referenceType": "global",
+      "guide": "docs/packages/microsoft-visualstudio-threading-analyzers.md"
+    },
+    {
+      "id": "MimeKit",
+      "version": "4.17.0",
+      "referenceType": "central",
+      "guide": "docs/packages/mimekit.md"
+    },
+    {
+      "id": "MinVer",
+      "version": "7.0.0",
+      "referenceType": "central"
+    },
+    {
+      "id": "MR.EntityFrameworkCore.KeysetPagination",
+      "version": "1.6.0",
+      "referenceType": "central",
+      "guide": "docs/packages/mr-entityframeworkcore-keysetpagination.md"
+    },
+    {
+      "id": "Npgsql",
+      "version": "10.0.3",
+      "referenceType": "central",
+      "guide": "docs/packages/npgsql.md"
+    },
+    {
+      "id": "Npgsql.EntityFrameworkCore.PostgreSQL",
+      "version": "10.0.3",
+      "referenceType": "central",
+      "guide": "docs/packages/npgsql.entityframeworkcore.postgresql.md"
+    },
+    {
+      "id": "Npgsql.OpenTelemetry",
+      "version": "10.0.3",
+      "referenceType": "central",
+      "guide": "docs/packages/npgsql.opentelemetry.md"
+    },
+    {
+      "id": "NuGet.Packaging",
+      "version": "6.12.5",
+      "referenceType": "central"
+    },
+    {
+      "id": "NuGet.Versioning",
+      "version": "6.12.5",
+      "referenceType": "central"
+    },
+    {
+      "id": "Nuke.Common",
+      "version": "10.1.0",
+      "referenceType": "central"
+    },
+    {
+      "id": "Octokit",
+      "version": "14.0.0",
+      "referenceType": "central"
+    },
+    {
+      "id": "OpenTelemetry",
+      "version": "1.17.0",
+      "referenceType": "central",
+      "guide": "docs/packages/opentelemetry.md"
+    },
+    {
+      "id": "OpenTelemetry.Api",
+      "version": "1.17.0",
+      "referenceType": "central",
+      "guide": "docs/packages/opentelemetry.api.md"
+    },
+    {
+      "id": "OpenTelemetry.Exporter.OpenTelemetryProtocol",
+      "version": "1.17.0",
+      "referenceType": "central",
+      "guide": "docs/packages/opentelemetry.exporter.opentelemetryprotocol.md"
+    },
+    {
+      "id": "OpenTelemetry.Extensions.Hosting",
+      "version": "1.17.0",
+      "referenceType": "central",
+      "guide": "docs/packages/opentelemetry.extensions.hosting.md"
+    },
+    {
+      "id": "OpenTelemetry.Instrumentation.AspNetCore",
+      "version": "1.17.0",
+      "referenceType": "central",
+      "guide": "docs/packages/opentelemetry.instrumentation.aspnetcore.md"
+    },
+    {
+      "id": "OpenTelemetry.Instrumentation.Http",
+      "version": "1.17.0",
+      "referenceType": "central",
+      "guide": "docs/packages/opentelemetry.instrumentation.http.md"
+    },
+    {
+      "id": "OpenTelemetry.Instrumentation.Runtime",
+      "version": "1.17.0",
+      "referenceType": "central",
+      "guide": "docs/packages/opentelemetry.instrumentation.runtime.md"
+    },
+    {
+      "id": "Pgvector",
+      "version": "0.3.2",
+      "referenceType": "central",
+      "guide": "docs/packages/pgvector.md"
+    },
+    {
+      "id": "Pgvector.EntityFrameworkCore",
+      "version": "0.3.0",
+      "referenceType": "central",
+      "guide": "docs/packages/pgvector.entityframeworkcore.md"
+    },
+    {
+      "id": "Polly",
+      "version": "8.7.0",
+      "referenceType": "central",
+      "guide": "docs/packages/polly.md"
+    },
+    {
+      "id": "Polly.Extensions",
+      "version": "8.7.0",
+      "referenceType": "central",
+      "guide": "docs/packages/polly-extensions.md"
+    },
+    {
+      "id": "Roslynator.Analyzers",
+      "version": "4.15.0",
+      "referenceType": "global",
+      "guide": "docs/packages/roslynator-analyzers.md"
+    },
+    {
+      "id": "Scalar.AspNetCore",
+      "version": "2.16.16",
+      "referenceType": "central",
+      "guide": "docs/packages/scalar-aspnetcore.md"
+    },
+    {
+      "id": "Scrutor",
+      "version": "7.0.0",
+      "referenceType": "central",
+      "guide": "docs/packages/scrutor.md"
+    },
+    {
+      "id": "SonarAnalyzer.CSharp",
+      "version": "10.30.0.144632",
+      "referenceType": "global",
+      "guide": "docs/packages/sonaranalyzer-csharp.md"
+    },
+    {
+      "id": "SpecsFor",
+      "version": "8.0.0-rc2a",
+      "referenceType": "central",
+      "guide": "docs/packages/specsfor.md"
+    },
+    {
+      "id": "System.Security.Cryptography.Xml",
+      "version": "10.0.10",
+      "referenceType": "central"
+    },
+    {
+      "id": "Testcontainers.PostgreSql",
+      "version": "4.13.0",
+      "referenceType": "central",
+      "guide": "docs/packages/testcontainers-postgresql.md"
+    },
+    {
+      "id": "Testcontainers.Redis",
+      "version": "4.13.0",
+      "referenceType": "central",
+      "guide": "docs/packages/testcontainers-redis.md"
+    },
+    {
+      "id": "TngTech.ArchUnitNET.xUnitV3",
+      "version": "0.13.3",
+      "referenceType": "central",
+      "guide": "docs/packages/tngtech-archunitnet-xunitv3.md"
+    },
+    {
+      "id": "xunit.runner.visualstudio",
+      "version": "3.1.5",
+      "referenceType": "central",
+      "guide": "docs/packages/xunit-runner-visualstudio.md"
+    },
+    {
+      "id": "xunit.v3",
+      "version": "3.2.2",
+      "referenceType": "central",
+      "guide": "docs/packages/xunit-v3.md"
+    },
+    {
+      "id": "YamlDotNet",
+      "version": "18.1.0",
+      "referenceType": "central",
+      "guide": "docs/packages/yamldotnet.md"
+    }
+  ]
+}
