@@ -10,14 +10,16 @@ The repository has three deliberately separate layers:
 
 | Layer | Responsibility |
 | --- | --- |
-| `pre-commit` | Fast, pinned feedback for staged files, commit messages, and pre-push validation. |
-| NUKE | The provider-neutral dependency graph for restore, build, test, pack, audit, SBOM, and publish. |
-| GitHub Actions | Provision runners, run repository prechecks, invoke NUKE, retain artifacts, and apply GitHub policy. |
+| `pre-commit` | Pinned repository-tool environment for local hooks and NUKE repository validation. |
+| NUKE | The authoritative C# application for repository policy, restore, build, test, pack, audit, SBOM, release evidence, GitHub release reconciliation, and package publication. |
+| GitHub Actions | Provision the supported Ubuntu runner and tools, invoke NUKE, perform Dependency Review and attestations, retain artifacts, and coordinate auto-merge. |
 
 NUKE is the canonical build API. Workflow YAML must not grow a second sequence
-of restore/build/test/pack commands. A CI-only check may remain in YAML when it
-depends on GitHub event metadata or is naturally a GitHub Action, such as
-dependency review or pull-request title validation.
+of provider-neutral validation or release-classification commands. GitHub event
+permissions, caches, attestations, Dependency Review, artifact retention, and
+auto-merge remain workflow concerns. NUKE consumes GitHub event payloads and
+uses the GitHub API through a tested C# boundary. Ubuntu is the sole supported
+CI environment.
 
 ## One-time setup
 
@@ -34,7 +36,7 @@ From the repository root:
 dotnet tool restore
 pipx install pre-commit==4.6.1
 pre-commit install --install-hooks
-dotnet nuke Validate --configuration Release
+dotnet nuke CI --configuration Release
 ```
 
 `pre-commit install` installs the `pre-commit`, `commit-msg`, and `pre-push`
@@ -61,6 +63,7 @@ Choose one change type:
 | `build` | NUKE, MSBuild, packaging, or build-tool changes. |
 | `ci` | GitHub Actions and repository automation. |
 | `chore` | Maintenance that does not fit another type. |
+| `release` | Preparation for an explicit stable release. |
 | `style` | Formatting-only changes. |
 | `revert` | Revert of a prior change. |
 
@@ -83,8 +86,8 @@ The enforced form is:
 
 The issue is a positive integer. The description is lowercase ASCII,
 hyphen-separated, and concise. Examples are `fix/42-registration-order`,
-`docs/87-release-setup`, and `ci/106-harden-actions`. Release Please and
-Dependabot branches are bot-exempt.
+`docs/87-release-setup`, `ci/106-harden-actions`, and
+`release/107-stable-package`. Dependabot branches are bot-exempt.
 
 Do not use long-lived `develop`, release, environment, or personal branches.
 `main` is the integration branch and must remain releasable. Use feature flags
@@ -106,7 +109,7 @@ The commit stage includes:
 - zizmor GitHub Actions security analysis.
 
 The `commit-msg` stage validates Conventional Commits. The `pre-push` stage
-runs `dotnet nuke Validate`, which is intentionally slower and authoritative.
+runs `dotnet nuke CI`, which is intentionally slower and authoritative.
 CI also runs a manual full-history Gitleaks hook because staged scanning cannot
 detect secrets introduced in older commits.
 
@@ -123,11 +126,8 @@ pre-commit run gitleaks-repository --all-files --hook-stage manual
 Markdownlint, Typos, JSON formatting, and basic hygiene hooks can edit files.
 Gitleaks, schema validation, actionlint, and zizmor only report findings.
 NuGet-generated `packages.lock.json` files are syntax-checked but excluded from
-the generic JSON autoformatter; only `UpdateLocks` should rewrite them. Release
-Please likewise owns `.release-please-manifest.json` and package
-`CHANGELOG.md` files. The manifest remains JSON syntax-checked, and changelogs
-remain covered by hygiene and secret checks, but generic formatters and Typos
-do not rewrite either generated format in a release pull request.
+the generic JSON autoformatter; only `Restore --update-locks` should rewrite
+them.
 
 ## NUKE target graph
 
@@ -136,45 +136,44 @@ Run `dotnet nuke --help` after adding a target or parameter. This regenerates
 parameter choices. `.nuke/parameters.json` supplies the default `Release`
 configuration.
 
-The build uses NUKE's strongly typed integrations rather than duplicating path
-strings:
+The build uses NUKE's strongly typed integrations and typed configuration
+objects rather than duplicating path strings or product project names:
 
-- `[Solution(GenerateProjects = true)]` loads the `.slnx` file and generates
-  typed product and test project accessors;
-- `[GitRepository]` supplies exact current tags for release verification;
-- `[Parameter]` exposes a typed `Debug` or `Release` configuration;
-- `[Secret]` protects the short-lived package token from normal logging;
-- `RootDirectory`, `BuildProjectFile`, and `IsServerBuild` come from
-  `NukeBuild`; and
+- `[Solution]` loads the `.slnx` as a repository graph without generating
+  hardcoded project accessors;
+- `[GitRepository]` supplies the endpoint, owner, repository, URL, and commit;
+- `[Parameter]` exposes only configuration and intentional lock regeneration;
+- `[Secret]` protects the short-lived GitHub/package and release credentials;
+- `BuildPaths`, `RepositoryModel`, `RepositoryIdentity`, `BuildPolicy`, and
+  `ToolchainVersions` centralize paths, graph roles, repository-derived values,
+  immutable policy, and versions;
+- `RootDirectory` and `IsServerBuild` come from `NukeBuild`; and
 - `GitHubActions.Instance` supplies strongly typed server context during
   publishing.
 
+The release-manifest and release-plan schema versions live on their models.
+The stable-title prefix, tag prefix, minimum test count, and approved pull
+request types are source-controlled policy objects rather than mutable per-run
+parameters. Changing one modifies a reviewed build or release contract.
+
 The build project remains outside `IX.Modularity.slnx`. This is intentional:
 the solution represents product and test code, while NUKE restores and compiles
-its conventional `build/_build.csproj` independently. Adding `_build.csproj`
-under a `/build/` solution folder also creates a name collision in NUKE's
-strongly typed solution generator.
+its conventional `build/_build.csproj` independently. NUKE treats the solution
+as one graph and discovers every package through evaluated `IsPackable`
+metadata; product and test project names are never hardcoded in the build.
 
 | Target | Dependencies and guarantees |
 | --- | --- |
-| `Clean` | Recreates `artifacts/`. |
-| `UpdateLocks` | Restores tools, solution, and build project with force evaluation and unlocked mode. |
-| `Restore` | Asserts repository shape and restores both project graphs in locked mode. |
-| `Format` | Depends on `Restore`; verifies solution formatting without edits. The build project enforces style while it compiles. |
-| `Compile` | Depends on `Restore`; uses NUKE's typed `DotNetBuild` settings. |
-| `Test` | Depends on `Compile`; uses typed `DotNetTest`, MTP reporting, and `--minimum-expected-tests 1`. |
-| `Pack` | Depends on `Compile`; creates clean package output with typed `DotNetPack`. |
-| `InspectPackages` | Depends on `Pack`; checks one package and symbols package, required contents, repository URL, and exact runtime dependency set. |
-| `Audit` | Depends on `Restore`; audits both the solution and the private build graph. |
-| `Sbom` | Depends on `Restore`; invokes the local CycloneDX tool and rejects an empty component list. |
-| `Validate` | Aggregates `Format`, `Test`, `InspectPackages`, `Audit`, and `Sbom`. |
-| `Outdated` | Scheduled maintenance target; fails when updates exist so GitHub opens a visible failed run. |
-| `Publish` | Requires server context and a secret token, reruns `Validate`, checks the exact SemVer tag against the package, then publishes once. |
+| `Restore` | Validates topology and restores tools, solution, NUKE, and build-test graphs in locked mode. `--update-locks` switches the same operation into explicit lock regeneration. |
+| `Test` | Depends on `Restore`, compiles all managed compilation inputs, runs all product and build-infrastructure tests, and enforces the configured nonzero minimum. |
+| `CI` | Depends on `Test`; reads and validates pull-request events when present, checks formatting, packs and inspects every packable project, enforces one lockstep version, audits every dependency graph, generates and validates the SBOM, runs repository hooks, and scans complete Git history. |
+| `Publish` | Depends on both `CI` and `Test`; requires a GitHub push to `main`, resolves exactly one merged pull request for the commit, classifies the release, creates the local tag, repacks and validates every package, emits schema-v2 evidence, creates or verifies the remote tag, publishes all packages, and reconciles the GitHub release and assets. |
 
 NUKE 10.1 has typed wrappers for the standard SDK operations used here. The
-generic `DotNet` runner is retained only for installed tools and the .NET 10
-`dotnet package list` command, for which this NUKE version has no suitable
-typed wrapper.
+structured process abstraction is retained only for installed tools, Git, and
+the .NET 10 `dotnet package list` command, for which this NUKE version has no
+suitable typed wrapper. It uses an argument list rather than shell-composed
+command strings and applies timeouts, exit-code checks, and secret redaction.
 
 ## Commit messages
 
@@ -198,15 +197,21 @@ fix(build): verify symbols package contents
 chore(deps): update Microsoft.Extensions packages
 ```
 
-Release Please maps `fix` to a SemVer patch and `feat` to a SemVer minor. Any
-allowed type marked with `!`, or carrying a `BREAKING CHANGE:` footer, produces
-a breaking release signal. Squash-merge pull requests, so the validated pull
-request title becomes the final conventional commit on `main`.
+Squash-merge pull requests, so the validated pull-request title becomes the
+final commit subject on `main`. Ordinary pull-request titles use Conventional
+Commits. A stable release is the one intentional exception and must use:
+
+```text
+RELEASE: <non-empty description>
+```
+
+The corresponding branch still follows policy, for example
+`release/123-publish-stable-package`, and the body still closes an issue.
 
 Git-generated merge commits and `fixup!` commits remain permitted locally for
 rebasing and autosquash, but should not survive the squash merge.
 
-## Pull requests and merge queue
+## Pull requests and automatic merge
 
 Use the pull-request template and include:
 
@@ -216,28 +221,25 @@ Use the pull-request template and include:
 - the exact validation performed; and
 - package/license notes for dependency changes.
 
-Draft pull requests are encouraged for early design feedback, but they cannot
-enter the merge queue. Resolve every review conversation. Do not approve your
-own change when another maintainer is available.
+Draft pull requests are encouraged for early design feedback, but automation
+does not merge them. Resolve every review conversation. Do not approve your own
+change when another maintainer is available.
 
-The CI workflow listens to `pull_request` and `merge_group`. A merge queue
-therefore validates the combined commit that would reach `main`, not only the
-individual pull-request head. Use squash as the queue merge method and delete
-the head branch after merge.
+The focused `Pull request` workflow has separate validation, metadata-policy,
+and dependency-review jobs, followed by one required `Pull request gate`. It
+also listens to `merge_group`, so repositories using a merge queue validate the
+combined commit that would reach `main`. Pull-request-only jobs are skipped for
+merge groups; the complete NUKE validation reruns.
 
-Issue forms apply the initial namespaced type and triage labels. Pull requests
-are classified by branch type and changed paths with the official GitHub
-Labeler action. The labeler reads the base branch configuration through the
-API; it never checks out or executes pull-request code. Labels are triage
-metadata, not substitutes for required checks, review, or release notes.
+After the workflow succeeds, the trusted `Auto-merge` workflow resolves the
+same pull request and invokes GitHub's merge operation with the exact checked
+head SHA. It enables auto-merge while reviews or other requirements are
+pending, or enters the merge queue when one is required. It does not check out,
+download, cache, or execute pull-request-controlled code or artifacts.
 
-After either CI or pull-request policy completes, a trusted base-branch
-workflow maintains one `Automated pull-request result` comment. It includes
-change statistics, current labels, links and states for every required check,
-dependency-graph change counts, the enforced dependency policy, and the NUKE
-guarantees behind each platform validation. The comment is updated in place so
-synchronizing a branch does not create notification noise. It is informational;
-the required checks and merge-queue run remain authoritative.
+The separate `Pull request labels` workflow classifies branch type and changed
+areas through the GitHub API. It intentionally uses `pull_request_target` but
+never checks out or executes pull-request content.
 
 ## Dependency updates
 
@@ -251,8 +253,9 @@ For any dependency change:
 2. Confirm the canonical upstream identity and current license.
 3. Review release notes, ownership changes, transitives, advisories, and
    external-service requirements.
-4. Update the central pin or manifest and regenerate locks with `UpdateLocks`.
-5. Run `Validate`, inspect the package, and review the SBOM diff.
+4. Update the central pin or manifest and regenerate locks with
+   `Restore --update-locks`.
+5. Run `CI`, inspect the package, and review the SBOM diff.
 6. Update the package catalog and supply-chain record when a cataloged package
    changes.
 
@@ -270,32 +273,33 @@ and proof of the actual delivery guarantees.
 
 ## Release workflow
 
-MinVer calculates package versions from tags matching
-`IX.Modularity-v<semver>`. The project config is authoritative because NUKE's
-generic MinVer injection cannot express this package-specific tag prefix.
+MinVer calculates one lockstep package version from immutable repository tags
+matching `v<semver>`. Every push to `main` must resolve to exactly one
+merged pull request; a direct push is a release failure and should already be
+prevented by the branch ruleset.
 
-Release Please reads conventional commits on `main` and maintains a release
-pull request that updates `src/IX.Modularity/version.txt` and
-`src/IX.Modularity/CHANGELOG.md`. Its generated version section is also the
-release pull-request summary and, after merge, the GitHub release message. This
-keeps commits, the checked-in changelog, and published release notes aligned;
-do not write a second release message by hand. Consumer-facing `feat`, `fix`,
-`perf`, `refactor`, `docs`, and `revert` commits are grouped into explicit
-sections, while internal build, CI, test, style, and chore commits stay hidden.
+Release classification occurs inside `Publish`:
 
-Merging the release pull request creates the exact component tag and GitHub
-release. The release workflow then checks out that tag, runs `Publish`, compares
-the tag version with the packed package version, and publishes to
-`https://nuget.pkg.github.com/i-x-io/index.json`.
+- an ordinary pull-request title keeps MinVer's exact candidate, such as
+  `0.1.1-preview.0.3`, and creates a GitHub prerelease;
+- a title beginning with the exact uppercase marker `RELEASE:` removes the
+  prerelease portion from that candidate, such as `0.1.1`, and creates the
+  latest stable GitHub release.
 
-Do not manually edit the manifest version, create a release tag, or call
-`Publish` from a workstation. Publishing requires GitHub Actions server context
-and configured credentials. Release Please receives the repository
-`RELEASE_TOKEN` secret; NUKE package publication receives the separate,
-job-scoped built-in token. GitHub CLI installs an existing token through
-standard input but cannot mint a new one. Provisioning, rotation, minimum
-permissions, and the tag-ruleset bypass are documented in
-[GitHub governance](github-governance.md).
+The release workflow invokes `Publish` once. `Publish` reruns authoritative
+validation, resolves the merged pull request through GitHub, writes the typed
+multi-package plan, creates the local tag, repacks under it, validates
+tag/package identity, generates checksummed evidence, creates or verifies the
+remote tag, derives the GitHub Packages endpoint from repository identity,
+publishes every package, and reconciles release notes and assets. The workflow
+then performs provenance and SBOM attestations and retains the same evidence as
+an Actions artifact.
+
+Do not create a release tag or call `Publish` from a workstation. Publishing
+requires GitHub Actions server context and configured credentials. The release
+credential creates protected tags and releases; the separate job-scoped token
+publishes the package. Provisioning, rotation, minimum permissions, and the tag
+ruleset are documented in [GitHub governance](github-governance.md).
 
 After the first stable package is published, set and maintain
 `PackageValidationBaselineVersion` so SDK package validation checks binary and
@@ -303,11 +307,10 @@ API compatibility against an intentional released baseline.
 
 ## Exceptional and maintenance operations
 
-- Use `dotnet nuke UpdateLocks` only with an intentional dependency change.
+- Use `dotnet nuke Restore --update-locks` only with an intentional dependency
+  change.
 - Use `pre-commit autoupdate` only in a dedicated tooling pull request; verify
   each revision and license before accepting it.
-- Run `dotnet nuke Outdated` locally when reviewing scheduled freshness
-  failures; the target is expected to fail while updates exist.
 - A hook bypass does not waive CI. Explain it and fix the underlying portability
   or false-positive issue in the same pull request when possible.
 - Reverts use a `revert:` pull request and still pass the complete merge-queue

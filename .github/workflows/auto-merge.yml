@@ -1,0 +1,75 @@
+name: Auto-merge
+
+on:
+  # zizmor: ignore[dangerous-triggers] API-only trusted workflow; no pull-request code or artifacts are consumed
+  workflow_run:
+    workflows:
+      - Pull request
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-merge-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  merge:
+    name: Queue passing pull request
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Resolve eligible pull request
+        id: pull-request
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+            let pullNumber = run.pull_requests?.[0]?.number ?? 0;
+
+            if (!pullNumber) {
+              const associated = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner,
+                repo,
+                commit_sha: run.head_sha,
+              });
+              pullNumber = associated.data.find(
+                pull => pull.base.ref === 'main' && pull.state === 'open',
+              )?.number ?? 0;
+            }
+
+            if (!pullNumber) {
+              core.notice('No open pull request is associated with the successful run.');
+              core.setOutput('eligible', 'false');
+              return;
+            }
+
+            const { data: pull } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+            const eligible = pull.state === 'open' && !pull.draft && pull.base.ref === 'main';
+            core.setOutput('eligible', String(eligible));
+            core.setOutput('number', String(pull.number));
+            core.setOutput('head-sha', pull.head.sha);
+
+      - name: Enable auto-merge or enter the merge queue
+        if: steps.pull-request.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ steps.pull-request.outputs.head-sha }}
+          PULL_NUMBER: ${{ steps.pull-request.outputs.number }}
+        run: >-
+          gh pr merge "$PULL_NUMBER"
+          --repo "$GITHUB_REPOSITORY"
+          --auto
+          --squash
+          --match-head-commit "$HEAD_SHA"

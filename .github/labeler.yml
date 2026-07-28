@@ -1,4 +1,4 @@
-changed-files-labels-limit: 10
+changed-files-labels-limit: 20
 max-files-changed: 500
 
 "type: feature":
@@ -23,13 +23,13 @@ max-files-changed: 500
   - head-branch: '^(build|chore|ci|style|revert)/'
 
 "type: release":
-  - head-branch: '^release-please--'
+  - head-branch: '^release/'
 
 dependencies:
   - head-branch: '^dependabot/'
 
 release:
-  - head-branch: '^release-please--'
+  - head-branch: '^release/'
 
 "area: api":
   - changed-files:
@@ -83,14 +83,12 @@ release:
 "area: packaging":
   - changed-files:
       - any-glob-to-any-file:
-          - '.release-please-manifest.json'
+          - 'build/Release/**'
           - 'Directory.Build.targets'
-          - 'release-please-config.json'
           - 'src/**/*.csproj'
-          - 'src/**/CHANGELOG.md'
-          - 'src/**/version.txt'
 
 "area: tests":
   - changed-files:
       - any-glob-to-any-file:
+          - 'build/tests/**'
           - 'test/**'

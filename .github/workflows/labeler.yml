@@ -6,6 +6,7 @@ on:
       - opened
       - reopened
       - synchronize
+      - ready_for_review
   workflow_dispatch:
     inputs:
       pr_number:
@@ -25,9 +26,9 @@ jobs:
   label:
     name: Label pull request
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      # pull_request_target is safe here because no pull-request code is checked
-      # out or executed; the pinned action reads changed paths through the API.
+      # zizmor: ignore[dangerous-triggers] API-only workflow; no pull-request code or artifacts are consumed
       - name: Apply branch and path labels
         uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
         with:

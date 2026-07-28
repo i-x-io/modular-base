@@ -19,9 +19,10 @@ environment and invokes the same NUKE targets that run locally.
   validation;
 - pinned `pre-commit`, Markdownlint CLI2, Gitleaks, Typos, JSON-schema,
   actionlint, zizmor, and Conventional Commits hooks;
-- cross-platform CI, pull-request policy, Dependabot, scheduled maintenance,
-  issue forms, and release automation; and
-- MinVer-derived package versions and Release Please release pull requests.
+- focused pull-request validation, trusted auto-merge, Dependabot, scheduled
+  maintenance, issue forms, and release automation; and
+- MinVer-derived prereleases for every merged pull request plus explicit stable
+  releases selected by a `RELEASE:` pull-request title.
 
 Optional packages documented in the package catalog are not runtime
 dependencies. The shipping package currently exposes only
@@ -34,38 +35,31 @@ tools and run the authoritative validation:
 
 ```sh
 dotnet tool restore
-dotnet nuke Validate --configuration Release
+dotnet nuke CI --configuration Release
 ```
 
 The checked-in launchers are equivalent entry points:
 
 ```sh
-./build.sh Validate
+./build.sh CI
 ```
 
 ```powershell
-./build.ps1 Validate
+./build.ps1 CI
 ```
 
 Run `dotnet nuke --help` for parameter completion and the complete target
-graph. Common targets are:
+graph. The build intentionally exposes only outcome-oriented targets:
 
 | Target | Purpose |
 | --- | --- |
-| `Restore` | Restore tools, the solution, and the build project from locks. |
-| `Format` | Verify solution formatting without modifying files. |
-| `Compile` | Compile product and tests with the selected configuration. |
-| `Test` | Run the MTP suite and reject zero discovered tests. |
-| `Pack` | Create `.nupkg` and `.snupkg` artifacts. |
-| `InspectPackages` | Check package contents, metadata, and runtime dependencies. |
-| `Audit` | Audit direct and transitive packages for vulnerabilities. |
-| `Sbom` | Generate and semantically validate a CycloneDX JSON SBOM. |
-| `Validate` | Run the complete local and CI quality gate. |
-| `UpdateLocks` | Regenerate locks after a reviewed dependency change. |
-| `Outdated` | Fail when scheduled maintenance finds package updates. |
-| `Publish` | Validate and publish an exact release tag in GitHub Actions. |
+| `Restore` | Restore tools and every managed project graph; pass `--update-locks` only for an intentional lock refresh. |
+| `Test` | Compile the repository, run every MTP suite, and reject missing tests. |
+| `CI` | Run `Test`, PR policy, formatting, package inspection, dependency audit, SBOM generation, repository checks, and history secret scanning. |
+| `Publish` | Run `CI` and `Test`, resolve the merged PR, plan and create the exact repository tag, repack all packages, publish them, and reconcile release evidence and assets. |
 
-Generated output is written below `artifacts/`.
+Generated product output is written below `artifacts/`. The running NUKE host
+uses `build/bin` and `build/obj`, keeping it outside cleanable product output.
 
 ## Install the Git hooks
 
@@ -79,7 +73,7 @@ pre-commit install --install-hooks
 
 The installed hook types are `pre-commit`, `commit-msg`, and `pre-push`.
 Commit-time hooks provide fast staged-file feedback; pre-push invokes the full
-NUKE `Validate` target. CI repeats the required checks because local hooks can
+NUKE `CI` target. GitHub repeats the required checks because local hooks can
 be skipped.
 
 ## Development and governance

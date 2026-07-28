@@ -1,32 +1,42 @@
-name: CI
+name: Pull request
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
   merge_group:
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: pull-request-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  preflight:
-    name: Pre-commit
+  validate:
+    name: Validate
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Check out repository
+      - name: Check out candidate revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
 
       - name: Set up Python
         id: python
@@ -43,48 +53,14 @@ jobs:
       - name: Install pre-commit
         run: python -m pip install --disable-pip-version-check pre-commit==4.6.1
 
-      - name: Run repository hooks
-        run: pre-commit run --all-files --show-diff-on-failure
-
-      - name: Scan repository history for secrets
-        run: pre-commit run gitleaks-repository --all-files --hook-stage manual
-
-  validate:
-    name: Validate (${{ matrix.os }})
-    needs: preflight
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          global-json-file: global.json
-          cache: true
-          cache-dependency-path: "**/packages.lock.json"
-
-      - name: Restore local tools
-        run: dotnet tool restore
-
       - name: Run authoritative validation
-        run: dotnet nuke Validate --configuration Release
+        run: ./build.sh CI --configuration Release
 
-      - name: Upload validation artifacts
+      - name: Upload validation diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: validation-${{ matrix.os }}
+          name: validation-${{ github.event.pull_request.number || github.sha }}
           path: |
             artifacts/test-results/**
             artifacts/packages/**
@@ -95,12 +71,12 @@ jobs:
   dependency-review:
     name: Dependency review
     if: github.event_name == 'pull_request'
-    needs: preflight
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
-      - name: Check out repository
+      - name: Check out candidate revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -117,3 +93,24 @@ jobs:
             BSD-3-Clause,
             PostgreSQL,
             LGPL-3.0-only
+
+  gate:
+    name: Pull request gate
+    if: always()
+    needs:
+      - validate
+      - dependency-review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DEPENDENCY_REVIEW_RESULT: ${{ needs.dependency-review.result }}
+      EVENT_NAME: ${{ github.event_name }}
+      VALIDATE_RESULT: ${{ needs.validate.result }}
+    steps:
+      - name: Enforce the complete gate
+        run: |
+          set -euo pipefail
+          test "$VALIDATE_RESULT" = success
+          if test "$EVENT_NAME" = pull_request; then
+            test "$DEPENDENCY_REVIEW_RESULT" = success
+          fi

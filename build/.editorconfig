@@ -1,0 +1,25 @@
+[Build{,.Parameters}.cs]
+# NUKE discovers targets and injected values through reflection. These members
+# intentionally follow NUKE's target and parameter naming conventions.
+dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA1823.severity = none
+dotnet_diagnostic.CS0649.severity = none
+dotnet_diagnostic.IDE0051.severity = none
+dotnet_diagnostic.IDE0058.severity = none
+dotnet_diagnostic.IDE1006.severity = none
+dotnet_diagnostic.MA0038.severity = none
+dotnet_diagnostic.MA0041.severity = none
+dotnet_diagnostic.MA0049.severity = none
+dotnet_diagnostic.S1144.severity = none
+dotnet_diagnostic.S2325.severity = none
+dotnet_diagnostic.RCS1213.severity = none
+
+[Tooling/DotNetToolchain.cs]
+# NUKE CLI wrappers return process information that these orchestration methods
+# intentionally do not consume.
+dotnet_diagnostic.IDE0058.severity = none
+
+[Validation/DependencyValidator.cs]
+# NUKE CLI wrappers return process information that these orchestration methods
+# intentionally do not consume.
+dotnet_diagnostic.IDE0058.severity = none
