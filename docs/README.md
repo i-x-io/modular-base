@@ -4,6 +4,7 @@ This documentation governs the future `IX.Modularity.*` library repository. It i
 
 ## Documentation branches
 
+- [Vanilla C# baseline assessment](vanilla-csharp-baseline-assessment.md) — current-state audit, missing engineering controls, build-system recommendation, and open-source dispatcher/library research.
 - [Package catalog](packages/README.md) — central package entries and package-specific decision guides.
 - [Package guidance](package-guidance/README.md) — package selection, ownership boundaries, and objective supply-chain facts.
 - [Composition recipes](recipes/README.md) — explained, multi-package workflows using the centrally pinned catalog.

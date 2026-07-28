@@ -64,7 +64,7 @@ Connection strings are configuration, not source code. Obtain passwords from the
 | `SSL Mode` and certificate options | Control transport verification. | Follow the deployment TLS policy; do not weaken validation as a workaround. | Build a new data source; security-sensitive; mismatch fails connection establishment. |
 | `Timeout`, `Command Timeout` | Bound connect and command waits. | Set from service latency budgets and PostgreSQL workload behavior. | New connections/commands observe configured values; timeout is not proof an operation was not committed. |
 | `Maximum Pool Size`, `Minimum Pool Size` | Bound/retain pooled physical connections. | Size from concurrency, database limits, and measured wait time; avoid multiplying pools. | Build a new data source for predictable change; exhaustion waits then fails according to timeout. |
-| `Max Auto Prepare` | Enables bounded automatic preparation; disabled unless configured. | Enable only after measuring statement reuse and server/session cost. | Data-source scoped; SQL shape can be sensitive; mis-sizing increases churn/resources. |
+| `Max Auto Prepare` | Enables bounded automatic preparation; disabled unless configured. | Enable only after measuring statement reuse and server/session cost. | Data-source scoped; SQL shape can be sensitive; incorrect sizing increases churn/resources. |
 
 ### Upgrade and rollback
 

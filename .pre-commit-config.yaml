@@ -1,0 +1,100 @@
+minimum_pre_commit_version: "4.6.1"
+default_install_hook_types:
+  - pre-commit
+  - pre-push
+  - commit-msg
+default_stages:
+  - pre-commit
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        stages:
+          - pre-commit
+      - id: check-case-conflict
+      - id: check-illegal-windows-names
+      - id: check-json
+      - id: pretty-format-json
+        args:
+          - --autofix
+          - --no-sort-keys
+          - --no-ensure-ascii
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-yaml
+      - id: check-xml
+        files: '(?i)(^NuGet\.Config$|\.(csproj|props|targets|slnx|xml)$)'
+        types:
+          - text
+      - id: check-executables-have-shebangs
+        stages:
+          - pre-commit
+      - id: check-shebang-scripts-are-executable
+        stages:
+          - pre-commit
+      - id: destroyed-symlinks
+        stages:
+          - pre-commit
+      - id: detect-private-key
+      - id: forbid-submodules
+      - id: fix-byte-order-marker
+      - id: end-of-file-fixer
+        stages:
+          - pre-commit
+      - id: mixed-line-ending
+        args:
+          - --fix=lf
+      - id: trailing-whitespace
+        args:
+          - --markdown-linebreak-ext=md
+        stages:
+          - pre-commit
+
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.2
+    hooks:
+      - id: markdownlint-cli2
+        args:
+          - --fix
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        args:
+          - --config=.gitleaks.toml
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.48.0
+    hooks:
+      - id: typos
+        args:
+          - --write-changes
+          - --force-exclude
+        stages:
+          - pre-commit
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        args:
+          - --verbose
+        stages:
+          - commit-msg
+
+  - repo: local
+    hooks:
+      - id: dotnet-format
+        name: Verify .NET formatting
+        entry: dotnet format IX.Modularity.slnx --verify-no-changes --no-restore
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages:
+          - pre-push
+          - manual

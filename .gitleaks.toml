@@ -1,0 +1,11 @@
+title = "ModularBase Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Reviewed prose false positive in Azure Blob integration guidance"
+condition = "AND"
+regexTarget = "line"
+regexes = ['''Test credential resolution, RBAC/firewall access, and authorization failures\.''']
+paths = ['''^docs/packages/fluentstorage-azure-blobs\.md$''']

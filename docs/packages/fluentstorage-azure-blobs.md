@@ -64,7 +64,9 @@ Dispose returned FluentStorage streams. For large objects, use streaming APIs. `
 
 ### Upgrade and rollback
 
-Upgrade `FluentStorage.Azure.Blobs`, core FluentStorage, and the resolved Azure Storage/Identity clients as one tested set. Compile the actual `FromClient` path and integration-test credential resolution, RBAC/firewall access, overwrite, prefix listing, large streams, cancellation, SDK retries, and any native ETag/lease/version operations used beside the abstraction. Recheck default retry and identity-chain behavior after transitive SDK changes.
+Upgrade `FluentStorage.Azure.Blobs`, core FluentStorage, and the resolved Azure Storage/Identity clients as one tested set. Compile the actual `FromClient` path.
+Test credential resolution, RBAC/firewall access, and authorization failures.
+Also integration-test overwrite, prefix listing, large streams, cancellation, SDK retries, and any native ETag/lease/version operations used beside the abstraction. Recheck default retry and identity-chain behavior after transitive SDK changes.
 
 Rollback to the prior package graph and `BlobServiceClient` options without changing the account, container, prefix, or identity scope. Drain transfers and reconcile writes that timed out using blob ETag/version/checksum before replay. Blobs, versions, leases, and uncommitted blocks created by the failed release remain external state; handle them through native diagnostics/lifecycle policy.
 

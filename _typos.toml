@@ -1,0 +1,6 @@
+[default]
+locale = "en"
+
+[default.extend-words]
+# NuGet author attribution for Npgsql packages.
+Yoh = "Yoh"
