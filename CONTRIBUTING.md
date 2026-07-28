@@ -14,9 +14,9 @@ GitHub Actions.
 3. Keep the change focused. Separate unrelated refactoring, dependency
    upgrades, and behavior changes.
 
-Allowed branch and commit types are `build`, `chore`, `ci`, `docs`, `feat`,
-`fix`, `perf`, `refactor`, `revert`, `style`, and `test`. Descriptions use
-lowercase ASCII words separated by hyphens.
+Allowed branch and ordinary commit types are `build`, `chore`, `ci`, `docs`,
+`feat`, `fix`, `perf`, `refactor`, `release`, `revert`, `style`, and `test`.
+Descriptions use lowercase ASCII words separated by hyphens.
 
 ## Set up the repository
 
@@ -27,7 +27,7 @@ The required prerequisites are Git, the exact .NET SDK selected by
 dotnet tool restore
 pipx install pre-commit==4.6.1
 pre-commit install --install-hooks
-dotnet nuke Validate --configuration Release
+dotnet nuke CI --configuration Release
 ```
 
 Do not install Markdownlint CLI2, Gitleaks, Typos, actionlint, or zizmor
@@ -53,8 +53,8 @@ For a dependency change, update the central version or project reference, then
 regenerate all affected lock files through the build:
 
 ```sh
-dotnet nuke UpdateLocks
-dotnet nuke Validate --configuration Release
+dotnet nuke Restore --update-locks
+dotnet nuke CI --configuration Release
 ```
 
 Review the package license, repository ownership, transitives, advisories, and
@@ -80,13 +80,16 @@ docs(workflow): explain release credentials
 Use `feat` and `fix` only for release-relevant package changes. Add `!` or a
 `BREAKING CHANGE:` footer for an incompatible change. The pull-request title
 uses the same grammar because squash merge makes that title the commit on
-`main`.
+`main`. A stable-release PR is the explicit exception and uses
+`RELEASE: <description>` from a conforming
+`release/<issue>-<description>` branch. Every ordinary merged PR publishes a
+prerelease.
 
 Before opening a pull request, run:
 
 ```sh
 pre-commit run --all-files --show-diff-on-failure
-dotnet nuke Validate --configuration Release
+dotnet nuke CI --configuration Release
 ```
 
 The pre-push hook runs the second command automatically. If an auto-fixing hook
@@ -99,7 +102,8 @@ pull request; `--no-verify` is not a normal workflow.
 The pull request must:
 
 - target `main` from a conforming branch;
-- have a Conventional Commit title;
+- have a Conventional Commit title or the exact stable marker
+  `RELEASE: <description>`;
 - include a closing reference such as `Closes #123`;
 - describe behavior, risk, and validation evidence;
 - contain no unresolved review conversations; and
@@ -107,8 +111,8 @@ The pull request must:
   enabled.
 
 Use squash merge. Do not push directly to `main`, force-push protected refs, or
-manually create release tags. Release Please owns version-file, changelog,
-release-PR, and release-tag changes.
+manually create release tags. NUKE derives the release plan from MinVer and the
+merged pull-request title; GitHub automation owns the immutable tag and release.
 
 The complete process, target graph, package policy, and exceptional workflows
 are documented in the [development workflow](docs/development-workflow.md).

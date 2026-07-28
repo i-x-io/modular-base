@@ -32,19 +32,10 @@
     "ExecutableTarget": {
       "type": "string",
       "enum": [
-        "Audit",
-        "Clean",
-        "Compile",
-        "Format",
-        "InspectPackages",
-        "Outdated",
-        "Pack",
+        "CI",
         "Publish",
         "Restore",
-        "Sbom",
-        "Test",
-        "UpdateLocks",
-        "Validate"
+        "Test"
       ]
     },
     "Verbosity": {
@@ -122,14 +113,23 @@
           "description": "Build configuration. Defaults to Release",
           "$ref": "#/definitions/BuildConfiguration"
         },
-        "PackageToken": {
+        "GitHubToken": {
           "type": "string",
-          "description": "Short-lived GitHub Packages token. Required only by Publish",
+          "description": "Short-lived GitHub token used to read pull requests and publish packages",
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
+        },
+        "ReleaseToken": {
+          "type": "string",
+          "description": "Credential allowed to create protected tags and GitHub releases",
           "default": "Secrets must be entered via 'nuke :secrets [profile]'"
         },
         "Solution": {
           "type": "string",
           "description": "Path to a solution file that is automatically loaded. Default is IX.Modularity.slnx"
+        },
+        "UpdateLocks": {
+          "type": "boolean",
+          "description": "Regenerates package locks instead of enforcing locked restore"
         }
       }
     },

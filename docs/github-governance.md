@@ -1,243 +1,172 @@
 # GitHub governance and repository setup
 
-The repository files define workflows and templates, but GitHub repository
-settings, rulesets, Apps, and security features live outside Git. Apply this
-checklist after the initial `main` branch is pushed. Revisit it whenever a
-required job name or release credential changes.
+Repository files define the automation, while GitHub settings, rulesets,
+credentials, and security features remain external state. Reconcile this
+checklist whenever a workflow name, required check, merge policy, or release
+credential changes.
 
-## Repository settings
+## Operating model
 
-Use these general settings:
+The automation has four focused workflows:
 
-- visibility: public;
-- default branch: `main`;
-- issues and private vulnerability reporting: enabled;
-- wiki and projects: disabled unless an owner and use case exist;
-- squash merge: enabled and selected as the only merge method;
-- merge commits and rebase merge: disabled;
-- automatically delete head branches: enabled;
-- always suggest updating pull-request branches: enabled; and
-- Actions workflow permissions: read-only by default.
+| Workflow | Trigger | Responsibility |
+| --- | --- | --- |
+| `Pull request` | `pull_request`, `merge_group` | Read-only NUKE `CI`, dependency review, and one aggregate gate. |
+| `Auto-merge` | successful `Pull request` workflow run | Trusted API-only transition into auto-merge or the merge queue. |
+| `Release` | push to `main` | Invoke NUKE `Publish`, attest the released artifacts, and retain evidence. |
+| `Pull request labels` | `pull_request_target`, manual dispatch | API-only branch/path classification without executing pull-request code. |
 
-Use the pull-request title as the default squash commit subject. The title is
-already checked as a Conventional Commit and becomes the release signal on
-`main`.
+NUKE owns validation, GitHub event/merged-PR interpretation, release
+classification, protected-tag and GitHub-release reconciliation, package
+inspection, version/tag agreement, SBOM generation, release assets, and
+evidence. GitHub Actions owns triggers, permissions, caching, Dependency
+Review, attestations, auto-merge orchestration, and artifact retention.
 
-## Actions policy
+## Repository merge settings
 
-Enable GitHub Actions and require every action to be pinned to a full-length
-commit SHA. The checked-in workflows already satisfy that rule. If the
-organization uses an action allowlist, permit only:
+Configure:
 
-- `actions/*`;
-- `amannn/action-semantic-pull-request`;
-- `googleapis/release-please-action`; and
-- `lycheeverse/lychee-action`.
+- default branch `main`;
+- squash merge as the only merge method;
+- pull-request title as the default squash subject;
+- automatic deletion of head branches;
+- auto-merge enabled;
+- merge commits and rebase merge disabled; and
+- default Actions workflow permissions set to read-only.
 
-Keep the repository default `GITHUB_TOKEN` permission at read-only and allow
-workflows to request narrower write scopes explicitly. Do not allow Actions to
-create or approve pull requests with the default token; release automation uses
-the separate `RELEASE_TOKEN` secret so its pull request triggers normal CI.
+Ordinary titles are Conventional Commits. An explicit stable release uses
+`RELEASE: <description>` and a `release/<issue>-<description>` branch. Every
+other merged pull request becomes a prerelease.
 
-Fork pull requests must never receive repository secrets. Current pull-request
-validation workflows use the `pull_request` event with read permissions. The
-labeler is the sole `pull_request_target` workflow: it has only contents read
-and pull-request write access and calls the pinned official Labeler action
-without checkout or execution of pull-request code. Do not add any untrusted
-checkout, script, build, or secret to that workflow.
+## Actions trust boundaries
 
-The pull-request summary uses `workflow_run`, which deliberately receives a
-write-capable token even when the original pull request came from a fork or
-Dependabot. It runs only pinned `actions/github-script` code from the default
-branch, reads check and dependency-graph results through the API, and never
-checks out, caches, builds, or executes pull-request content. Preserve that
-trust boundary: do not download or execute artifacts or scripts from the
-triggering workflow in this job.
+Require third-party actions to be pinned to full commit SHAs. The allowlist
+needs only `actions/*`; Dependency Review is an official GitHub-maintained
+action under that namespace. The trusted auto-merge workflow also uses the
+GitHub-hosted `gh` CLI for its documented merge-queue operation.
+
+The `Pull request` workflow executes candidate code only with read permissions
+and receives no repository release credential. NUKE `CI` reads the trusted
+GitHub event payload and enforces title, branch, and issue policy alongside the
+code and package checks.
+
+`Auto-merge` runs through `workflow_run`, which receives a privileged token
+even when the initiating pull request did not. It must remain API-only: never
+check out pull-request code, restore a pull-request cache, download an artifact,
+or execute a script supplied by the triggering run. It binds the merge request
+to the exact successful head SHA.
+
+`Pull request labels` has the same API-only trust boundary. It uses the label
+configuration from the protected default branch, reads changed paths through
+GitHub, and must never check out or execute pull-request-controlled content.
+
+`Release` runs only after code reaches protected `main`. Treat that branch as
+the trust boundary for code that receives release permissions.
 
 ## Main branch ruleset
 
-Create an active branch ruleset named `main` targeting the default branch.
-Configure:
+Create an active ruleset named `main` targeting the default branch. Configure:
 
-- restrict deletion;
-- block force pushes;
-- require linear history;
-- require a pull request before merging;
-- require zero approvals initially, raising this to one when at least two
-  maintainers can review without blocking the repository;
-- dismiss stale approvals when approval requirements are enabled;
-- require all review conversations to be resolved;
-- allow only squash as the merge type;
-- require the merge queue, using squash and only non-failing pull requests; and
-- require status checks, without separately requiring the branch to be current
-  because the merge queue validates the combined head.
+- restrict deletion and block force pushes;
+- require linear history and a pull request;
+- allow only squash merge;
+- require all conversations to be resolved;
+- require one approval when at least two independent maintainers are active;
+- dismiss stale approvals when approvals are required;
+- disallow ruleset bypass for normal operation; and
+- require the exact check `Pull request gate` from GitHub Actions.
 
-After each required workflow has run at least once, select these exact check
-names with GitHub Actions as the expected source:
+For an active repository, require the merge queue. The `Pull request` workflow
+listens to `merge_group`, and the aggregate gate intentionally accepts skipped
+PR-metadata and Dependency Review jobs only for that event while rerunning the
+full NUKE validation against the combined queue commit. GitHub requires the
+`merge_group` event for required Actions checks used by a merge queue.
 
-- `Pre-commit`;
-- `Validate (ubuntu-latest)`;
-- `Validate (windows-latest)`;
-- `Validate (macos-latest)`;
-- `Dependency review`;
-- `Conventional pull request`; and
-- `Branch and issue policy`.
+Do not require the individual `Validate` or `Dependency review` job separately.
+`Pull request gate` is the stable public contract and fails unless all
+applicable jobs succeed.
 
-Both CI and pull-request policy workflows listen for `merge_group`. Jobs that
-need pull-request metadata are emitted as successful skipped checks for merge
-groups, while the complete NUKE validation reruns against the merge-queue
-commit. Do not add a required workflow that uses only path filters or lacks a
-`merge_group` trigger; its absent status can block the queue indefinitely.
-The asynchronous `Pull request summary` workflow is intentionally not required:
-it reports the required results after they finish and does not itself validate
-the merge-group commit.
+## Release tag ruleset and credential
 
-Do not grant administrators a blanket bypass. If emergency bypass is retained,
-limit it to repository administrators in pull-request-only mode and require a
-follow-up issue. Normal release automation does not need to bypass `main`.
-
-## Release tag ruleset
-
-Create an active tag ruleset named `IX.Modularity release tags` targeting:
+Create an active tag ruleset named `repository release tags` targeting:
 
 ```text
-IX.Modularity-v*
+v*
 ```
 
-Restrict creation, update, and deletion, and block force updates. While the
-workflow uses a user token, add only the `i-x-io/maintainers` team as an
-always-allowed bypass actor; the token owner must be a current member. Do not
-add an administrator-role, default Actions token, or Dependabot bypass. A
-maintainer has the technical ability to create a matching tag but must still
-use the release workflow so the tag, changelog, GitHub release, and package
-cannot diverge.
+Restrict creation, update, and deletion and block force updates. NUKE
+`Publish` is idempotent: an existing tag is accepted only when it already
+points to the pushed `main` commit. A conflicting remote tag fails without
+mutation.
 
-## Release token
+Store `RELEASE_TOKEN` as a repository Actions secret. Prefer a short-lived,
+organization-owned GitHub App installation token. If that is not yet
+available, use a fine-grained personal access token limited to this repository
+with Contents write permission and the shortest practical expiration. Add only
+that App or token owner to the tag-ruleset bypass list. Record ownership and
+expiry privately and rotate before expiry.
 
-Release Please uses the repository Actions secret `RELEASE_TOKEN`. Prefer a
-fine-grained personal access token limited to `i-x-io/modular-base`, with
-Contents, Issues, and Pull requests read/write permissions and the shortest
-practical expiration. Record its owner and expiry privately and rotate it
-before expiration.
+The workflow falls back to its job token where repository policy permits it,
+but a protected tag ruleset should require the dedicated credential. The job
+token separately receives pull-request read and package write permissions and
+is passed as `GitHubToken`; NUKE derives owner, repository, and package source
+from `[GitRepository]`.
 
-GitHub CLI cannot mint a new personal access token. It can install an existing
-authenticated credential without printing it:
+## GitHub Packages and release evidence
 
-```sh
-gh auth token | gh secret set RELEASE_TOKEN --repo i-x-io/modular-base
-```
-
-The active `gh` credential may be used for the controlled first-release
-bootstrap. A dedicated fine-grained token is preferable for ongoing operation
-because a normal CLI credential commonly has broader account scopes. Never
-write either value to a file, command log, workflow output, or committed
-configuration.
-
-The release workflow passes `RELEASE_TOKEN` only to Release Please. Its normal
-job token remains read-only for repository contents and gains only
-`packages: write`; NUKE receives that separate job token for package
-publication. Replacing the user token with a short-lived organization-owned
-GitHub App is an optional credential-hardening follow-up, not a second active
-authentication path in the workflow.
-
-The built-in job token publishes the package because the release job requests
-`packages: write`. It is passed to NUKE only for the publish step and is masked
-as a secret parameter.
-
-## GitHub Packages
-
-Packages are published to the organization NuGet endpoint:
+Packages publish to:
 
 ```text
 https://nuget.pkg.github.com/i-x-io/index.json
 ```
 
-The package links back to this repository. Grant package access to consuming
-repositories explicitly rather than making a broad organization token. GitHub
-Actions consumers should request `packages: read`; developer and external
-NuGet clients normally use a least-privilege personal access token with
-`read:packages`. Never commit a token to `NuGet.Config`.
+Grant package read access to consuming repositories explicitly. Actions
+consumers should request `packages: read`; developer and external clients use a
+least-privilege credential with `read:packages`. Never commit a token to
+`NuGet.Config`.
 
-After the first publish, verify package visibility, repository linkage,
-download instructions, symbols artifact retention, and that a clean consumer
-can restore only with the documented permissions.
+Each release must contain:
+
+- the `.nupkg` and `.snupkg` assets;
+- the CycloneDX JSON SBOM;
+- `release-plan.json` as a release asset and retained Actions evidence;
+- `release-manifest.json` and `SHA256SUMS` as release assets and retained
+  evidence; and
+- GitHub provenance and SBOM attestations.
+
+Ordinary merges must be marked prerelease and must not become the latest
+release. Only `RELEASE:` merges are stable and update the latest-release
+pointer.
 
 ## Security features
 
 Enable:
 
-- dependency graph;
+- dependency graph and Dependency Review;
 - Dependabot alerts and security updates;
 - secret scanning and push protection;
 - private vulnerability reporting; and
 - automatic security advisories for supported ecosystems.
 
-The repository already adds dependency review, package audit, Gitleaks, action
-SHA pinning, actionlint, zizmor, and an SBOM. Add CodeQL default setup only
-after confirming the generated job name and merge-queue behavior, then make it
-required. Coverage gates, OpenSSF Scorecard, artifact attestations, and package
-signing are useful later hardening steps, but are intentionally not silently
-treated as complete in this baseline.
+The repository additionally enforces locked restore, NuGet audit, Gitleaks,
+action SHA pinning, actionlint, zizmor, package inspection, and SBOM generation.
+Add CodeQL default setup after verifying its merge-queue check name, then make
+that exact check required if desired.
 
-## Teams, ownership, and labels
+## Bootstrap and reconciliation
 
-The `i-x-io/maintainers` team owns the repository-wide policy, build,
-workflow, and public API surfaces through `.github/CODEOWNERS`:
+1. Push the reviewed automation to `main` before enabling automatic release.
+2. Run a test pull request so GitHub records `Pull request gate`.
+3. Enable auto-merge, squash-only merging, the merge queue, and the `main`
+   ruleset.
+4. Install `RELEASE_TOKEN` and the immutable release-tag ruleset.
+5. Merge an ordinary test pull request and verify prerelease package, tag,
+   attestations, assets, and generated notes.
+6. Merge a controlled `RELEASE:` pull request and verify promotion to a stable
+   version and latest release.
+7. Verify a direct push, a conflicting tag, a failed gate, and a draft pull
+   request cannot publish or merge.
 
-```text
-* @i-x-io/maintainers
-/.github/ @i-x-io/maintainers
-/build/ @i-x-io/maintainers
-/src/IX.Modularity/PublicAPI.*.txt @i-x-io/maintainers
-```
-
-Keep mandatory code-owner review disabled while the team has only one active
-human member, because self-approval cannot provide independent review. Enable
-one required code-owner approval as soon as a second active maintainer joins,
-without making release automation unable to maintain its pull request.
-
-Use namespaced labels for human workflow decisions:
-
-- type: `type: bug`, `type: feature`, `type: documentation`, `type: tests`,
-  `type: performance`, `type: refactor`, `type: maintenance`, and
-  `type: release`;
-- area: `area: api`, `area: build`, `area: ci`, `area: dependencies`,
-  `area: documentation`, `area: hooks`, `area: packaging`, and `area: tests`;
-- status: `status: triage`, `status: blocked`, `status: ready`, and
-  `status: waiting`;
-- priority: `priority: critical`, `priority: high`, `priority: medium`, and
-  `priority: low`; and
-- compatibility: `impact: breaking`.
-
-Retain integration labels used by other tools: `security`, `dependencies`,
-`dotnet`, `github-actions`, `pre-commit`, `release`, `autorelease: pending`, and
-`autorelease: tagged`. Dependabot references the ecosystem labels in
-`.github/dependabot.yml`, while Release Please owns its lifecycle labels.
-
-Issue forms apply existing type and triage labels natively. The pinned official
-`actions/labeler` workflow applies and synchronizes pull-request type and area
-labels from branch names and changed paths. All referenced labels are created
-up front, so the workflow needs `pull-requests: write` but not `issues: write`.
-It is deliberately informational and is not a required status check.
-
-## Bootstrap order
-
-The new remote has no default branch until the first push. Bootstrap in this
-order:
-
-1. Review and push the complete baseline to `main` before enabling release
-   automation.
-2. Let every workflow run once so GitHub records its check names.
-3. Configure repository merge settings and Actions SHA enforcement.
-4. Install `RELEASE_TOKEN` through standard input and create the tag ruleset.
-5. Push or manually dispatch `Release` to create or update the first release pull
-   request.
-6. Create and activate the `main` ruleset with recorded check names.
-7. Enable the security features and private reporting.
-8. Verify labels, team membership, and `CODEOWNERS` resolution.
-9. Open a non-release test pull request and exercise the merge queue.
-10. Merge a controlled release pull request and verify package consumption.
-
-Rulesets are intentionally configured in GitHub rather than synchronized from
-a checked-in token-bearing script. Record material settings changes in an
-issue or ADR so GitHub-side policy remains auditable.
+Rulesets remain configured in GitHub rather than synchronized from a
+token-bearing repository script. Record material settings changes in an issue
+or ADR so external policy remains auditable.

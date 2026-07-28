@@ -8,10 +8,9 @@ The repository is now an executable vanilla C# library baseline rather than an
 empty policy catalog. It contains a shipping `IX.Modularity` project, a
 cross-platform 24-test suite, locked dependencies, deterministic packaging,
 typed NUKE orchestration, managed Git hooks, hardened GitHub workflows,
-templates, release automation, and a documented governance model.
-The controlled first release has completed: `IX.Modularity` 0.1.0 is tagged,
-published in GitHub Packages, retained as a workflow artifact, and verified
-from a clean consumer project.
+templates, release automation, and a documented governance model. The release
+contract has been reset to a repository-wide lockstep model so additional
+packable projects can be added without changing the build host.
 
 The selected platform is .NET 10 with stable C# 14. The selected workflow build
 system is NUKE 10.1, while SDK-style MSBuild remains the compiler and project
@@ -38,12 +37,9 @@ documented or centrally versioned.
 | Supply chain | Low-severity NuGet audit, dependency review, Dependabot, full-history Gitleaks, CycloneDX SBOM. |
 | Local workflow | Managed pre-commit, pre-push, and commit-message hooks with pinned revisions. |
 | Workflow linting | GitHub schemas, actionlint, and strict zizmor collection. |
-| CI | Linux, Windows, and macOS validation using the same NUKE `Validate` target. |
-| Pull requests | Issue forms, PR template, branch pattern, issue linkage, Conventional Commit title. |
-| Classification | Native issue-form labels and official Labeler branch/path automation with a namespaced taxonomy. |
-| PR feedback | One update-in-place comment with change metadata, required checks, dependency diff, and NUKE guarantees. |
-| Releases | Release Please manifest flow, commit-generated changelog and release message, protected component tags, exact tag/package match, GitHub Packages publish target. |
-| Maintenance | Weekly dependency freshness and documentation link checks. |
+| CI | Focused Ubuntu pull-request and merge-group validation using the same NUKE `CI` target. |
+| Pull requests | Issue forms, PR template, branch pattern, issue linkage, conventional or explicit stable-release title, one aggregate gate, and trusted auto-merge. |
+| Releases | Typed multi-package NUKE release plan, MinVer prereleases on ordinary merges, `RELEASE:` stable promotion, protected repository tags, exact tag/package match, attestations, assets, and GitHub Packages publication. |
 
 ## Pre-commit research outcome
 
@@ -60,15 +56,11 @@ separate global copies. Selected hooks are pinned to reviewed revisions:
 | check-jsonschema | 0.37.4 | First-party schemas for workflows, Dependabot, issue forms, and issue config. |
 | actionlint | 1.7.12 | GitHub expression, event, shell, and workflow semantic checking. |
 | zizmor | 1.28.0 | Security-specific Actions analysis, including permissions, credential persistence, and ref pinning. |
-| local NUKE hook | repository | Runs the authoritative `Validate` graph at pre-push/manual stages. |
+| local NUKE hook | repository | Runs the authoritative `CI` graph at pre-push/manual stages. |
 
 NuGet-generated `packages.lock.json` files remain under JSON syntax checking
 but are excluded from generic JSON autoformatting, avoiding a permanent diff
-between NuGet's serializer and the hook formatter. Release Please likewise
-owns `.release-please-manifest.json` and package `CHANGELOG.md` files. The
-manifest remains syntax-checked and both generated formats remain covered by
-hygiene and secret scanning, but generic formatters and Typos do not rewrite
-them in release pull requests.
+between NuGet's serializer and the hook formatter.
 
 Alternatives were not stacked when they duplicated a selected capability:
 `markdownlint-cli` duplicates CLI2, codespell duplicates Typos, and
@@ -76,44 +68,38 @@ detect-secrets or TruffleHog duplicate the normal Gitleaks commit path. A
 complementary scanner is justified only if it adds a distinct guarantee, such
 as verified live-secret detection, and its network/service boundary is
 accepted. ShellCheck is deferred because the only shell launcher is a trivial
-forwarder; add it when maintained shell logic exists. A link checker belongs in
-scheduled CI rather than every local commit, so Lychee runs weekly.
+forwarder; add it when maintained shell logic exists. A networked link checker
+is intentionally outside the four build outcomes and the merge gate.
 
 ## Why NUKE is used fully
 
 NUKE is not used as a decorative wrapper around a list of shell commands. The
-build definition uses:
+four-target graph is isolated in `Build.cs`, injected values and the four
+custom parameters live in `Build.Parameters.cs`, and `Pipeline/` is the single
+composition boundary. Vertical `Repository/`, `Tooling/`, `Validation/`, and
+`Release/` areas own cohesive behavior. Paths, repository-derived identity,
+graph roles, immutable policy, and toolchain versions are typed objects, and
+the build assembly has its own enterprise test project.
 
-- typed `DotNetToolRestore`, `DotNetRestore`, `DotNetFormat`, `DotNetBuild`,
-  `DotNetTest`, `DotNetPack`, and `DotNetNuGetPush` settings;
-- target descriptions and an explicit dependency graph;
-- output declarations for test, package, and SBOM artifacts;
-- early target requirements for server-only publishing and secrets;
-- strongly typed solution and project generation;
-- injected Git repository metadata;
-- typed build configuration values with generated schema completion;
-- secret parameter handling;
-- native build-root and build-project paths; and
-- strongly typed GitHub Actions runtime context for repository validation.
+The solution is treated as a graph rather than generated hardcoded product and
+test accessors. Every packable project is discovered through evaluated
+`IsPackable` metadata, runtime dependencies come from evaluated
+`PackageReference` items, and the solution plus build tests are managed build
+inputs. Typed
+`DotNet*` wrappers cover standard SDK commands; generic process execution
+remains only for installed tools and CLI surfaces without a suitable NUKE 10.1
+wrapper.
 
-Raw `dotnet` invocation remains only where NUKE 10.1 has no appropriate typed
-wrapper: the installed CycloneDX and outdated tools and the .NET 10 noun-first
-`dotnet package list` audit command.
+Central MSBuild MinVer configuration remains authoritative for one lockstep
+version and the `v` repository tag prefix. NUKE inspects every produced
+package, creates a schema-v2 release plan, requires every final package to
+equal the tagged version, generates versioned evidence, and reconciles the
+GitHub release through Octokit. Focused workflows retain triggers, permissions,
+caches, merge orchestration, Dependency Review, attestations, and retention.
 
-The `[MinVer]` NUKE injection was deliberately not added. The package's
-authoritative MinVer MSBuild configuration uses the component-specific
-`IX.Modularity-v` tag prefix, while NUKE's generic injection does not preserve
-that project setting. The build instead reads the produced package version and
-requires it to equal the exact repository tag. The NUKE `[GitHubActions]`
-workflow generator is also deliberately not used: the hand-authored workflows
-need full-SHA action pins, least-privilege job permissions, pre-commit caches,
-matrix artifacts, merge-queue events, dependency review, and Release Please.
-NUKE still supplies the runtime GitHub context and owns all build behavior.
-
-Build components are unnecessary for one small build class. Introduce them
-only when multiple repositories or genuinely independent build concerns would
-reuse the components; premature components would hide this baseline's target
-graph without reducing duplication.
+Reusable NUKE components should be extracted when a second repository needs
+the same stable contract. The current internal abstraction layer provides that
+seam without publishing repository-specific components prematurely.
 
 ## C# and .NET decision
 
@@ -156,17 +142,16 @@ For dispatch:
 
 Checked-in automation covers:
 
-- CI on pushes, pull requests, merge groups, and manual invocation;
-- pull-request title, branch, and linked-issue policy;
+- read-only NUKE `CI` on pull requests and merge groups;
+- pull-request title, branch, and linked-issue policy inside the same target;
+- one aggregate gate followed by an API-only trusted auto-merge controller;
+- API-only branch and changed-path labeling from protected configuration;
 - four Dependabot ecosystems with grouped updates and cooldowns;
-- release PR, tag, GitHub release, package validation, and package publish;
-- a checked-in changelog and identical generated GitHub release message from
-  Conventional Commits;
-- weekly dependency freshness and Markdown link checks;
+- one NUKE `Publish` call for plan, protected tag, validation, evidence, and
+  package publication after every merged pull request;
+- generated release notes, prerelease/stable classification, release assets,
+  provenance, and SBOM attestations;
 - structured bug/feature forms, private-security routing, and a PR template;
-- native issue labels plus safe branch/path pull-request classification;
-- a trusted base-branch result commenter that works for repository, fork, and
-  Dependabot pull requests without executing their content;
 - immutable action revisions, explicit token permissions, no credential
   persistence, and safe pull-request events.
 
@@ -177,31 +162,13 @@ features, labels, and bootstrap order are documented in
 
 ## Release acceptance evidence
 
-The controlled first release completed on 2026-07-28 without bypassing the
-main-branch or tag rulesets:
-
-- release pull request [#7](https://github.com/i-x-io/modular-base/pull/7)
-  passed all seven required checks and the three-platform merge-queue build;
-- protected tag
-  [`IX.Modularity-v0.1.0`](https://github.com/i-x-io/modular-base/releases/tag/IX.Modularity-v0.1.0)
-  points to the merged release commit and produced a non-draft, non-prerelease
-  GitHub release;
-- the GitHub release body is the generated `0.1.0` changelog section rather
-  than separately maintained prose;
-- the successful [release workflow](https://github.com/i-x-io/modular-base/actions/runs/30378382153)
-  invoked NUKE `Publish`, published `IX.Modularity` 0.1.0 to GitHub Packages,
-  and retained the package and symbols package as artifact
-  `IX.Modularity-0.1.0`; and
-- a new `net10.0` console project restored the published package from the
-  organization feed, compiled with zero warnings and errors, and executed the
-  public `ModuleId` API.
-
-Package metadata was also checked independently: the nuspec and resolved
-dependency graph report package version `0.1.0`, file version is `0.1.0.0`,
-and informational version is `0.1.0` plus the release commit. The assembly
-version `0.0.0.0` is intentional: MinVer follows the open-source library
-[version-number guidance](https://github.com/adamralph/minver#version-numbers)
-of `{major}.0.0.0`, so every pre-1.0 release shares assembly major version zero.
+The first release through the reconciled contract must demonstrate that the
+pull-request gate passed, the `v<semver>` tag targets the merged commit, all
+packable projects published at the same version, the GitHub release has the
+correct prerelease/latest classification, every package and evidence file is
+attached, attestations exist, and a clean consumer can restore the packages.
+Historical component-tag releases and package versions are intentionally not
+part of this new contract.
 
 ## Remaining work and deliberate deferrals
 
@@ -209,12 +176,12 @@ The baseline is usable, but these items remain:
 
 | Priority | Item | Trigger or fix |
 | --- | --- | --- |
-| P1 now | Package compatibility baseline. | Set `PackageValidationBaselineVersion` to the intentional `0.1.0` release after deciding how CI retrieves the GitHub Packages baseline without exposing a broad credential. |
+| P1 after the first intentional stable release | Package compatibility baseline. | Set `PackageValidationBaselineVersion` to that release after deciding how CI retrieves the GitHub Packages baseline without exposing a broad credential. |
 | P1 credential hardening | Replace the broad CLI bootstrap credential with a repository-scoped fine-grained token or organization-owned App. | Verify the new identity on a release, rotate the old credential, and update the tag-ruleset actor. |
 | P1 with a second maintainer | Independent ownership enforcement. | The team and `CODEOWNERS` exist; require one code-owner review after a second active maintainer joins. |
 | P1 when coverage has a decision use | MTP-native coverage and threshold. | Add an open-source MTP integration and ratchet a meaningful threshold; do not add a vanity percentage. |
 | P1 security hardening | CodeQL default setup. | Confirm .NET 10 results and merge-queue check names, then make it required. |
-| P2 release hardening | Package signing/provenance and artifact attestations. | Choose a supported identity, verification policy, and consumer process first. |
+| P2 release hardening | Package signing. | Choose a supported identity, verification policy, and consumer process; provenance and SBOM attestations are already emitted. |
 | P2 ecosystem signal | OpenSSF Scorecard. | Add only after permissions/findings ownership is assigned. |
 | As needed | `CODE_OF_CONDUCT.md`, discussions, project boards, wiki. | Add when community or planning ownership exists. |
 
@@ -234,7 +201,6 @@ Locally, the implemented baseline has demonstrated:
 - a non-empty CycloneDX JSON SBOM; and
 - schema, actionlint, and strict zizmor validation of GitHub files.
 
-Local acceptance is `dotnet nuke Validate --configuration Release` followed by
-all-file `pre-commit` validation. The protected GitHub workflow, release,
-package publication, retained artifact, and clean-consumer acceptance described
-above have now completed for version `0.1.0`.
+Local acceptance is `dotnet nuke CI --configuration Release` followed by
+all-file `pre-commit` validation. Remote release acceptance is performed only
+after the refactor has passed the protected pull-request workflow.
