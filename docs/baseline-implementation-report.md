@@ -164,7 +164,7 @@ Checked-in automation covers:
   persistence, and safe pull-request events.
 
 External repository settings cannot be inferred from YAML. The exact Actions
-policy, main and tag rulesets, release App, package permissions, security
+policy, main and tag rulesets, release credential, package permissions, security
 features, labels, and bootstrap order are documented in
 `docs/github-governance.md`.
 
@@ -174,9 +174,9 @@ The baseline is usable, but these items remain:
 
 | Priority | Item | Trigger or fix |
 | --- | --- | --- |
-| P0 before remote use | Push `main`, let checks register, configure rulesets and release App. | Follow the governance bootstrap order; settings cannot be active before the first branch exists. |
-| P0 before first publish | Exercise Release Please and restore the package from a clean consumer. | Use a controlled `0.1.0` release and verify GitHub Packages permissions. |
+| P0 before first publish | Exercise Release Please and restore the package from a clean consumer. | Use the controlled `0.1.0` release and verify GitHub Packages permissions. |
 | P1 after first stable release | Package compatibility baseline. | Set `PackageValidationBaselineVersion` to an intentional released version. |
+| P1 credential hardening | Replace the broad CLI bootstrap credential with a repository-scoped fine-grained token or organization-owned App. | Verify the new identity on a release, rotate the old credential, and update the tag-ruleset actor. |
 | P1 with a second maintainer | Independent ownership enforcement. | The team and `CODEOWNERS` exist; require one code-owner review after a second active maintainer joins. |
 | P1 when coverage has a decision use | MTP-native coverage and threshold. | Add an open-source MTP integration and ratchet a meaningful threshold; do not add a vanity percentage. |
 | P1 security hardening | CodeQL default setup. | Confirm .NET 10 results and merge-queue check names, then make it required. |

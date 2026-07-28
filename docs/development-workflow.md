@@ -286,8 +286,12 @@ the tag version with the packed package version, and publishes to
 
 Do not manually edit the manifest version, create a release tag, or call
 `Publish` from a workstation. Publishing requires GitHub Actions server context
-and a short-lived token. The GitHub App setup and ruleset bypass are documented
-in [GitHub governance](github-governance.md).
+and configured credentials. Release Please receives the repository
+`RELEASE_TOKEN` secret; NUKE package publication receives the separate,
+job-scoped built-in token. GitHub CLI installs an existing token through
+standard input but cannot mint a new one. Provisioning, rotation, minimum
+permissions, and the tag-ruleset bypass are documented in
+[GitHub governance](github-governance.md).
 
 After the first stable package is published, set and maintain
 `PackageValidationBaselineVersion` so SDK package validation checks binary and
