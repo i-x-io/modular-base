@@ -2,7 +2,7 @@
 
 ## Scope and enforcement
 
-This is the quality contract for projects beneath the repository root. It applies to the non-packable `ArchitectureTest` project at `test/IX.Modularity.Architecture.Tests` and to future production projects. The architecture-test project validates governance; `src/` contains no production projects.
+This is the quality contract for projects beneath the repository root. It applies to the packable `IX.Modularity.Analyzers` project, its focused non-packable test project, and the non-packable `ArchitectureTest` project at `test/IX.Modularity.Architecture.Tests`. The architecture-test project validates governance. See [project structure](project-structure.md) for the complete current inventory and for future project conventions.
 
 `Directory.Build.props` supplies the default framework, language, nullable, documentation-file, determinism, analyzer, and warning policy. `Directory.Build.targets` supplies package-reference validation, packable-project validation, and a self-contained lexical source-policy MSBuild task. The root `.editorconfig` supplies file-scoped editor and C# style rules. `ModularBase.globalconfig` supplies repository-wide analyzer diagnostic defaults through `GlobalAnalyzerConfigFiles`.
 

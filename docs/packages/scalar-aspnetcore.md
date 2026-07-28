@@ -4,7 +4,7 @@
 
 | Package | Pinned version | Role | Status |
 | --- | --- | --- | --- |
-| `Scalar.AspNetCore` | `2.16.16` | Interactive Scalar API reference UI for generated OpenAPI documents | Centrally pinned; catalog-only until an API project consumes it |
+| `Scalar.AspNetCore` | `2.16.16` | Interactive Scalar API reference UI for generated OpenAPI documents | Catalog-only; not approved for automatic project consumption; the central pin supplies a version only |
 
 - Owner: IX
 - Last reviewed: 2026-07-27
@@ -12,11 +12,11 @@
 
 ## Decision and scope
 
-Use Scalar as the interactive UI over the FastEndpoints-generated OpenAPI documents. It does not generate FastEndpoints metadata or enforce security; it only renders configured document endpoints/files.
+Do not add Scalar to a project until its adoption has explicit architecture/adoption approval. The central `PackageVersion` is a version-management mechanism, not approval to consume the package. After approval, Scalar may serve as the interactive UI over FastEndpoints-generated OpenAPI documents. It does not generate FastEndpoints metadata or enforce security; it only renders configured document endpoints/files.
 
 ## Recommended registration and use
 
-Add the centrally versioned package to the consuming web project:
+Only after explicit architecture/adoption approval, add the centrally versioned package to the approved consuming web project:
 
 ```xml
 <ItemGroup>
@@ -24,7 +24,7 @@ Add the centrally versioned package to the consuming web project:
 </ItemGroup>
 ```
 
-Map Scalar after mapping the OpenAPI document(s), passing the exact FastEndpoints document names. Gate both routes to development unless production exposure has an explicit protected authorization policy:
+For that approved adoption, map Scalar after mapping the OpenAPI document(s), passing the exact FastEndpoints document names. Gate both routes to development unless the approval also covers production exposure under an explicit protected authorization policy:
 
 ```csharp
 if (app.Environment.IsDevelopment())
@@ -38,9 +38,9 @@ if (app.Environment.IsDevelopment())
 }
 ```
 
-Add all intended named documents explicitly; `AddDocuments("v1", "v2")` is appropriate only when both documents are registered. Compile and browser-test this mapping in the consuming application as required by the verification checklist.
+After approval, add all intended named documents explicitly; `AddDocuments("v1", "v2")` is appropriate only when both documents are registered. Compile and browser-test this mapping in the consuming application as required by the verification checklist.
 
-For an approved non-development deployment, protect both the UI and its source document with the same documentation policy:
+If the adoption approval also permits a non-development deployment, protect both the UI and its source document with the same documentation policy:
 
 ```csharp
 app.MapOpenApi("/openapi/{documentName}.json")
@@ -63,6 +63,8 @@ app.MapScalarApiReference("/docs", options =>
 
 ## Enterprise implementation guidance
 
+The following setup and operational guidance applies only to an explicitly approved adoption.
+
 - Treat the Scalar route as a public application surface: choose a route, hosting environment, access policy, and change-control owner.
 - Keep document titles, server URLs, authorization descriptions, and examples accurate; Scalar faithfully exposes whatever the OpenAPI document declares.
 - Use a single OpenAPI document source of truth. Do not configure Scalar against a stale copied file in development while clients use a different live contract.
@@ -81,7 +83,7 @@ Rollback the package and application artifact together if mapping/options APIs c
 - [Microsoft.AspNetCore.OpenApi](microsoft-aspnetcore-openapi.md) is underlying document infrastructure; [Microsoft.OpenApi](microsoft-openapi.md) stays on 2.11.0 for compatibility.
 - [JWT bearer](microsoft-aspnetcore-authentication-jwtbearer.md) protects APIs. Scalar’s authorization input is a client convenience, not an identity solution.
 - Use the [API authentication ownership decision](../package-guidance/package-selection.md#api-authentication-ownership) before wiring the explorer to bearer-protected operations.
-- Follow the [FastEndpoints, JWT, OpenAPI, and Scalar recipe](../recipes/fastendpoints-jwt-openapi-scalar.md) for producer, validator, and UI ownership.
+- After adoption approval, follow the [FastEndpoints, JWT, OpenAPI, and Scalar recipe](../recipes/fastendpoints-jwt-openapi-scalar.md) for producer, validator, and UI ownership.
 - Review [Scalar.AspNetCore supply-chain metadata](../package-guidance/supply-chain.md#scalar-aspnetcore) before approval or upgrade.
 
 ## Security, performance, AOT, trimming, and operations
@@ -105,12 +107,14 @@ Monitor UI-route status/latency, source-document fetch status, browser-side asse
 
 ## Avoid
 
+- Do not treat the central pin as adoption approval or add the `PackageReference` without explicit architecture/adoption approval.
 - Do not assume `MapScalarApiReference()` generates an OpenAPI document.
 - Do not specify a document name that FastEndpoints did not register.
 - Do not treat “Authorize” support in the UI as a reason to weaken OAuth/OIDC flows or API security.
 
 ## Verification checklist
 
+- [ ] Explicit architecture/adoption approval is recorded before the project adds the `PackageReference`.
 - [ ] Each configured Scalar document exists at the expected OpenAPI endpoint/static path.
 - [ ] The UI is exposed only in approved environments or protected by the approved policy.
 - [ ] Document titles/operation names and auth schemes match the published API contract.

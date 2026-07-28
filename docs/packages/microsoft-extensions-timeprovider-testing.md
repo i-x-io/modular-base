@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.8.0` | Test-only controllable `TimeProvider` implementation (`FakeTimeProvider`) | Approved test dependency only |
+| `10.8.0` | Test-only controllable `TimeProvider` implementation (`FakeTimeProvider`) | Direct; approved test dependency only |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

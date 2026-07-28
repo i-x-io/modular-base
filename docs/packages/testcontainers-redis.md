@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `Testcontainers.Redis` |
 | Pinned version | `4.13.0` |
-| Status | Approved test-only dependency |
+| Status | Direct; approved only for test-role projects that require disposable Redis infrastructure |
 | Role | Disposable Redis containers for integration tests |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
@@ -29,6 +29,7 @@ Use xUnit's asynchronous lifecycle, a reviewed image pin, and the post-start con
 
 ```csharp
 using Testcontainers.Redis;
+using Xunit;
 
 public sealed class RedisFixture : IAsyncLifetime
 {
@@ -70,7 +71,7 @@ Upgrade the Redis and PostgreSQL modules together when both are present so they 
 
 ## Integration with the catalog
 
-Use with [xunit.v3](xunit-v3.md). Production client and cache behavior belong with `Microsoft.Extensions.Caching.StackExchangeRedis`, not this package. Use [AwesomeAssertions](awesomeassertions.md) for observable outcomes and [Testcontainers.PostgreSql](testcontainers-postgresql.md) for database tests. The project reference stays versionless. See the [PostgreSQL and Redis Testcontainers recipe](../recipes/testcontainers-postgresql-redis-xunit.md), [test-platform guidance](../package-guidance/package-selection.md#test-platform-runners-and-coverage), and the [Testcontainers.Redis supply-chain entry](../package-guidance/supply-chain.md#testcontainers-redis).
+Use with [xunit.v3](xunit-v3.md). Production client and cache behavior belong with [Microsoft.Extensions.Caching.StackExchangeRedis](microsoft-extensions-caching-stackexchangeredis.md), not this package. Use [AwesomeAssertions](awesomeassertions.md) for observable outcomes and [Testcontainers.PostgreSql](testcontainers-postgresql.md) for database tests. The `PackageReference` stays versionless. See the [PostgreSQL and Redis Testcontainers recipe](../recipes/testcontainers-postgresql-redis-xunit.md), [test-platform guidance](../package-guidance/package-selection.md#test-platform-runners-and-coverage), and the [Testcontainers.Redis supply-chain entry](../package-guidance/supply-chain.md#testcontainers-redis).
 
 ## Security, performance, AOT, trimming, and operations
 

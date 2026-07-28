@@ -4,6 +4,7 @@
 
 `Humanizer.Core` **3.0.10** — direct catalog package; human-readable transformations for strings, dates, quantities, enums, and numbers. The catalog owns the version for `net10.0` projects using C# 14.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 **Review trigger:** `Humanizer.Core` version changes, target-framework changes, or supported locale/globalization-data changes.

@@ -8,7 +8,9 @@ The example disables retries for unsafe HTTP methods. A command may opt back int
 
 ## Required packages
 
-Keep the Web host references versionless under central package management:
+Use central package management for the Web host. The following Web SDK block is
+a standalone application illustration outside this repository's enforced
+project graph:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">
@@ -143,6 +145,7 @@ A deterministic primary handler can validate retry ownership and method policy i
 ```csharp
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Hosting;

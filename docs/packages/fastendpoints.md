@@ -4,7 +4,7 @@
 
 | Package | Pinned version | Role | Status |
 | --- | --- | --- | --- |
-| `FastEndpoints` | `8.2.0` | Endpoint framework and ASP.NET Core registration/middleware | Centrally pinned; catalog-only until an application project consumes it |
+| `FastEndpoints` | `8.2.0` | Endpoint framework and ASP.NET Core registration/middleware | Catalog-only; centrally pinned until an application project consumes it |
 
 - Owner: IX
 - Last reviewed: 2026-07-27
@@ -16,11 +16,14 @@ Use FastEndpoints as the API endpoint framework. It owns endpoint discovery, bin
 
 ## Recommended registration and use
 
-With central package management enabled, the application project omits the version:
+The complete composition below uses direct versionless references for FastEndpoints, its OpenAPI integration, JWT bearer authentication, and Scalar. Central package management supplies every version:
 
 ```xml
 <ItemGroup>
   <PackageReference Include="FastEndpoints" />
+  <PackageReference Include="FastEndpoints.OpenApi" />
+  <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  <PackageReference Include="Scalar.AspNetCore" />
 </ItemGroup>
 ```
 

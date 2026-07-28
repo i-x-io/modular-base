@@ -4,238 +4,517 @@
 
 This glossary gives future `IX.Modularity.*` libraries one shared vocabulary. A term being defined here does not, by itself, create a build rule, project type, package, or dependency. The normative requirements are in [architectural rules](architectural-rules.md) and the permitted project relationships are in [project structure](project-structure.md).
 
-The labels used throughout the architecture documentation have precise force:
-
-| Label | Meaning |
-| --- | --- |
-| **Defined vocabulary** | A name used consistently by this repository. It may describe a concept without requiring a particular implementation. |
-| **Normative** | A requirement for future library projects. A pull request must either comply or record an approved exception. |
-| **Enforceable** | A normative rule that can be checked mechanically once a suitable project or architecture test exists. An unenforced normative rule remains required. |
-| **Heuristic** | A decision aid. It directs design review but is not an automatic rejection criterion. |
-| **Out of scope** | Useful context that this repository intentionally does not prescribe. |
-
-## Design principles
-
-### Defined vocabulary
-
-| Term | Meaning | Status in this repository |
-| --- | --- | --- |
-| **SOLID** | The family of object-oriented principles: single responsibility, open/closed, Liskov substitution, interface segregation, and dependency inversion. | Heuristic. Use it to examine responsibilities and dependencies; do not treat the acronym as a substitute for a concrete rule. |
-| **Separation of concerns (SoC)** | Place concerns that change for different reasons behind distinct boundaries. | Normative at the project-boundary level; see architectural rules. |
-| **Cohesion** | The degree to which the contents of a unit belong together for one reason to change. | Heuristic. Prefer cohesive projects and packages. |
-| **Coupling** | The degree to which one unit must know about or change with another. | Heuristic. Prefer narrow, explicit, acyclic dependencies. |
-| **DRY** | Keep one authoritative representation of a rule or piece of knowledge. | Normative for policy, contracts, and compatibility baselines; use judgment for coincidental code similarity. |
-| **KISS** | Prefer the smallest understandable design that satisfies the stated need. | Heuristic. |
-| **YAGNI** | Do not add capability until a current requirement needs it. | Normative against speculative public abstractions and project splits. |
-| **CQS** | At an operation boundary, a query observes state and returns information; a command changes state. | Heuristic for public APIs and application services. |
-| **CQRS** | Separate read and write models when their responsibilities justify it. It is broader than CQS and can use one or separate stores. | Out of scope as a required architecture. Adopt it only for a documented workload need. |
-
-### Component and package principles
-
-Here, a **component** means a releasable and independently versioned unit, normally a NuGet package with one or more assemblies. It is not synonymous with a C# project.
-
-| Term | Meaning | Status in this repository |
-| --- | --- | --- |
-| **REP** — Release Equivalence Principle | Units released together should be versioned and released together. | Normative when choosing a package boundary. |
-| **CCP** — Common Closure Principle | Put classes that change together for the same reason in the same component. | Heuristic. |
-| **CRP** — Common Reuse Principle | Do not force consumers to depend on types they do not use. | Normative for public package dependencies; heuristic for internal layout. |
-| **ADP** — Acyclic Dependencies Principle | The component dependency graph has no cycles. | Normative and enforceable when dependency checks exist. |
-| **SDP** — Stable Dependencies Principle | Depend in the direction of greater stability. | Heuristic. Use stable contracts and abstractions to avoid implementation-driven dependency direction. |
-| **SAP** — Stable Abstractions Principle | A stable component should be abstract enough to avoid resisting change, without becoming empty ceremony. | Heuristic. |
-
-## Architectural styles and boundaries
-
-| Term | Meaning | Status in this repository |
-| --- | --- | --- |
-| **Layered architecture** | Organizes code into responsibility layers; dependencies generally point inward or downward according to the chosen layer model. | Defined vocabulary. This repository uses its dependency direction, not a fixed set of application layers. |
-| **Clean architecture** | Organizes code around business policies and controls source-code dependencies so details depend on policies. | Defined vocabulary and heuristic. |
-| **Onion architecture** | Places domain policy at the center and infrastructure at outer rings; dependencies point inward. | Defined vocabulary and heuristic. |
-| **Hexagonal architecture** | Separates an application core from primary/driving and secondary/driven adapters through ports. | Defined vocabulary and heuristic. A repository `Adapter` role is an implementation boundary, not proof that a system is hexagonal. |
-| **Modular monolith** | One deployable application with modules that retain explicit internal boundaries. | Out of scope for this library repository. Libraries may support one, but do not prescribe an application deployment topology. |
-| **Composition root** | The outermost place that selects implementations and assembles an object graph. | Defined vocabulary. It belongs in an application or integration boundary, never in an abstractions-only package. |
-| **Port** | An interface owned by the policy that needs a capability. | Defined vocabulary. It normally belongs in `Abstractions` or `Contracts`, not in an adapter. |
-| **Adapter** | Code that translates between a port/contract and a concrete technology, protocol, or external library. | Defined vocabulary. It is a project role with specific dependency constraints. |
-
-## Domain-driven design vocabulary
-
-DDD terms describe a domain model; they do not require that every library contain a domain model.
-
-| Term | Meaning | Status in this repository |
-| --- | --- | --- |
-| **Domain** | The subject area and rules the software serves. | Defined vocabulary. |
-| **Ubiquitous language** | Shared, context-specific language used by domain experts and developers. | Heuristic. Use it for public domain-facing names. |
-| **Bounded context** | An explicit boundary within which a model and its terms have one meaning. | Defined vocabulary and heuristic for package/module boundaries. |
-| **Context map** | A description of relationships between bounded contexts. | Out of scope unless a future multi-context system needs one. |
-| **Aggregate** | A consistency boundary with an aggregate root controlling changes to its contained model. | Defined vocabulary. |
-| **Entity** | An object defined by continuity of identity. | Defined vocabulary. |
-| **Value object** | An object defined by its attributes rather than identity. | Defined vocabulary. |
-| **Repository** | A collection-like abstraction for retrieving and persisting aggregates. | Defined vocabulary; do not introduce one solely to mirror a database. |
-| **Domain service** | Stateless domain behavior that does not naturally belong to one entity or value object. | Defined vocabulary. |
-| **Application service** | Orchestrates a use case, coordinates dependencies, and delegates domain decisions to domain policy. | Defined vocabulary. |
-| **Domain event** | A record of a meaningful fact that occurred in a domain. | Defined vocabulary. |
-| **Anti-corruption layer (ACL)** | Translation that prevents one bounded context or external model from leaking into another. | Heuristic. An `Adapter` may implement an ACL. |
-
-## .NET library vocabulary
-
-| Term | Meaning | Status in this repository |
-| --- | --- | --- |
-| **Project** | An MSBuild project that produces an assembly, package, analyzer, generator, or test output. | Defined vocabulary. A project is an implementation unit, not necessarily a release unit. |
-| **Assembly** | The CLR deployment and type-identity unit produced by a project. | Defined vocabulary. |
-| **NuGet package** | The distribution and version-selection unit consumed through NuGet. | Defined vocabulary. One package can contain multiple assemblies. |
-| **Public API** | Public and protected types and members that consumers can compile against, plus documented behavior that consumers reasonably rely on. | Normative compatibility boundary for released libraries. |
-| **Source compatibility** | Consumer source still compiles after an update. | Defined vocabulary; insufficient on its own for a released package. |
-| **Binary compatibility** | Previously compiled consumer code can run against the updated assembly without a missing or changed public contract. | Normative release concern. |
-| **Behavioral compatibility** | An update preserves documented and reasonably relied-on behavior. | Normative release concern; it requires review and tests, not only API tooling. |
-| **Package validation** | SDK/API-compatibility validation of a package or assembly against compatible target frameworks or a baseline package. | Enforceable when enabled for a package project. |
-| **Public API baseline** | A checked-in record of intentional shipped and pending public API surface, used by public API analyzers. | Normative for packable projects under the existing code-quality policy. |
-
-## A–Z linked glossary
-
-The following stable anchors are the preferred cross-document links for terms used by the deep taxonomy. They complement the canonical vocabulary above; they do not create additional project roles or application architecture requirements.
+The A–Z glossary below is the canonical vocabulary. Each term has a native
+Markdown heading for stable cross-document links. Status words such as
+“normative” and “heuristic” describe the force of a term; they do not create
+additional project roles or application architecture requirements.
 
 ## A
 
-[Adapter](boundaries-and-dependencies.md#boundary-and-dependency) translates technology at a policy boundary.
+### Adapter
+
+Code that translates between a port or contract and a concrete technology,
+protocol, or external library. It is defined vocabulary and a project role with
+specific dependency constraints; see [boundaries and dependencies](boundaries-and-dependencies.md#boundary-and-dependency).
+
+### ADP — Acyclic Dependencies Principle
+
+The component dependency graph has no cycles. This is normative and enforceable
+when dependency checks exist.
+
+### Aggregate
+
+A consistency boundary with an aggregate root controlling changes to its
+contained model. This is defined vocabulary.
+
+### Analyzer
+
+Compiler-time diagnostic tooling; see [analyzer policy](analyzer-policy.md).
+
+### Anti-corruption layer (ACL)
+
+Translation that prevents one bounded context or external model from leaking
+into another. This is a heuristic; an `Adapter` may implement an ACL.
+
+### API compatibility
+
+Source, binary, and behavioral preservation for released contracts; see
+[library public API and evolution](library-public-api-and-evolution.md).
+
+### Application service
+
+Orchestrates a use case, coordinates dependencies, and delegates domain
+decisions to domain policy. This is defined vocabulary.
+
+### Assembly
+
+The CLR deployment and type-identity unit produced by a project. This is defined
+vocabulary.
 
 ## B
 
-Boundary separates concerns that change for different reasons.
+### Behavioral compatibility
+
+An update preserves documented and reasonably relied-on behavior. This is a
+normative release concern that requires review and tests, not only API tooling.
+
+### Binary compatibility
+
+Previously compiled consumer code can run against the updated assembly without
+a missing or changed public contract. This is a normative release concern.
+
+### Bounded context
+
+An explicit boundary within which a model and its terms have one meaning. This
+is defined vocabulary and a heuristic for package or module boundaries; see
+[domain modeling](domain-modeling.md).
+
+### Boundary
+
+Separates concerns that change for different reasons; see
+[boundaries and dependencies](boundaries-and-dependencies.md).
 
 ## C
 
-Contract is a consumer-visible API, behavior, or dependency commitment.
+### CCP — Common Closure Principle
+
+Put classes that change together for the same reason in the same component.
+This is a heuristic.
+
+### Clean architecture
+
+Organizes code around business policies and controls source-code dependencies
+so details depend on policies. This is defined vocabulary and a heuristic.
+
+### Cohesion
+
+The degree to which the contents of a unit belong together for one reason to
+change. This is a heuristic; prefer cohesive projects and packages.
+
+### Component
+
+A releasable and independently versioned unit, normally a NuGet package with
+one or more assemblies. It is not synonymous with a C# project.
+
+### Composition root
+
+The outermost place that selects implementations and assembles an object graph.
+This is defined vocabulary. It belongs in an application or integration
+boundary, never in an abstractions-only package.
+
+### Context map
+
+A description of relationships between bounded contexts. This is out of scope
+unless a future multi-context system needs one.
+
+### Contract
+
+A consumer-visible API, behavior, or dependency commitment; see
+[library public API and evolution](library-public-api-and-evolution.md).
+
+### Coupling
+
+The degree to which one unit must know about or change with another. This is a
+heuristic; prefer narrow, explicit, acyclic dependencies.
+
+### CQS
+
+At an operation boundary, a query observes state and returns information; a
+command changes state. This is a heuristic for public APIs and application
+services.
+
+### CQRS
+
+Separates read and write models when their responsibilities justify it. It is
+broader than CQS and can use one or separate stores. It is out of scope as a
+required architecture and should be adopted only for a documented workload
+need.
+
+### CRP — Common Reuse Principle
+
+Do not force consumers to depend on types they do not use. This is normative
+for public package dependencies and a heuristic for internal layout.
 
 ## D
 
-[Domain model](domain-modeling.md#domain-model) gives library terms their stable meaning.
+### Data object
+
+A public value or data carrier with documented semantics; see
+[type system and data modeling](type-system-and-data-modeling.md).
+
+### Defined vocabulary
+
+A name used consistently by this repository. It may describe a concept without
+requiring a particular implementation.
+
+### Dependency
+
+A compile-time, package, or runtime commitment; see
+[boundaries and dependencies](boundaries-and-dependencies.md).
+
+### Documentation contract
+
+Complete XML documentation required by `IXM1001`–`IXM1005`; see
+[analyzer taxonomy](analyzer-taxonomy.md).
+
+### Domain
+
+The subject area and rules the software serves. This is defined vocabulary.
+
+### Domain-driven design vocabulary
+
+Terms that describe a domain model. They do not require every library to
+contain a domain model.
+
+### Domain event
+
+A record of a meaningful fact that occurred in a domain. This is defined
+vocabulary.
+
+### Domain model
+
+Gives library terms their stable meaning; see
+[domain modeling](domain-modeling.md#domain-model).
+
+### Domain service
+
+Stateless domain behavior that does not naturally belong to one entity or value
+object. This is defined vocabulary.
+
+### DRY
+
+Keep one authoritative representation of a rule or piece of knowledge. This is
+normative for policy, contracts, and compatibility baselines; use judgment for
+coincidental code similarity.
 
 ## E
 
-Entity is a domain object defined by continuity of identity.
+### Enforceable
+
+A normative rule that can be checked mechanically once a suitable project or
+architecture test exists. An unenforced normative rule remains required.
+
+### Entity
+
+A domain object defined by continuity of identity. This is defined vocabulary;
+see [domain modeling](domain-modeling.md).
+
+### Error code
+
+An immutable lowercase snake-case `public const string Code` owned by a concrete
+business error type; see [IXM3002](diagnostics/ixm3002.md).
+
+### Exceptional failure
+
+Cancellation, programming fault, broken invariant, corrupt state, or unexpected
+technical failure that propagates as an exception; see
+[boundaries and dependencies](boundaries-and-dependencies.md).
+
+### Expected failure
+
+A caller-actionable business or application outcome returned as a coded result;
+see [domain modeling](domain-modeling.md).
 
 ## F
 
-Framework detail is implementation technology, not a neutral public contract.
+### Failure atomicity
+
+A failure leaves no undocumented partial state or false appearance of success;
+see [documentation, testing, and quality](documentation-testing-and-quality.md#documentation-testing-and-quality).
+
+### Framework detail
+
+Implementation technology, not a neutral public contract.
 
 ## G
 
-Generated code is compiler-produced output and outside user-authored documentation diagnostics.
+### Generated code
+
+Compiler-produced output that is outside user-authored documentation
+diagnostics.
 
 ## H
 
-Heuristic is a review aid rather than an automatically rejecting rule.
+### Heuristic
+
+A decision aid. It directs design review but is not an automatic rejection
+criterion.
+
+### Hexagonal architecture
+
+Separates an application core from primary or driving and secondary or driven
+adapters through ports. This is defined vocabulary and a heuristic. A repository
+`Adapter` role is an implementation boundary, not proof that a system is
+hexagonal.
 
 ## I
 
-Immutable means state cannot change after construction.
+### Immutable
+
+State cannot change after construction; see
+[type system and data modeling](type-system-and-data-modeling.md).
+
+### Interface
+
+A public capability shape owned by the policy requiring it; see
+[boundaries and dependencies](boundaries-and-dependencies.md).
 
 ## J
 
-Justification records why a narrow policy exception is necessary.
+### Justification
+
+Records why a narrow policy exception is necessary.
 
 ## K
 
-KISS prefers the smallest understandable design that meets the current need.
+### KISS
+
+Prefer the smallest understandable design that satisfies the stated need. This
+is a heuristic.
 
 ## L
 
-[Library public API](library-public-api-and-evolution.md#library-public-api) is the released consumer contract.
+### Layered architecture
+
+Organizes code into responsibility layers; dependencies generally point inward
+or downward according to the chosen layer model. This is defined vocabulary.
+The repository uses its dependency direction, not a fixed set of application
+layers.
+
+### Logging
+
+Structured operational events, not an application configuration mechanism; see
+[observability and operability](observability-and-operability.md).
 
 ## M
 
-Magic string is a repeated semantic literal lacking one authoritative named or typed representation.
+### Magic string
+
+A repeated semantic literal lacking one authoritative named or typed
+representation; see [design principles](design-principles.md).
+
+### Memory
+
+A heap-storable buffer view for asynchronous or retained boundaries; see
+[performance and resource management](performance-and-resource-management.md).
+
+### Modular monolith
+
+One deployable application with modules that retain explicit internal
+boundaries. This is out of scope for this library repository. Libraries may
+support one, but do not prescribe an application deployment topology.
 
 ## N
 
-[Nullability](type-system-and-data-modeling.md#type-system-and-data-model) is a public promise about absent values.
+### Normative
+
+A requirement for future library projects. A pull request must either comply or
+record an approved exception.
+
+### NuGet package
+
+The distribution and version-selection unit consumed through NuGet. This is
+defined vocabulary; one package can contain multiple assemblies.
+
+### Nullability
+
+A static public promise about absent values; see
+[type system and data modeling](type-system-and-data-modeling.md#type-system-and-data-model).
 
 ## O
 
-[Observability](observability-and-operability.md#observability-and-operability) provides bounded, structured operational signals.
+### Observability
+
+Provides bounded, structured operational signals; see
+[observability and operability](observability-and-operability.md#operational-signals).
+
+### Onion architecture
+
+Places domain policy at the center and infrastructure at outer rings;
+dependencies point inward. This is defined vocabulary and a heuristic.
+
+### Out of scope
+
+Useful context that this repository intentionally does not prescribe.
+
+### Ownership
+
+Responsibility to dispose, return, or refrain from mutating a resource; see
+[performance and resource management](performance-and-resource-management.md).
 
 ## P
 
-[Performance](performance-and-resource-management.md#performance-and-resource-management) is a measured workload property, not an intuition.
+### Package validation
+
+SDK or API compatibility validation of a package or assembly against compatible
+target frameworks or a baseline package. It is enforceable when enabled for a
+package project.
+
+### Performance
+
+A measured workload property, not an intuition; see
+[performance and resource management](performance-and-resource-management.md#memory-views-ownership-and-measurement).
+
+### Port
+
+An interface owned by the policy that needs a capability. This is defined
+vocabulary and normally belongs in `Abstractions` or `Contracts`, not in an
+adapter; see [boundaries and dependencies](boundaries-and-dependencies.md).
+
+### Project
+
+An MSBuild project that produces an assembly, package, analyzer, generator, or
+test output. This is defined vocabulary. A project is an implementation unit,
+not necessarily a release unit.
+
+### Public API
+
+Public and protected types and members that consumers can compile against, plus
+documented behavior that consumers reasonably rely on. It is the normative
+compatibility boundary and released consumer contract; see
+[library public API and evolution](library-public-api-and-evolution.md#library-public-api).
+
+### Public API baseline
+
+A checked-in record of intentional shipped and pending public API surface, used
+by public API analyzers. It is normative for packable projects under the
+existing code-quality policy.
 
 ## Q
 
-Query observes state and returns information without a meaningful domain-state mutation.
+### Query
+
+Observes state and returns information without a meaningful domain-state
+mutation.
 
 ## R
 
-Record is a C# type with value-oriented generated members.
+### Record
 
-[Result](#result) represents an expected service outcome without using an exception as ordinary control flow.
+A C# type with value-oriented generated members; see
+[type system and data modeling](type-system-and-data-modeling.md).
+
+### REP — Release Equivalence Principle
+
+Units released together should be versioned and released together. This is
+normative when choosing a package boundary.
+
+### Repository
+
+A collection-like abstraction for retrieving and persisting aggregates. This
+is defined vocabulary; do not introduce one solely to mirror a database.
+
+### Resource lifetime
+
+The period in which a resource or buffer may safely be used; see
+[performance and resource management](performance-and-resource-management.md).
+
+### Result
+
+`FluentResults.Result` or `Result<T>` represents an expected service outcome
+without using an exception as ordinary control flow; see
+[FluentResults](../packages/fluentresults.md).
 
 ## S
 
-[Single responsibility](design-principles.md#design-principles) means one primary reason for a type or package to change.
+### SAP — Stable Abstractions Principle
+
+A stable component should be abstract enough to avoid resisting change, without
+becoming empty ceremony. This is a heuristic.
+
+### SDP — Stable Dependencies Principle
+
+Depend in the direction of greater stability. This is a heuristic; use stable
+contracts and abstractions to avoid implementation-driven dependency direction.
+
+### Separation of concerns (SoC)
+
+Place concerns that change for different reasons behind distinct boundaries.
+This is normative at the project-boundary level; see
+[architectural rules](architectural-rules.md).
+
+### Service
+
+A public behavior coordinator with one primary responsibility; see
+[design principles](design-principles.md).
+
+### Single responsibility principle (SRP)
+
+One primary reason for a type or package to change; see
+[design principles](design-principles.md#responsibility-cohesion-and-separation-of-concerns).
+
+### SOLID
+
+The family of object-oriented principles: single responsibility, open/closed,
+Liskov substitution, interface segregation, and dependency inversion. This is a
+heuristic for examining responsibilities and dependencies, not a substitute for
+a concrete rule.
+
+### Source compatibility
+
+Consumer source still compiles after an update. This is defined vocabulary and
+is insufficient on its own for a released package.
+
+### Source-generated logging
+
+A `LoggerMessage`-generated static structured logging method; see
+[observability and operability](observability-and-operability.md).
+
+### Span
+
+A stack-only contiguous-memory view for synchronous work; see
+[performance and resource management](performance-and-resource-management.md).
+
+### Suppression
+
+A narrow, justified, owned, reviewed exception to a diagnostic; see
+[documentation, testing, and quality](documentation-testing-and-quality.md).
 
 ## T
 
-Trace correlates one operation across component boundaries.
+### Trace
+
+Correlates one operation across component boundaries.
 
 ## U
 
-Ubiquitous language is the shared, context-specific language used for stable domain names.
+### Ubiquitous language
+
+Shared, context-specific language used by domain experts and developers. This
+is a heuristic; use it for public domain-facing names.
 
 ## V
 
-Value object is defined by attributes/value equality rather than continuity of identity.
+### Value object
+
+A domain object defined by attributes or value equality rather than continuity
+of identity. This is defined vocabulary; see [domain modeling](domain-modeling.md).
 
 ## W
 
-Warning is a diagnostic severity; repository policy can promote it to a build error.
+### Warning
+
+A diagnostic severity; repository policy can promote it to a build error.
 
 ## X
 
-[XML documentation](documentation-testing-and-quality.md#documentation-testing-and-quality) is the consumer-facing C# API contract emitted from documentation comments.
+### XML documentation
+
+The consumer-facing C# API contract emitted from `///` documentation comments;
+see [analyzer taxonomy](analyzer-taxonomy.md).
 
 ## Y
 
-YAGNI rejects speculative public capability and premature project splits.
+### YAGNI
+
+Do not add capability until a current requirement needs it. This is normative
+against speculative public abstractions and premature project splits.
 
 ## Z
 
-Zero-cost abstraction is a performance claim that requires measurement, not a default assumption.
+### Zero-cost abstraction
 
-| Term | Definition and policy link |
-| --- | --- |
-| <a id="adapter"></a>**Adapter** | Technology-specific translation at a boundary; see [boundaries and dependencies](boundaries-and-dependencies.md). |
-| <a id="analyzer"></a>**Analyzer** | Compiler-time diagnostic tooling; see [analyzer policy](analyzer-policy.md). |
-| <a id="api-compatibility"></a>**API compatibility** | Source, binary, and behavioral preservation for released contracts; see [library public API and evolution](library-public-api-and-evolution.md). |
-| <a id="bounded-context"></a>**Bounded context** | Boundary within which a model has one meaning; see [domain modeling](domain-modeling.md). |
-| <a id="composition-root"></a>**Composition root** | Application/integration boundary that selects implementations; see [boundaries and dependencies](boundaries-and-dependencies.md). |
-| <a id="contract"></a>**Contract** | Consumer-visible API, behavior, or dependency commitment; see [library public API and evolution](library-public-api-and-evolution.md). |
-| <a id="data-object"></a>**Data object** | Public value/data carrier with documented semantics; see [type system and data modeling](type-system-and-data-modeling.md). |
-| <a id="dependency"></a>**Dependency** | Compile-time, package, or runtime commitment; see [boundaries and dependencies](boundaries-and-dependencies.md). |
-| <a id="documentation-contract"></a>**Documentation contract** | Complete XML documentation required by `IXM1001`–`IXM1005`; see [analyzer taxonomy](analyzer-taxonomy.md). |
-| <a id="domain-service"></a>**Domain service** | Stateless domain behavior not owned by an entity/value object; see [domain modeling](domain-modeling.md). |
-| <a id="entity"></a>**Entity** | Domain object defined by continuity of identity; see [domain modeling](domain-modeling.md). |
-| <a id="immutable"></a>**Immutable** | State cannot change after construction; see [type system and data modeling](type-system-and-data-modeling.md). |
-| <a id="interface"></a>**Interface** | Public capability shape owned by the policy requiring it; see [boundaries and dependencies](boundaries-and-dependencies.md). |
-| <a id="logging"></a>**Logging** | Structured operational events, not an application configuration mechanism; see [observability and operability](observability-and-operability.md). |
-| <a id="magic-string"></a>**Magic string** | Repeated semantic literal lacking one named/typed authority; see [design principles](design-principles.md). |
-| <a id="memory"></a>**Memory** | Heap-storable buffer view for async/retained boundaries; see [performance and resource management](performance-and-resource-management.md). |
-| <a id="nullability"></a>**Nullability** | Static promise about null values in a public contract; see [type system and data modeling](type-system-and-data-modeling.md). |
-| <a id="ownership"></a>**Ownership** | Responsibility to dispose, return, or refrain from mutating a resource; see [performance and resource management](performance-and-resource-management.md). |
-| <a id="package"></a>**Package** | NuGet distribution and version-selection unit; see [library public API and evolution](library-public-api-and-evolution.md). |
-| <a id="port"></a>**Port** | Capability interface owned by the policy that needs it; see [boundaries and dependencies](boundaries-and-dependencies.md). |
-| <a id="public-api"></a>**Public API** | Public/protected compile-time and documented consumer contract; see [library public API and evolution](library-public-api-and-evolution.md). |
-| <a id="record"></a>**Record** | C# type with value-oriented generated members; see [type system and data modeling](type-system-and-data-modeling.md). |
-| <a id="result"></a>**Result** | `FluentResults.Result` or `Result<T>` that represents an expected service outcome; see [FluentResults](../packages/fluentresults.md). |
-| <a id="expected-failure"></a>**Expected failure** | Caller-actionable business or application outcome returned as a coded result; see [domain modeling](domain-modeling.md). |
-| <a id="exceptional-failure"></a>**Exceptional failure** | Cancellation, programming fault, broken invariant, corrupt state, or unexpected technical failure that propagates as an exception; see [boundaries and dependencies](boundaries-and-dependencies.md). |
-| <a id="error-code"></a>**Error code** | Immutable lowercase snake-case `public const string Code` owned by a concrete business error type; see [IXM3002](diagnostics/ixm3002.md). |
-| <a id="failure-atomicity"></a>**Failure atomicity** | A failure leaves no undocumented partial state or false appearance of success; see [documentation, testing, and quality](documentation-testing-and-quality.md). |
-| <a id="resource-lifetime"></a>**Resource lifetime** | Period in which a resource/buffer may safely be used; see [performance and resource management](performance-and-resource-management.md). |
-| <a id="service"></a>**Service** | Public behavior coordinator with one primary responsibility; see [design principles](design-principles.md). |
-| <a id="source-generated-logging"></a>**Source-generated logging** | `LoggerMessage`-generated static structured logging method; see [observability and operability](observability-and-operability.md). |
-| <a id="span"></a>**Span** | Stack-only contiguous-memory view for synchronous work; see [performance and resource management](performance-and-resource-management.md). |
-| <a id="srp"></a>**Single responsibility principle (SRP)** | One primary reason for a type/package to change; see [design principles](design-principles.md). |
-| <a id="suppression"></a>**Suppression** | Narrow, justified, owned, reviewed exception to a diagnostic; see [documentation, testing, and quality](documentation-testing-and-quality.md). |
-| <a id="value-object"></a>**Value object** | Domain object defined by attributes/value equality; see [domain modeling](domain-modeling.md). |
-| <a id="xml-documentation"></a>**XML documentation** | C# API documentation emitted from `///` comments; see [analyzer taxonomy](analyzer-taxonomy.md). |
+A performance claim that requires measurement, not a default assumption.
 
 ## Sources
 

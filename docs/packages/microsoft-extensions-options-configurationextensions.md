@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | DI extensions that bind `IConfiguration` sections into options | Approved composition-boundary integration |
+| `10.0.10` | DI extensions that bind `IConfiguration` sections into options | Companion; approved composition-boundary integration |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

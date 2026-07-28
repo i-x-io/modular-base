@@ -6,11 +6,11 @@
 
 | Package | Exact version | Role | Status |
 | --- | ---: | --- | --- |
-| `Ardalis.Specification.EntityFrameworkCore` | `9.3.1` | EF Core evaluators and repository support for specifications | Cataloged; isolated EF Core 10 compile/evaluator probe passed; PostgreSQL integration unverified |
+| `Ardalis.Specification.EntityFrameworkCore` | `9.3.1` | EF Core evaluators and repository support for specifications | Companion; pinned at `9.3.1`; representative consumer verification against the EF Core 10/Npgsql stack is required |
 
 ## Decision and scope
 
-Use this adapter at the EF infrastructure boundary to execute Ardalis specifications. Its NuGet dependency groups target EF Core 8/9; the catalog's EF Core 10 combination has isolated compile evidence but not a project or PostgreSQL support guarantee.
+Use this adapter at the EF infrastructure boundary to execute Ardalis specifications. Its NuGet dependency groups target EF Core 8/9; the catalog's EF Core 10 combination requires representative consuming-project and PostgreSQL verification before it is supported.
 
 ## Recommended registration and use
 
@@ -75,14 +75,14 @@ Track query count, latency, returned rows, and timeouts by stable operation name
 
 ## Avoid
 
-- Do not treat the isolated probe as proof of production PostgreSQL compatibility.
+- Do not treat package metadata or a successful restore/compile as proof of production PostgreSQL compatibility.
 - Do not hide expensive includes, tracking, or provider-only expressions inside opaque specifications.
 - Do not return provider exceptions or EF entities as API contracts.
 - Do not evaluate the same paged specification with `CountAsync` without confirming that paging is ignored or using a separate count specification.
 
 ## Verification checklist
 
-- [ ] Restore and compile with exact 9.3.1/10.0.10 pins; the isolated probe built with zero warnings/errors and returned one evaluated row.
+- [ ] In a representative consuming project, restore and compile with the exact Ardalis `9.3.1` and EF Core `10.0.10` pins, then execute a representative specification against PostgreSQL.
 - [ ] Exercise direct `SpecificationEvaluator` and any repository wrapper with cancellation.
 - [ ] Run representative filter/include/projection/paging specifications against PostgreSQL.
 - [ ] Confirm translation, SQL shape, authorization scope, and error handling in the consuming application.

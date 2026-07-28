@@ -5,15 +5,114 @@ This ledger covers all **89 external catalog entries** and the separately produc
 external pins. Facts were accessed on **2026-07-27**.
 
 For external packages, “dependencies” is the union of direct NuGet dependencies
-declared across target-framework groups; it is not a lock-file graph. “No advisory
+declared across target-framework groups. It is not a lock-file graph. “No advisory
 attached” means the exact NuGet registration supplied no vulnerability record at
-access time, not that the package or its transitive graph is vulnerability-free.
-The repository keeps `NuGetAudit` enabled and that current restore-time result is the
-release gate. “NuGet.org repository-signed” establishes repository integrity, not a
-reproducible-build guarantee. Context7 was attempted first for every family but was
-quota-exhausted; exact NuGet metadata and official upstream sources were used.
+access time. It does not mean the package or its transitive graph is
+vulnerability-free. The repository keeps `NuGetAudit` enabled. That current
+restore-time result is the release gate. “NuGet.org repository-signed” establishes
+repository integrity. It does not establish a reproducible-build guarantee.
+Context7 was attempted first for every family but was quota-exhausted. Exact NuGet
+metadata and official upstream sources were used.
 
 Shared primary sources: [NuGet registration metadata](https://learn.microsoft.com/en-us/nuget/api/registration-base-url-resource), [package auditing](https://learn.microsoft.com/en-us/nuget/concepts/auditing-packages), [signed-package verification](https://learn.microsoft.com/en-us/dotnet/core/tools/nuget-signed-package-verification), and [.NET support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core).
+
+## Contents
+
+Entries follow the package catalog's groups. The package link jumps to the
+objective facts below; the guide link opens the corresponding adoption guide.
+
+| Group | Package entry | Adoption guide |
+| --- | --- | --- |
+| Core utilities, validation, mail, and resilience | [AngleSharp](#anglesharp) | [Package guide](../packages/anglesharp.md) |
+| | [DeviceDetector.NET](#devicedetector-net) | [Package guide](../packages/devicedetector-net.md) |
+| | [Enums.NET](#enums-net) | [Package guide](../packages/enums-net.md) |
+| | [FluentResults](#fluentresults) | [Package guide](../packages/fluentresults.md) |
+| | [FluentValidation](#fluentvalidation) | [Package guide](../packages/fluentvalidation.md) |
+| | [FluentValidation.DependencyInjectionExtensions](#fluentvalidation-dependencyinjectionextensions) | [Package guide](../packages/fluentvalidation-dependencyinjectionextensions.md) |
+| | [Humanizer.Core](#humanizer-core) | [Package guide](../packages/humanizer-core.md) |
+| | [MailKit](#mailkit) | [Package guide](../packages/mailkit.md) |
+| | [Microsoft.Extensions.Http.Resilience](#microsoft-extensions-http-resilience) | [Package guide](../packages/microsoft-extensions-http-resilience.md) |
+| | [Microsoft.Extensions.Resilience](#microsoft-extensions-resilience) | [Package guide](../packages/microsoft-extensions-resilience.md) |
+| | [MimeKit](#mimekit) | [Package guide](../packages/mimekit.md) |
+| | [Polly](#polly) | [Package guide](../packages/polly.md) |
+| | [Polly.Extensions](#polly-extensions) | [Package guide](../packages/polly-extensions.md) |
+| | [Scrutor](#scrutor) | [Package guide](../packages/scrutor.md) |
+| | [YamlDotNet](#yamldotnet) | [Package guide](../packages/yamldotnet.md) |
+| Documentation, benchmarking, and compiler-tooling development | [BenchmarkDotNet](#benchmarkdotnet) | [Package guide](../packages/benchmarkdotnet.md) |
+| | [Markdig](#markdig) | [Package guide](../packages/markdig.md) |
+| | [Microsoft.CodeAnalysis.Analyzers](#microsoft-codeanalysis-analyzers) | [Package guide](../packages/microsoft-codeanalysis-analyzers.md) |
+| | [Microsoft.CodeAnalysis.Common](#microsoft-codeanalysis-common) | [Package guide](../packages/microsoft-codeanalysis-common.md) |
+| | [Microsoft.CodeAnalysis.CSharp](#microsoft-codeanalysis-csharp) | [Package guide](../packages/microsoft-codeanalysis-csharp.md) |
+| Produced package: consumers opt in deliberately | [IX.Modularity.Analyzers](#ix-modularity-analyzers) | [Package guide](../packages/ix-modularity-analyzers.md) |
+| Microsoft.Extensions foundation | [Microsoft.Extensions.Caching.StackExchangeRedis](#microsoft-extensions-caching-stackexchangeredis) | [Package guide](../packages/microsoft-extensions-caching-stackexchangeredis.md) |
+| | [Microsoft.Extensions.Configuration.Abstractions](#microsoft-extensions-configuration-abstractions) | [Package guide](../packages/microsoft-extensions-configuration-abstractions.md) |
+| | [Microsoft.Extensions.Configuration.Binder](#microsoft-extensions-configuration-binder) | [Package guide](../packages/microsoft-extensions-configuration-binder.md) |
+| | [Microsoft.Extensions.DependencyInjection](#microsoft-extensions-dependencyinjection) | [Package guide](../packages/microsoft-extensions-dependencyinjection.md) |
+| | [Microsoft.Extensions.DependencyInjection.Abstractions](#microsoft-extensions-dependencyinjection-abstractions) | [Package guide](../packages/microsoft-extensions-dependencyinjection-abstractions.md) |
+| | [Microsoft.Extensions.DependencyModel](#microsoft-extensions-dependencymodel) | [Package guide](../packages/microsoft-extensions-dependencymodel.md) |
+| | [Microsoft.Extensions.Diagnostics.HealthChecks](#microsoft-extensions-diagnostics-healthchecks) | [Package guide](../packages/microsoft-extensions-diagnostics-healthchecks.md) |
+| | [Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions](#microsoft-extensions-diagnostics-healthchecks-abstractions) | [Package guide](../packages/microsoft-extensions-diagnostics-healthchecks-abstractions.md) |
+| | [Microsoft.Extensions.Hosting](#microsoft-extensions-hosting) | [Package guide](../packages/microsoft-extensions-hosting.md) |
+| | [Microsoft.Extensions.Hosting.Abstractions](#microsoft-extensions-hosting-abstractions) | [Package guide](../packages/microsoft-extensions-hosting-abstractions.md) |
+| | [Microsoft.Extensions.Http](#microsoft-extensions-http) | [Package guide](../packages/microsoft-extensions-http.md) |
+| | [Microsoft.Extensions.Logging.Abstractions](#microsoft-extensions-logging-abstractions) | [Package guide](../packages/microsoft-extensions-logging-abstractions.md) |
+| | [Microsoft.Extensions.Options](#microsoft-extensions-options) | [Package guide](../packages/microsoft-extensions-options.md) |
+| | [Microsoft.Extensions.Options.ConfigurationExtensions](#microsoft-extensions-options-configurationextensions) | [Package guide](../packages/microsoft-extensions-options-configurationextensions.md) |
+| | [Microsoft.Extensions.TimeProvider.Testing](#microsoft-extensions-timeprovider-testing) | [Package guide](../packages/microsoft-extensions-timeprovider-testing.md) |
+| ASP.NET Core, FastEndpoints, OpenAPI, and API infrastructure | [Asp.Versioning.Http](#asp-versioning-http) | [Package guide](../packages/asp-versioning-http.md) |
+| | [FastEndpoints](#fastendpoints) | [Package guide](../packages/fastendpoints.md) |
+| | [FastEndpoints.Generator](#fastendpoints-generator) | [Package guide](../packages/fastendpoints-generator.md) |
+| | [FastEndpoints.OpenApi](#fastendpoints-openapi) | [Package guide](../packages/fastendpoints-openapi.md) |
+| | [FastEndpoints.Security](#fastendpoints-security) | [Package guide](../packages/fastendpoints-security.md) |
+| | [FastEndpoints.Testing](#fastendpoints-testing) | [Package guide](../packages/fastendpoints-testing.md) |
+| | [Microsoft.AspNetCore.Authentication.JwtBearer](#microsoft-aspnetcore-authentication-jwtbearer) | [Package guide](../packages/microsoft-aspnetcore-authentication-jwtbearer.md) |
+| | [Microsoft.AspNetCore.Mvc.Testing](#microsoft-aspnetcore-mvc-testing) | [Package guide](../packages/microsoft-aspnetcore-mvc-testing.md) |
+| | [Microsoft.AspNetCore.OpenApi](#microsoft-aspnetcore-openapi) | [Package guide](../packages/microsoft-aspnetcore-openapi.md) |
+| | [Microsoft.OpenApi](#microsoft-openapi) | [Package guide](../packages/microsoft-openapi.md) |
+| | [Scalar.AspNetCore](#scalar-aspnetcore) | [Package guide](../packages/scalar-aspnetcore.md) |
+| EF Core, PostgreSQL, specifications, search, and pagination | [Ardalis.Specification](#ardalis-specification) | [Package guide](../packages/ardalis-specification.md) |
+| | [Ardalis.Specification.EntityFrameworkCore](#ardalis-specification-entityframeworkcore) | [Package guide](../packages/ardalis-specification-entityframeworkcore.md) |
+| | [EFCore.NamingConventions](#efcore-namingconventions) | [Package guide](../packages/efcore-namingconventions.md) |
+| | [EntityFrameworkCore.Exceptions.PostgreSQL](#entityframeworkcore-exceptions-postgresql) | [Package guide](../packages/entityframeworkcore-exceptions-postgresql.md) |
+| | [Microsoft.EntityFrameworkCore](#microsoft-entityframeworkcore) | [Package guide](../packages/microsoft-entityframeworkcore.md) |
+| | [Microsoft.EntityFrameworkCore.Design](#microsoft-entityframeworkcore-design) | [Package guide](../packages/microsoft-entityframeworkcore-design.md) |
+| | [Microsoft.EntityFrameworkCore.InMemory](#microsoft-entityframeworkcore-inmemory) | [Package guide](../packages/microsoft-entityframeworkcore-inmemory.md) |
+| | [Microsoft.EntityFrameworkCore.Relational](#microsoft-entityframeworkcore-relational) | [Package guide](../packages/microsoft-entityframeworkcore-relational.md) |
+| | [MR.EntityFrameworkCore.KeysetPagination](#mr-entityframeworkcore-keysetpagination) | [Package guide](../packages/mr-entityframeworkcore-keysetpagination.md) |
+| | [Npgsql](#npgsql) | [Package guide](../packages/npgsql.md) |
+| | [Npgsql.EntityFrameworkCore.PostgreSQL](#npgsql-entityframeworkcore-postgresql) | [Package guide](../packages/npgsql.entityframeworkcore.postgresql.md) |
+| | [Npgsql.OpenTelemetry](#npgsql-opentelemetry) | [Package guide](../packages/npgsql.opentelemetry.md) |
+| | [Pgvector](#pgvector) | [Package guide](../packages/pgvector.md) |
+| | [Pgvector.EntityFrameworkCore](#pgvector-entityframeworkcore) | [Package guide](../packages/pgvector.entityframeworkcore.md) |
+| FluentStorage core and approved enterprise providers | [FluentStorage](#fluentstorage) | [Package guide](../packages/fluentstorage.md) |
+| | [FluentStorage.AWS](#fluentstorage-aws) | [Package guide](../packages/fluentstorage-aws.md) |
+| | [FluentStorage.Azure.Blobs](#fluentstorage-azure-blobs) | [Package guide](../packages/fluentstorage-azure-blobs.md) |
+| | [FluentStorage.Azure.Files](#fluentstorage-azure-files) | [Package guide](../packages/fluentstorage-azure-files.md) |
+| | [FluentStorage.GCP](#fluentstorage-gcp) | [Package guide](../packages/fluentstorage-gcp.md) |
+| | [FluentStorage.Minio](#fluentstorage-minio) | [Package guide](../packages/fluentstorage-minio.md) |
+| | [FluentStorage.SFTP](#fluentstorage-sftp) | [Package guide](../packages/fluentstorage-sftp.md) |
+| Observability | [OpenTelemetry](#opentelemetry) | [Package guide](../packages/opentelemetry.md) |
+| | [OpenTelemetry.Api](#opentelemetry-api) | [Package guide](../packages/opentelemetry.api.md) |
+| | [OpenTelemetry.Exporter.OpenTelemetryProtocol](#opentelemetry-exporter-opentelemetryprotocol) | [Package guide](../packages/opentelemetry.exporter.opentelemetryprotocol.md) |
+| | [OpenTelemetry.Extensions.Hosting](#opentelemetry-extensions-hosting) | [Package guide](../packages/opentelemetry.extensions.hosting.md) |
+| | [OpenTelemetry.Instrumentation.AspNetCore](#opentelemetry-instrumentation-aspnetcore) | [Package guide](../packages/opentelemetry.instrumentation.aspnetcore.md) |
+| | [OpenTelemetry.Instrumentation.Http](#opentelemetry-instrumentation-http) | [Package guide](../packages/opentelemetry.instrumentation.http.md) |
+| | [OpenTelemetry.Instrumentation.Runtime](#opentelemetry-instrumentation-runtime) | [Package guide](../packages/opentelemetry.instrumentation.runtime.md) |
+| Testing: SpecsFor is intentionally catalog-only and is the sole prerelease dependency | [AwesomeAssertions](#awesomeassertions) | [Package guide](../packages/awesomeassertions.md) |
+| | [coverlet.collector](#coverlet-collector) | [Package guide](../packages/coverlet-collector.md) |
+| | [Microsoft.NET.Test.Sdk](#microsoft-net-test-sdk) | [Package guide](../packages/microsoft-net-test-sdk.md) |
+| | [SpecsFor](#specsfor) | [Package guide](../packages/specsfor.md) |
+| | [Testcontainers.PostgreSql](#testcontainers-postgresql) | [Package guide](../packages/testcontainers-postgresql.md) |
+| | [Testcontainers.Redis](#testcontainers-redis) | [Package guide](../packages/testcontainers-redis.md) |
+| | [TngTech.ArchUnitNET.xUnitV3](#tngtech-archunitnet-xunitv3) | [Package guide](../packages/tngtech-archunitnet-xunitv3.md) |
+| | [xunit.runner.visualstudio](#xunit-runner-visualstudio) | [Package guide](../packages/xunit-runner-visualstudio.md) |
+| | [xunit.v3](#xunit-v3) | [Package guide](../packages/xunit-v3.md) |
+| Project-scoped analyzer: packable projects opt in and own their PublicAPI files | [Microsoft.CodeAnalysis.PublicApiAnalyzers](#microsoft-codeanalysis-publicapianalyzers) | [Package guide](../packages/microsoft-codeanalysis-publicapianalyzers.md) |
+| Universal analyzers: build-only and never flow into package consumers | [Meziantou.Analyzer](#meziantou-analyzer) | [Package guide](../packages/meziantou-analyzer.md) |
+| | [Microsoft.CodeAnalysis.BannedApiAnalyzers](#microsoft-codeanalysis-bannedapianalyzers) | [Package guide](../packages/microsoft-codeanalysis-bannedapianalyzers.md) |
+| | [Microsoft.VisualStudio.Threading.Analyzers](#microsoft-visualstudio-threading-analyzers) | [Package guide](../packages/microsoft-visualstudio-threading-analyzers.md) |
+| | [Roslynator.Analyzers](#roslynator-analyzers) | [Package guide](../packages/roslynator-analyzers.md) |
+| | [SonarAnalyzer.CSharp](#sonaranalyzer-csharp) | [Package guide](../packages/sonaranalyzer-csharp.md) |
 
 ## Core utilities, validation, mail, and resilience
 
@@ -259,7 +358,7 @@ Shared primary sources: [NuGet registration metadata](https://learn.microsoft.co
 | Lifecycle / advisories | NuGet-listed stable; formal package-version support/EOL policy not officially documented. No advisory was attached to the exact NuGet registration at access; continue restore-time audit. |
 | Signing / provenance | Exact artifact verified with Microsoft author signature and NuGet.org repository signature; repository/commit provenance is carried in package metadata. |
 
-## Produced package
+## Produced package: consumers opt in deliberately
 
 ### ix-modularity-analyzers
 
@@ -931,7 +1030,7 @@ Shared primary sources: [NuGet registration metadata](https://learn.microsoft.co
 | Lifecycle / advisories | NuGet-listed stable; formal package-version support/EOL policy not officially documented. No advisory was attached to the exact NuGet registration at access; continue restore-time audit. |
 | Signing / provenance | NuGet.org repository-signed; author-signature status not officially documented in the sources reviewed. Repository provenance is carried in package metadata when supplied. |
 
-## Testing. SpecsFor is intentionally catalog-only and is the sole prerelease dependency
+## Testing: SpecsFor is intentionally catalog-only and is the sole prerelease dependency
 
 ### awesomeassertions
 
@@ -1055,7 +1154,7 @@ Shared primary sources: [NuGet registration metadata](https://learn.microsoft.co
 | Lifecycle / advisories | NuGet-listed stable; formal package-version support/EOL policy not officially documented. No advisory was attached to the exact NuGet registration at access; continue restore-time audit. |
 | Signing / provenance | Exact artifact verified with Microsoft author signature and NuGet.org repository signature; repository/commit provenance is carried in package metadata. |
 
-## Universal analyzers. These are build-only and never flow into package consumers
+## Universal analyzers: build-only and never flow into package consumers
 
 ### meziantou-analyzer
 

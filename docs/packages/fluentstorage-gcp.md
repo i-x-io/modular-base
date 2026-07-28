@@ -7,7 +7,7 @@
 | Package | `FluentStorage.GCP` |
 | Pinned version | `8.0.14` |
 | Role | Google Cloud Storage implementation of FluentStorage `IStore` |
-| Status | Approved for GCS object workloads; native APIs remain required for GCS-specific preconditions and lifecycle controls |
+| Status | Companion; approved for GCS object workloads; native APIs remain required for GCS-specific preconditions and lifecycle controls |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
 | Review trigger | Any `FluentStorage.GCP`, Google Cloud Storage client, target-framework, ADC, retry-default, endpoint, IAM, or bucket-policy change |

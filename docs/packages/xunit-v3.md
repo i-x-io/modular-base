@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `xunit.v3` |
 | Pinned version | `3.2.2` |
-| Status | Preferred approved test-only dependency |
+| Status | Direct; preferred test framework for test-role projects using Microsoft Testing Platform |
 | Role | xUnit v3 framework with Microsoft Testing Platform v1 runner integration |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
@@ -33,6 +33,8 @@ In a project with `IXModularityProjectRole=Test` or `ArchitectureTest`, set `IsT
 Use `[Fact]` for one fixed case and `[Theory]` for data-driven behavior. Await asynchronous work and keep each case independent:
 
 ```csharp
+using Xunit;
+
 public sealed class SlugTests
 {
     [Theory]
@@ -45,6 +47,19 @@ public sealed class SlugTests
         var actual = await Slug.NormalizeAsync(input);
 
         Assert.Equal(expected, actual);
+    }
+}
+
+internal static class Slug
+{
+    internal static Task<string> NormalizeAsync(string value)
+    {
+        string normalized = string.Join(
+            '-',
+            value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .ToLowerInvariant();
+
+        return Task.FromResult(normalized);
     }
 }
 ```
@@ -72,7 +87,7 @@ Inspect the exact `xunit.v3` meta-package dependency before upgrading because it
 
 ## Integration with the catalog
 
-Use [AwesomeAssertions](awesomeassertions.md) for richer diagnostics, Testcontainers for real PostgreSQL/Redis tests, and `TngTech.ArchUnitNET.xUnitV3` only in the architecture-test project. Do not add [Microsoft.NET.Test.Sdk](microsoft-net-test-sdk.md), [xunit.runner.visualstudio](xunit-runner-visualstudio.md), or [coverlet.collector](coverlet-collector.md) to this MTP stack. MTP coverage requires a separately approved `coverlet.MTP` entry. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage), the [PostgreSQL and Redis Testcontainers recipe](../recipes/testcontainers-postgresql-redis-xunit.md), and the [xunit.v3 supply-chain entry](../package-guidance/supply-chain.md#xunit-v3).
+Use [AwesomeAssertions](awesomeassertions.md) for richer diagnostics, Testcontainers for real PostgreSQL/Redis tests, and [TngTech.ArchUnitNET.xUnitV3](tngtech-archunitnet-xunitv3.md) only in the architecture-test project. Do not add [Microsoft.NET.Test.Sdk](microsoft-net-test-sdk.md), [xunit.runner.visualstudio](xunit-runner-visualstudio.md), or [coverlet.collector](coverlet-collector.md) to this MTP stack. MTP coverage requires a separately approved `coverlet.MTP` entry. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage), the [PostgreSQL and Redis Testcontainers recipe](../recipes/testcontainers-postgresql-redis-xunit.md), and the [xunit.v3 supply-chain entry](../package-guidance/supply-chain.md#xunit-v3).
 
 ## Security, performance, AOT, trimming, and operations
 

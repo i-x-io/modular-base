@@ -4,9 +4,10 @@
 
 `DeviceDetector.NET` **6.5.0** — direct catalog package; user-agent parser for client, device, operating system, brand, and model classification. The catalog owns the version for `net10.0` projects using C# 14.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
-**Review trigger:** `DeviceDetector.NET` version changes, target-framework changes, or upstream regex/parser-data changes.
+- **Review trigger:** `DeviceDetector.NET` version changes, target-framework changes, or upstream regex/parser-data changes.
 
 ## Decision and scope
 
@@ -68,7 +69,7 @@ Treat an upgrade as a data-classification change because bundled regexes can alt
 
 ## Integration with the catalog
 
-Use `microsoft-extensions-resilience.md` only if device data comes from an explicit remote dependency; local parsing needs no retry policy. Use `fluentresults.md` when classification is optional enrichment whose failure should not fail the request.
+Use [Microsoft.Extensions.Http.Resilience](microsoft-extensions-http-resilience.md) only if device data comes from an explicit remote dependency; local parsing needs no retry policy. Use [FluentResults](fluentresults.md) when classification is optional enrichment whose failure should not fail the request.
 
 See the [`DeviceDetector.NET` supply-chain entry](../package-guidance/supply-chain.md#devicedetector-net).
 

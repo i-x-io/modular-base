@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `AwesomeAssertions` |
 | Pinned version | `9.5.0` |
-| Status | Approved test-only dependency |
+| Status | Direct; approved test-only dependency |
 | Role | Expressive assertions with detailed failure diagnostics |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
@@ -61,7 +61,7 @@ Upgrade the central pin in a focused change, then compile every custom assertion
 
 ## Integration with the catalog
 
-Use with [xunit.v3](xunit-v3.md) for the preferred MTP test stack and with the Testcontainers guides for integration assertions. The central version and test-role restriction are owned by `Directory.Packages.props` and `Directory.Build.targets`; project references stay versionless. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage) and the [AwesomeAssertions supply-chain entry](../package-guidance/supply-chain.md#awesomeassertions).
+Use with [xunit.v3](xunit-v3.md) for the preferred MTP test stack and with the Testcontainers guides for integration assertions. The central version and test-role restriction are owned by `Directory.Packages.props` and `Directory.Build.targets`; `PackageReference` entries omit `Version` under Central Package Management, while `ProjectReference` entries are source-project dependencies governed by documented role and boundary rules. See [test-platform, runner, and coverage selection](../package-guidance/package-selection.md#test-platform-runners-and-coverage) and the [AwesomeAssertions supply-chain entry](../package-guidance/supply-chain.md#awesomeassertions).
 
 ## Security, performance, AOT, trimming, and operations
 
@@ -76,7 +76,7 @@ Failure formatting can traverse large graphs and print subject values. Never ass
 
 ## Verification checklist
 
-- [ ] The project reference is versionless and limited to a `Test` or `ArchitectureTest` project.
+- [ ] The `PackageReference` omits `Version` under Central Package Management and is limited to a `Test` or `ArchitectureTest` project; any `ProjectReference` is a source-project dependency governed separately by the documented role and boundary rules.
 - [ ] Comparison rules make ordering, time, culture, and exclusions explicit where relevant.
 - [ ] A deliberately failing test produces useful diagnostics without sensitive values.
 - [ ] The test runs through the project's selected xUnit v3 runner stack.

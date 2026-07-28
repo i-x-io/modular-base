@@ -4,7 +4,7 @@
 
 | Package | Pinned version | Role | Status |
 | --- | --- | --- | --- |
-| `Asp.Versioning.Http` | `10.0.0` | HTTP API versioning primitives and Minimal API/FastEndpoints-adjacent integration | Centrally pinned; catalog-only until an API project consumes it |
+| `Asp.Versioning.Http` | `10.0.0` | HTTP API versioning primitives and Minimal API/FastEndpoints-adjacent integration | Catalog-only; centrally pinned until an API project consumes it |
 
 - Owner: IX
 - Last reviewed: 2026-07-27

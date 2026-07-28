@@ -4,6 +4,7 @@
 
 `Microsoft.CodeAnalysis.Common` **5.6.0** — centrally pinned Roslyn compiler API for `Analyzer` and `SourceGenerator` implementation or test projects.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 - **Review trigger:** Review when any aligned Roslyn pin, supported compiler host, analyzer target framework, or analyzer package layout changes.

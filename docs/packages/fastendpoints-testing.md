@@ -4,7 +4,7 @@
 
 | Package | Pinned version | Role | Status |
 | --- | --- | --- | --- |
-| `FastEndpoints.Testing` | `8.2.0` | FastEndpoints integration/unit-test fixtures, route-less request helpers, and message receivers | Catalog-only; this repository intentionally has no test project |
+| `FastEndpoints.Testing` | `8.2.0` | FastEndpoints integration/unit-test fixtures, route-less request helpers, and message receivers | Catalog-only; the repository has no FastEndpoints-consuming API integration-test project |
 
 - Owner: IX
 - Last reviewed: 2026-07-27
@@ -65,7 +65,7 @@ public sealed class CreateOrderTests(ApiFixture app) : TestBase<ApiFixture>
 }
 ```
 
-The repository currently has no test project, so this example is a template for the first consuming application rather than a repository-runnable test. Once that project exists, run its scoped suite with `dotnet test path/to/MyApi.Tests.csproj`.
+The repository has no FastEndpoints-consuming API integration-test project, so this example is a template for the first consuming application rather than a repository-runnable test. Once that project exists, run its scoped suite with `dotnet test path/to/MyApi.Tests.csproj`.
 
 ## Enterprise implementation guidance
 

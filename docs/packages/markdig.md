@@ -4,6 +4,7 @@
 
 `Markdig` **1.3.2** — centrally pinned Markdown parser for repository documentation validation and other deliberate documentation-processing boundaries.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 - **Review trigger:** Review when the Markdig pin, enabled pipeline extensions, or the repository Markdown schema/link rules change.

@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | Runtime access to the `.deps.json` dependency context | Approved only for metadata/discovery scenarios |
+| `10.0.10` | Runtime access to the `.deps.json` dependency context | Direct; approved only for metadata/discovery scenarios |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

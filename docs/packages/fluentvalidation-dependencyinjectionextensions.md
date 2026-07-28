@@ -4,9 +4,10 @@
 
 `FluentValidation.DependencyInjectionExtensions` **12.1.1** — companion catalog package; registers FluentValidation validators with `Microsoft.Extensions.DependencyInjection`.
 
+- **Adoption:** Companion
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
-**Review trigger:** either FluentValidation companion version changes, target-framework changes, or DI scanning/lifetime behavior changes.
+- **Review trigger:** either FluentValidation companion version changes, target-framework changes, or DI scanning/lifetime behavior changes.
 
 ## Decision and scope
 
@@ -62,7 +63,7 @@ Keep this package on the exact same version line as `FluentValidation`. Compare 
 
 ## Integration with the catalog
 
-This companion supports `fluentvalidation.md`; FastEndpoints endpoint validation should resolve the registered `IValidator<T>` through its supported integration. `scrutor.md` has the same fixed-marker, reflection-scanning constraint.
+This companion supports [FluentValidation](fluentvalidation.md); FastEndpoints endpoint validation should resolve the registered `IValidator<T>` through its supported integration. [Scrutor](scrutor.md) has the same fixed-marker, reflection-scanning constraint.
 
 See the [validation/results recipe](../recipes/fastendpoints-validation-results.md) and [`FluentValidation.DependencyInjectionExtensions` supply-chain entry](../package-guidance/supply-chain.md#fluentvalidation-dependencyinjectionextensions).
 

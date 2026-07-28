@@ -4,7 +4,7 @@
 
 | Package | Pinned version | Role | Status |
 | --- | --- | --- | --- |
-| `Microsoft.AspNetCore.Mvc.Testing` | `10.0.10` | In-memory ASP.NET Core functional test host and `WebApplicationFactory<TEntryPoint>` | Catalog-only; this repository intentionally has no test project |
+| `Microsoft.AspNetCore.Mvc.Testing` | `10.0.10` | In-memory ASP.NET Core functional test host and `WebApplicationFactory<TEntryPoint>` | Catalog-only; no current test project consumes this package |
 
 - Owner: IX
 - Last reviewed: 2026-07-27
@@ -61,7 +61,7 @@ public sealed class HealthTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
 The example assumes xUnit and test-owned `IClock`/`FakeClock` types. With top-level `Program.cs`, expose the entry point to the test assembly, commonly with `public partial class Program { }` in the API project. Prefer `ConfigureTestServices` for overrides so the test registration runs after application services.
 
-The repository has no test project, so no sample is represented as repository-runnable.
+No current test project consumes `Microsoft.AspNetCore.Mvc.Testing`, so no sample is represented as repository-runnable.
 
 ## Enterprise implementation guidance
 

@@ -8,7 +8,9 @@ Docker-backed tests are integration tests. They complement unit tests; they do n
 
 ## Required packages
 
-Use a dedicated test project with versionless references and the repository's Microsoft Testing Platform selection:
+Use the repository-oriented
+`test/IX.Modularity.Infrastructure.Integration.Tests/IX.Modularity.Infrastructure.Integration.Tests.csproj`
+project with the repository's Microsoft Testing Platform selection:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -114,6 +116,7 @@ Use a unique operation key, parameterized SQL, an explicit cache TTL, and cleanu
 ```csharp
 using Microsoft.Extensions.Caching.Distributed;
 using Npgsql;
+using Xunit;
 
 [Trait("category", "integration")]
 public sealed class StorageContractTests(
@@ -183,7 +186,7 @@ This is not an atomic dual-write. If the application requires consistency across
 Run the project only in a labeled Docker-capable integration job:
 
 ```bash
-dotnet test tests/Infrastructure.IntegrationTests \
+dotnet test test/IX.Modularity.Infrastructure.Integration.Tests \
   -- --filter-query /[category=integration]
 ```
 

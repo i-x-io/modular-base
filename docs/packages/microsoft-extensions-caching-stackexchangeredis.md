@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | Redis-backed `IDistributedCache` implementation | Approved for application composition |
+| `10.0.10` | Redis-backed `IDistributedCache` implementation | Direct; approved for application composition |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

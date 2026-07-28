@@ -4,7 +4,7 @@
 
 | Package | Pinned version | Role | Status |
 | --- | --- | --- | --- |
-| `FastEndpoints.OpenApi` | `8.2.0` | FastEndpoints-aware OpenAPI document generation and export | Centrally pinned; catalog-only until an API project consumes it |
+| `FastEndpoints.OpenApi` | `8.2.0` | FastEndpoints-aware OpenAPI document generation and export | Catalog-only; centrally pinned until an API project consumes it |
 
 - Owner: IX
 - Last reviewed: 2026-07-27
@@ -16,11 +16,14 @@ Use this package as the sole OpenAPI registration path for FastEndpoints. It use
 
 ## Recommended registration and use
 
-Add the package without a version; `Directory.Packages.props` supplies `8.2.0`:
+Use the same direct versionless reference set as the complete composition in [FastEndpoints](fastendpoints.md): the endpoint framework, OpenAPI integration, JWT bearer authentication, and Scalar UI. `Directory.Packages.props` supplies their versions:
 
 ```xml
 <ItemGroup>
+  <PackageReference Include="FastEndpoints" />
   <PackageReference Include="FastEndpoints.OpenApi" />
+  <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  <PackageReference Include="Scalar.AspNetCore" />
 </ItemGroup>
 ```
 

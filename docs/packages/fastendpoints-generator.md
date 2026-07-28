@@ -4,7 +4,7 @@
 
 | Package | Pinned version | Role | Status |
 | --- | --- | --- | --- |
-| `FastEndpoints.Generator` | `8.2.0` | Compile-time FastEndpoints registrations, permissions, and serializer-context support | Centrally pinned; catalog-only until an endpoint project consumes it |
+| `FastEndpoints.Generator` | `8.2.0` | Compile-time FastEndpoints registrations, permissions, and serializer-context support | Catalog-only; centrally pinned until an endpoint project consumes it |
 
 - Owner: IX
 - Last reviewed: 2026-07-27

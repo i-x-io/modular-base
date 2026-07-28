@@ -8,7 +8,7 @@
 
 `<PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />`
 
-**Role:** ASP.NET Core server instrumentation for inbound HTTP telemetry. **Status:** approved central-catalog dependency for hosted ASP.NET Core services; it is not required by worker-only hosts.
+**Role:** ASP.NET Core server instrumentation for inbound HTTP telemetry. **Adoption:** Companion; use it with a hosted OpenTelemetry SDK pipeline for ASP.NET Core services. It is not required by worker-only hosts.
 
 ## Decision and scope
 

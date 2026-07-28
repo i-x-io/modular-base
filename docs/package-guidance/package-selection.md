@@ -2,9 +2,12 @@
 
 Use this guide before composing overlapping packages. A valid combination means
 the packages have distinct responsibilities; it does not replace the individual
-[package guides](../packages/README.md). Sources were accessed on **2026-07-27**.
+[package guides](../packages/README.md), the repository
+[dependency policy](../architecture/dependency-policy.md), or the project-role
+rules in [project structure](../architecture/project-structure.md). Sources were
+accessed on **2026-07-27**.
 
-## resilience-and-retry-ownership
+## Resilience and retry ownership
 
 | Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
 | --- | --- | --- | --- | --- | --- |
@@ -13,7 +16,7 @@ the packages have distinct responsibilities; it does not replace the individual
 
 Primary sources: [Microsoft HTTP resilience](https://learn.microsoft.com/en-us/dotnet/core/resilience/http-resilience), [Polly pipelines](https://www.pollydocs.org/pipelines/).
 
-## test-platform-runners-and-coverage
+## Test platform, runners, and coverage
 
 | Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
 | --- | --- | --- | --- | --- | --- |
@@ -23,7 +26,7 @@ Primary sources: [Microsoft HTTP resilience](https://learn.microsoft.com/en-us/d
 
 Primary sources: [xUnit v3](https://xunit.net/docs/getting-started/v3/getting-started), [.NET test platforms](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-platform-intro).
 
-## relational-test-fidelity
+## Relational test fidelity
 
 | Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
 | --- | --- | --- | --- | --- | --- |
@@ -32,7 +35,7 @@ Primary sources: [xUnit v3](https://xunit.net/docs/getting-started/v3/getting-st
 
 Primary source: [EF Core testing strategy](https://learn.microsoft.com/en-us/ef/core/testing/choosing-a-testing-strategy).
 
-## postgresql-data-access
+## PostgreSQL data access
 
 | Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
 | --- | --- | --- | --- | --- | --- |
@@ -41,7 +44,7 @@ Primary source: [EF Core testing strategy](https://learn.microsoft.com/en-us/ef/
 
 Primary source: [Npgsql EF Core provider](https://www.npgsql.org/efcore/).
 
-## api-authentication-ownership
+## API authentication ownership
 
 | Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
 | --- | --- | --- | --- | --- | --- |
@@ -50,7 +53,7 @@ Primary source: [Npgsql EF Core provider](https://www.npgsql.org/efcore/).
 
 Primary sources: [FastEndpoints security](https://fast-endpoints.com/docs/security), [ASP.NET Core JWT bearer](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/configure-jwt-bearer-authentication?view=aspnetcore-10.0).
 
-## opentelemetry-composition
+## OpenTelemetry composition
 
 | Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
 | --- | --- | --- | --- | --- | --- |
@@ -61,7 +64,7 @@ Primary sources: [FastEndpoints security](https://fast-endpoints.com/docs/securi
 
 Primary source: [OpenTelemetry .NET](https://opentelemetry.io/docs/languages/dotnet/instrumentation/).
 
-## storage-abstraction-and-provider-sdks
+## Storage abstraction and provider SDKs
 
 | Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
 | --- | --- | --- | --- | --- | --- |
@@ -70,7 +73,7 @@ Primary source: [OpenTelemetry .NET](https://opentelemetry.io/docs/languages/dot
 
 Primary source: [FluentStorage upstream](https://github.com/robinrodricks/FluentStorage).
 
-## microsoft-abstractions-and-runtime-implementations
+## Microsoft abstractions and runtime implementations
 
 | Concern | Runtime/registration owner | Direct reference guidance | Valid combinations | Choose when | Common misuse |
 | --- | --- | --- | --- | --- | --- |

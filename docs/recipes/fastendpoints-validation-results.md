@@ -4,9 +4,26 @@
 
 This recipe separates malformed input from expected application outcomes. FastEndpoints runs a FluentValidation validator before the handler and returns the configured validation response for invalid request shape. The application service returns `FluentResults.Result<T>` for expected business outcomes. The endpoint translates typed application errors into HTTP responses once, while cancellation, programming defects, and unexpected infrastructure failures remain exceptions for the host's exception boundary and telemetry.
 
-## Required packages
+## Required packages and project boundary
 
-The versions come from `Directory.Packages.props`:
+The application service and its FluentResults contract belong in the
+repository-oriented
+`src/IX.Modularity.Catalog/IX.Modularity.Catalog.csproj` library project:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IXModularityProjectRole>Library</IXModularityProjectRole>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="FluentResults" />
+  </ItemGroup>
+</Project>
+```
+
+The following Web SDK block is a standalone application illustration outside
+this repository's enforced project graph:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">
@@ -15,17 +32,27 @@ The versions come from `Directory.Packages.props`:
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FastEndpoints" />
-    <PackageReference Include="FluentResults" />
     <PackageReference Include="FluentValidation" />
+    <ProjectReference Include="../IX.Modularity.Catalog/IX.Modularity.Catalog.csproj" />
   </ItemGroup>
 </Project>
 ```
 
-FastEndpoints already integrates FluentValidation. The explicit `FluentValidation` reference makes the endpoint project's validator dependency intentional; no `FluentValidation.DependencyInjectionExtensions` reference or validator scanning registration is needed for validators derived from `FastEndpoints.Validator<T>`.
+Both blocks use versions from `Directory.Packages.props`. The library's direct
+`Library` role permits its public FluentResults service contract. The standalone
+Web host consumes the public result types transitively through its
+`ProjectReference` to `IX.Modularity.Catalog`; it does not add a direct
+FluentResults package dependency. FastEndpoints already integrates
+FluentValidation. The explicit `FluentValidation` reference makes the endpoint
+project's validator dependency intentional; no
+`FluentValidation.DependencyInjectionExtensions` reference or validator
+scanning registration is needed for validators derived from
+`FastEndpoints.Validator<T>`.
 
 ## Request validation
 
-Define an immutable request and a stateless validator:
+In the standalone Web host, define an immutable transport request and a
+stateless validator:
 
 ```csharp
 using FastEndpoints;
@@ -55,7 +82,8 @@ FastEndpoints discovers the validator and runs it after binding but before `Hand
 
 ## Application outcome model
 
-Represent expected failures as concrete error types with stable codes:
+In `IX.Modularity.Catalog`, represent expected failures as concrete error types
+with stable codes:
 
 ```csharp
 using FluentResults;
@@ -69,36 +97,40 @@ public sealed class DuplicateSkuError()
 }
 
 public sealed record ProductCreated(Guid Id, string Sku);
+public sealed record CreateProductCommand(string Sku, string Name);
 
 public interface IProductService
 {
     Task<Result<ProductCreated>> CreateAsync(
-        CreateProductRequest request,
+        CreateProductCommand command,
         CancellationToken cancellationToken);
 }
 ```
 
 The concrete error type is the application's machine-readable contract; callers do not parse `Error.Message` or package metadata. The service should return this failure only for an expected, caller-actionable conflict. It should propagate `OperationCanceledException` and unexpected storage/network exceptions so central handling records a failure and returns a generic server response.
 
-For a self-contained host, this implementation shows the result flow without pretending to provide durable uniqueness:
+In the same library project, this demonstration implementation shows the result
+flow without pretending to provide durable uniqueness:
 
 ```csharp
+using FluentResults;
+
 public sealed class DemoProductService : IProductService
 {
     public Task<Result<ProductCreated>> CreateAsync(
-        CreateProductRequest request,
+        CreateProductCommand command,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (request.Sku == "EXISTS")
+        if (command.Sku == "EXISTS")
         {
             return Task.FromResult(
                 Result.Fail<ProductCreated>(new DuplicateSkuError()));
         }
 
         return Task.FromResult(
-            Result.Ok(new ProductCreated(Guid.NewGuid(), request.Sku)));
+            Result.Ok(new ProductCreated(Guid.NewGuid(), command.Sku)));
     }
 }
 ```
@@ -107,9 +139,12 @@ public sealed class DemoProductService : IProductService
 
 ## HTTP translation and host composition
 
-Branch once on the result at the transport boundary:
+Back in the standalone Web host, branch once on the result at the transport
+boundary:
 
 ```csharp
+using FastEndpoints;
+
 public sealed record ApiError(string Code, string Message);
 
 public sealed class CreateProductEndpoint(IProductService service)
@@ -125,7 +160,8 @@ public sealed class CreateProductEndpoint(IProductService service)
         CreateProductRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await service.CreateAsync(request, cancellationToken);
+        var command = new CreateProductCommand(request.Sku, request.Name);
+        var result = await service.CreateAsync(command, cancellationToken);
 
         if (result.IsSuccess)
         {
@@ -167,6 +203,8 @@ The endpoint never reads `result.Value` until success is established. It maps th
 Register the application service and FastEndpoints once:
 
 ```csharp
+using FastEndpoints;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IProductService, DemoProductService>();
@@ -200,7 +238,8 @@ Observe validation rejection rate by rule code, expected outcome rate by typed e
 
 Authoring evidence:
 
-- [x] The complete sample compiled in a temporary `net10.0` web project with pinned package versions.
+- [ ] The role-separated library and standalone Web fragments were not
+  recompiled after this documentation boundary correction.
 - [ ] The deterministic service was not presented as a database integration test.
 
 Consuming-application checks:

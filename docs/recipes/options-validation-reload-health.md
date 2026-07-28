@@ -6,7 +6,9 @@ Use this recipe for settings that must be valid at startup, may reload while the
 
 ## Required catalog packages
 
-The ASP.NET Core shared framework supplies the web health-check endpoint. Reference the cataloged options and health-check implementations without versions:
+The ASP.NET Core shared framework supplies the web health-check endpoint. The
+following Web SDK block is a standalone application illustration outside this
+repository's enforced project graph:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">
@@ -76,6 +78,7 @@ The options type is a binding shape, not a secret store; the API key must come f
 ```csharp
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 

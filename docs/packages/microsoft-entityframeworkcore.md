@@ -6,7 +6,7 @@
 
 | Package | Exact version | Role | Status |
 | --- | ---: | --- | --- |
-| `Microsoft.EntityFrameworkCore` | `10.0.10` | Core EF Core ORM/runtime surface | Cataloged; repository target framework is `net10.0`; no consuming project exists |
+| `Microsoft.EntityFrameworkCore` | `10.0.10` | Core EF Core ORM/runtime surface | Direct; cataloged for the repository's `net10.0` target framework; no consuming project exists |
 
 ## Decision and scope
 
@@ -99,16 +99,14 @@ For repeated timeouts, correlate EF command logs/spans with Npgsql pool and serv
 
 ## Sources
 
-Accessed 2026-07-27.
-
-- [Central package catalog](../../Directory.Packages.props)
-- [Microsoft.EntityFrameworkCore 10.0.10 on NuGet](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore/10.0.10)
-- [EF Core overview](https://learn.microsoft.com/ef/core/)
-- [DbContext lifetime, configuration, and initialization](https://learn.microsoft.com/ef/core/dbcontext-configuration/)
-- [Tracking and no-tracking queries](https://learn.microsoft.com/ef/core/querying/tracking)
-- [Applying EF Core migrations](https://learn.microsoft.com/ef/core/managing-schemas/migrations/applying)
-- [EF Core connection resiliency](https://learn.microsoft.com/ef/core/miscellaneous/connection-resiliency)
-- [EF Core performance guidance](https://learn.microsoft.com/ef/core/performance/)
-- [EF Core logging, events, and diagnostics](https://learn.microsoft.com/ef/core/logging-events-diagnostics/)
-- [EF Core simple logging and sensitive-data warning](https://learn.microsoft.com/ef/core/logging-events-diagnostics/simple-logging)
-- [EF NativeAOT and precompiled queries](https://learn.microsoft.com/ef/core/performance/nativeaot-and-precompiled-queries)
+- [Central package catalog](../../Directory.Packages.props) — Accessed 2026-07-27.
+- [Microsoft.EntityFrameworkCore 10.0.10 on NuGet](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore/10.0.10) — Accessed 2026-07-27.
+- [EF Core overview](https://learn.microsoft.com/ef/core/) — Accessed 2026-07-27.
+- [DbContext lifetime, configuration, and initialization](https://learn.microsoft.com/ef/core/dbcontext-configuration/) — Accessed 2026-07-27.
+- [Tracking and no-tracking queries](https://learn.microsoft.com/ef/core/querying/tracking) — Accessed 2026-07-27.
+- [Applying EF Core migrations](https://learn.microsoft.com/ef/core/managing-schemas/migrations/applying) — Accessed 2026-07-27.
+- [EF Core connection resiliency](https://learn.microsoft.com/ef/core/miscellaneous/connection-resiliency) — Accessed 2026-07-27.
+- [EF Core performance guidance](https://learn.microsoft.com/ef/core/performance/) — Accessed 2026-07-27.
+- [EF Core logging, events, and diagnostics](https://learn.microsoft.com/ef/core/logging-events-diagnostics/) — Accessed 2026-07-27.
+- [EF Core simple logging and sensitive-data warning](https://learn.microsoft.com/ef/core/logging-events-diagnostics/simple-logging) — Accessed 2026-07-27.
+- [EF NativeAOT and precompiled queries](https://learn.microsoft.com/ef/core/performance/nativeaot-and-precompiled-queries) — Accessed 2026-07-27.

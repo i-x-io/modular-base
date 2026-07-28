@@ -6,7 +6,7 @@
 
 | Package | Exact version | Role | Status |
 | --- | ---: | --- | --- |
-| `Ardalis.Specification` | `9.3.1` | Provider-agnostic model for reusable query specifications | Cataloged; isolated EF Core 10 compile probe passed; project/PostgreSQL integration unverified |
+| `Ardalis.Specification` | `9.3.1` | Provider-agnostic model for reusable query specifications | Direct; pinned at `9.3.1`; representative consumer verification against the selected evaluator and provider is required |
 
 ## Decision and scope
 

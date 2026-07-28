@@ -28,7 +28,7 @@ Every future package page in `docs/packages/` uses the following exact heading o
 
 | Section | Required content |
 | --- | --- |
-| `Catalog entry` | Exact pinned version and category/role. State whether the package is direct, companion, catalog-only, or a global analyzer. |
+| `Catalog entry` | Exact pinned version and category/role. Begin Status/Adoption with one of these exact classifications, followed by qualifiers when needed: `Direct`, `Companion`, `Catalog-only`, `Global analyzer`, or `Produced package`. Adoption is distinct from the catalog mechanism. |
 | `Decision and scope` | Why it is approved, the intended boundary, and explicit non-goals. |
 | `Recommended registration and use` | Correct DI registration and minimal use pattern. If the package has no DI integration, retain the heading and explain direct/API use. |
 | `Enterprise implementation guidance` | Configuration, lifecycle, error handling, data ownership, and deployment guidance relevant to this package. |

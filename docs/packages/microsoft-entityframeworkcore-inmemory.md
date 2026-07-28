@@ -6,7 +6,7 @@
 
 | Package | Exact version | Role | Status |
 | --- | ---: | --- | --- |
-| `Microsoft.EntityFrameworkCore.InMemory` | `10.0.10` | Non-relational in-process EF Core provider | Cataloged; test-only by repository build policy |
+| `Microsoft.EntityFrameworkCore.InMemory` | `10.0.10` | Non-relational in-process EF Core provider | Companion; cataloged and test-only by repository build policy |
 
 ## Decision and scope
 
@@ -73,10 +73,8 @@ The provider is not designed for production robustness or performance. It cannot
 
 ## Sources
 
-Accessed 2026-07-27.
-
-- [Central package catalog](../../Directory.Packages.props)
-- [Microsoft.EntityFrameworkCore.InMemory 10.0.10 on NuGet](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.InMemory/10.0.10)
-- [EF Core InMemory provider guidance](https://learn.microsoft.com/ef/core/providers/in-memory/)
-- [EF Core testing strategy](https://learn.microsoft.com/ef/core/testing/choosing-a-testing-strategy)
-- [Testing EF Core applications](https://learn.microsoft.com/ef/core/testing/)
+- [Central package catalog](../../Directory.Packages.props) — Accessed 2026-07-27.
+- [Microsoft.EntityFrameworkCore.InMemory 10.0.10 on NuGet](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.InMemory/10.0.10) — Accessed 2026-07-27.
+- [EF Core InMemory provider guidance](https://learn.microsoft.com/ef/core/providers/in-memory/) — Accessed 2026-07-27.
+- [EF Core testing strategy](https://learn.microsoft.com/ef/core/testing/choosing-a-testing-strategy) — Accessed 2026-07-27.
+- [Testing EF Core applications](https://learn.microsoft.com/ef/core/testing/) — Accessed 2026-07-27.

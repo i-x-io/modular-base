@@ -4,9 +4,10 @@
 
 `Polly.Extensions` **8.7.0** — companion catalog package; `IServiceCollection` registration and lookup integration for Polly resilience pipelines.
 
+- **Adoption:** Companion
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
-**Review trigger:** either Polly companion version changes, target-framework changes, or DI pipeline/reload semantics change.
+- **Review trigger:** Either Polly companion version changes, target-framework changes, or DI pipeline/reload semantics change.
 
 ## Decision and scope
 
@@ -25,37 +26,43 @@ With central package management, reference the companion package without a proje
 Register each pipeline once at the composition root. Do not call `Build()` inside `AddResiliencePipeline`; the provider constructs and caches the pipeline:
 
 ```csharp
+using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.CircuitBreaker;
 using Polly.Registry;
 using Polly.Retry;
 
-internal static class PipelineKeys
+internal static class InventoryResilience
 {
     internal const string Inventory = "inventory";
-}
 
-builder.Services.AddResiliencePipeline(PipelineKeys.Inventory, pipeline =>
-{
-    pipeline
-        .AddRetry(new RetryStrategyOptions
+    internal static void AddInventoryPipeline(IServiceCollection services)
+    {
+        services.AddResiliencePipeline(Inventory, pipeline =>
         {
-            ShouldHandle = new PredicateBuilder().Handle<IOException>(),
-            MaxRetryAttempts = 2,
-            Delay = TimeSpan.FromMilliseconds(200),
-            BackoffType = DelayBackoffType.Exponential,
-            UseJitter = true
-        })
-        .AddCircuitBreaker(new CircuitBreakerStrategyOptions
-        {
-            ShouldHandle = new PredicateBuilder().Handle<IOException>(),
-            FailureRatio = 0.5,
-            SamplingDuration = TimeSpan.FromSeconds(30),
-            MinimumThroughput = 20,
-            BreakDuration = TimeSpan.FromSeconds(15)
-        })
-        .AddTimeout(TimeSpan.FromSeconds(2));
-});
+            pipeline
+                .AddRetry(new RetryStrategyOptions
+                {
+                    ShouldHandle =
+                        new PredicateBuilder().Handle<IOException>(),
+                    MaxRetryAttempts = 2,
+                    Delay = TimeSpan.FromMilliseconds(200),
+                    BackoffType = DelayBackoffType.Exponential,
+                    UseJitter = true
+                })
+                .AddCircuitBreaker(new CircuitBreakerStrategyOptions
+                {
+                    ShouldHandle =
+                        new PredicateBuilder().Handle<IOException>(),
+                    FailureRatio = 0.5,
+                    SamplingDuration = TimeSpan.FromSeconds(30),
+                    MinimumThroughput = 20,
+                    BreakDuration = TimeSpan.FromSeconds(15)
+                })
+                .AddTimeout(TimeSpan.FromSeconds(2));
+        });
+    }
+}
 
 public sealed class InventoryGateway(
     ResiliencePipelineProvider<string> pipelines)
@@ -63,7 +70,7 @@ public sealed class InventoryGateway(
     public ValueTask RefreshAsync(CancellationToken cancellationToken)
     {
         ResiliencePipeline pipeline =
-            pipelines.GetPipeline(PipelineKeys.Inventory);
+            pipelines.GetPipeline(InventoryResilience.Inventory);
 
         return pipeline.ExecuteAsync(
             static async token => await RefreshInventoryAsync(token),
@@ -109,7 +116,7 @@ Keep `Polly.Extensions` compatible with the centrally pinned `Polly`. Build the 
 
 ## Integration with the catalog
 
-This is the DI companion to `polly.md`. Use `microsoft-extensions-resilience.md` for telemetry enrichment and `microsoft-extensions-http-resilience.md` for `HttpClient` handlers. Do not register a retrying DI pipeline around the HTTP handler by default; choose one retry owner.
+This is the DI companion to [Polly](polly.md). Use [Microsoft.Extensions.Resilience](microsoft-extensions-resilience.md) for telemetry enrichment and [Microsoft.Extensions.Http.Resilience](microsoft-extensions-http-resilience.md) for `HttpClient` handlers. Do not register a retrying DI pipeline around the HTTP handler by default; choose one retry owner.
 
 Use the [resilience selection guidance](../package-guidance/package-selection.md#resilience-and-retry-ownership) and [`Polly.Extensions` supply-chain entry](../package-guidance/supply-chain.md#polly-extensions).
 

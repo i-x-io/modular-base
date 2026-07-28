@@ -4,6 +4,7 @@
 
 `Roslynator.Analyzers` **4.15.0** — universal catalog analyzer supplied through a shared `GlobalPackageReference` with private analyzer assets.
 
+- **Adoption:** Global analyzer
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 - **Review trigger:** Review when the analyzer pin, `RCSxxxx` catalog/default severities, generated-code scope, or overlap with SDK/Meziantou/Sonar policy changes.
@@ -61,7 +62,7 @@ Upgrade the global reference without a category-wide severity change. Build repr
 
 ## Integration with the catalog
 
-Roslynator uses the same global analyzer integration as `meziantou-analyzer.md` and `sonaranalyzer-csharp.md`. SDK analyzer settings are in `Directory.Build.props`; `ModularBase.globalconfig` owns repository defaults; `.editorconfig` overrides matching source paths. Central package management owns version `4.15.0`, and `PrivateAssets=all` prevents the analyzer from flowing through produced packages. Review its [supply-chain record](../package-guidance/supply-chain.md#roslynator-analyzers) before upgrading.
+Roslynator uses the same global analyzer integration as [Meziantou.Analyzer](meziantou-analyzer.md) and [SonarAnalyzer.CSharp](sonaranalyzer-csharp.md). SDK analyzer settings are in `Directory.Build.props`; `ModularBase.globalconfig` owns repository defaults; `.editorconfig` overrides matching source paths. Central package management owns version `4.15.0`, and `PrivateAssets=all` prevents the analyzer from flowing through produced packages. Review its [supply-chain record](../package-guidance/supply-chain.md#roslynator-analyzers) before upgrading.
 
 ## Security, performance, AOT, trimming, and operations
 

@@ -4,6 +4,8 @@
 
 Use this index to navigate the produced analyzer package and its individual diagnostic contracts. The authoritative summary remains [analyzer taxonomy](analyzer-taxonomy.md); each page supplies rationale, library-focused examples, exceptions, and suppression guidance.
 
+The packaged analyzer HelpLink pages are concise entry points; each affected page links back to its detailed repository policy under `docs/architecture/diagnostics`.
+
 | Diagnostic | Repository severity | Page |
 | --- | --- | --- |
 | `IXM1001` | error | [Data object](diagnostics/ixm1001.md) |

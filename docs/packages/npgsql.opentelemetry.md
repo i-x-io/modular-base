@@ -8,7 +8,7 @@
 | --- | --- |
 | Package | `Npgsql.OpenTelemetry` |
 | Pinned version | `10.0.3` |
-| Status | Approved catalog dependency |
+| Status | Companion; use only with Npgsql and an OpenTelemetry SDK pipeline |
 | Role | OpenTelemetry tracing integration for Npgsql commands and connection activity |
 
 ## Decision and scope

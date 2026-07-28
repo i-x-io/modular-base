@@ -8,7 +8,9 @@ Logs are intentionally outside this recipe. Adding trace and metric exporters do
 
 ## Required packages
 
-Use central package management and versionless references in the ASP.NET Core host:
+Use central package management in the ASP.NET Core host. The following Web SDK
+block is a standalone application illustration outside this repository's
+enforced project graph:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">

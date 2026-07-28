@@ -4,9 +4,10 @@
 
 `FluentValidation` **12.1.1** — direct catalog package; strongly typed validation-rule framework.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
-**Review trigger:** `FluentValidation` version changes, target-framework changes, or validation execution/default changes.
+- **Review trigger:** `FluentValidation` version changes, target-framework changes, or validation execution/default changes.
 
 ## Decision and scope
 
@@ -71,7 +72,7 @@ Read every intervening major-version guide and compile validators before deploym
 
 ## Integration with the catalog
 
-Registration/scanning lives in `fluentvalidation-dependencyinjectionextensions.md`. Convert validation failures to the contract described in `fluentresults.md`; cross-reference the catalog's FastEndpoints package documentation for endpoint wiring.
+Registration/scanning lives in [FluentValidation.DependencyInjectionExtensions](fluentvalidation-dependencyinjectionextensions.md). Convert validation failures to the contract described in [FluentResults](fluentresults.md); cross-reference [FastEndpoints](fastendpoints.md) for endpoint wiring.
 
 See the [validation/results recipe](../recipes/fastendpoints-validation-results.md) and [`FluentValidation` supply-chain entry](../package-guidance/supply-chain.md#fluentvalidation).
 

@@ -4,9 +4,10 @@
 
 `Enums.NET` **5.0.0** — direct catalog package; high-performance enum utilities, including parsing, formatting, cached metadata, validation, and flag operations. The catalog owns the version for `net10.0` projects using C# 14.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
-**Review trigger:** `Enums.NET` version changes, target-framework changes, or enum metadata/formatting API changes.
+- **Review trigger:** `Enums.NET` version changes, target-framework changes, or enum metadata/formatting API changes.
 
 ## Decision and scope
 
@@ -61,7 +62,7 @@ Before upgrading, run contract tests for every accepted name, numeric representa
 
 ## Integration with the catalog
 
-`humanizer-core.md` can produce presentation text after validation; it must not define wire-format names. Use `fluentvalidation.md` to reject request values before domain conversion, and keep serializer configuration aligned with the same canonical names.
+[Humanizer.Core](humanizer-core.md) can produce presentation text after validation; it must not define wire-format names. Use [FluentValidation](fluentvalidation.md) to reject request values before domain conversion, and keep serializer configuration aligned with the same canonical names.
 
 See the [`Enums.NET` supply-chain entry](../package-guidance/supply-chain.md#enums-net).
 

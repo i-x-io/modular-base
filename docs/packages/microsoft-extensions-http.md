@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | `IHttpClientFactory`, named/typed client registration, and handler pooling | Approved outbound HTTP integration |
+| `10.0.10` | `IHttpClientFactory`, named/typed client registration, and handler pooling | Direct; approved outbound HTTP integration |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ Use this package for DI-integrated outbound HTTP clients. It provides factory-ma
 
 ## Recommended registration and use
 
-With Central Package Management, add a versionless project reference:
+With Central Package Management, `PackageReference` entries omit `Version` because `Directory.Packages.props` is the package-version authority. `ProjectReference` entries express source-project dependencies and remain governed by project-role and boundary policy:
 
 ```xml
 <PackageReference Include="Microsoft.Extensions.Http" />

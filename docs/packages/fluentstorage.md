@@ -7,7 +7,7 @@
 | Package | `FluentStorage` |
 | Pinned version | `8.0.16` |
 | Role | Core `IStore` abstraction, local/in-memory stores, connection-string infrastructure, and shared models |
-| Status | Approved for application-facing storage abstractions; select and register exactly one concrete provider per storage boundary |
+| Status | Direct; approved for application-facing storage abstractions; select and register exactly one concrete provider per storage boundary |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
 | Review trigger | Any `FluentStorage` version change, target-framework change, or change to stream ownership, path normalization, listing, overwrite, or disposal behavior |

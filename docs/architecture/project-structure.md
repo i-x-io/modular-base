@@ -4,7 +4,7 @@
 
 This document defines the project roles and permitted dependency direction for future `IX.Modularity.*` library projects. It deliberately supports an adaptive layout: the repository starts with one project when that is the smallest coherent boundary and introduces role-specific projects only when a real dependency, consumer, release, or test boundary exists.
 
-The current repository intentionally contains `test/IX.Modularity.Architecture.Tests/IX.Modularity.Architecture.Tests.csproj` as its one `ArchitectureTest` project and contains no `src/` production projects. The production paths below are target conventions, not a claim that they already exist.
+The current solution contains three projects: the packable `src/IX.Modularity.Analyzers/IX.Modularity.Analyzers.csproj` (`Analyzer`), its focused non-packable `test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj` (`Test`), and the non-packable `test/IX.Modularity.Architecture.Tests/IX.Modularity.Architecture.Tests.csproj` (`ArchitectureTest`). Future `IX.Modularity.*` library layouts below are target conventions, not claims that those projects already exist.
 
 ## Project roles
 

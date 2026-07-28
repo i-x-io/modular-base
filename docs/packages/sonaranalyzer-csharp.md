@@ -4,6 +4,7 @@
 
 `SonarAnalyzer.CSharp` **10.30.0.144632** — universal catalog analyzer supplied through a shared `GlobalPackageReference` with private analyzer assets.
 
+- **Adoption:** Global analyzer
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 - **Review trigger:** Review when the analyzer pin, `Sxxxx` rule metadata/defaults, Sonar quality profile/connected mode, or repository security policy changes.
@@ -61,7 +62,7 @@ Upgrade the NuGet analyzer separately from quality-profile or connected-mode cha
 
 ## Integration with the catalog
 
-This package shares the global analyzer mechanism with `meziantou-analyzer.md`, `roslynator-analyzers.md`, and the other universal analyzers. Repository-wide defaults are in `ModularBase.globalconfig`; matching `.editorconfig` entries take precedence. Central package management owns exact version `10.30.0.144632`, and `PrivateAssets=all` prevents analyzer assets from flowing to package consumers. Scanner or connected-mode tooling is not installed by this catalog entry. Review its [supply-chain record](../package-guidance/supply-chain.md#sonaranalyzer-csharp) before changing analyzer provenance or connected tooling.
+This package shares the global analyzer mechanism with [Meziantou.Analyzer](meziantou-analyzer.md), [Roslynator.Analyzers](roslynator-analyzers.md), and the other universal analyzers. Repository-wide defaults are in `ModularBase.globalconfig`; matching `.editorconfig` entries take precedence. Central package management owns exact version `10.30.0.144632`, and `PrivateAssets=all` prevents analyzer assets from flowing to package consumers. Scanner or connected-mode tooling is not installed by this catalog entry. Review its [supply-chain record](../package-guidance/supply-chain.md#sonaranalyzer-csharp) before changing analyzer provenance or connected tooling.
 
 ## Security, performance, AOT, trimming, and operations
 

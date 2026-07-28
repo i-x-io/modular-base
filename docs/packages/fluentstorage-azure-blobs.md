@@ -7,7 +7,7 @@
 | Package | `FluentStorage.Azure.Blobs` |
 | Pinned version | `8.0.10` |
 | Role | Azure Blob Storage implementation of FluentStorage `IStore` |
-| Status | Approved for blob workloads; use the native Azure client when blob-specific conditions, encryption options, or leases are required |
+| Status | Companion; approved for blob workloads; use the native Azure client when blob-specific conditions, encryption options, or leases are required |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
 | Review trigger | Any provider/Azure Blob SDK or target-framework change, or a change to identity, retry, endpoint, conditional-write, or storage-account policy |

@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | DI contracts: `IServiceCollection`, `IServiceProvider`, `ServiceDescriptor`, and registration extensions | Approved library-facing abstraction |
+| `10.0.10` | DI contracts: `IServiceCollection`, `IServiceProvider`, `ServiceDescriptor`, and registration extensions | Direct; approved library-facing abstraction |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

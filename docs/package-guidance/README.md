@@ -11,7 +11,9 @@ These references complement the one-package-at-a-time guides in the
 
 `Directory.Packages.props` remains the source of truth for package IDs and pinned
 versions. These pages do not authorize a new dependency, replace a package guide,
-or override the repository's dependency policy.
+or override the repository's [dependency policy](../architecture/dependency-policy.md).
+Use [project structure](../architecture/project-structure.md) to determine which
+project role may own an approved dependency.
 
 Research was last accessed on **2026-07-27**. Context7 was consulted first for
 each package family, but its service returned `Monthly quota exceeded` before any

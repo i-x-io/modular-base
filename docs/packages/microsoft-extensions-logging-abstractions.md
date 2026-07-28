@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | Logging contracts such as `ILogger`, `ILoggerFactory`, and `LogLevel` | Approved library-facing abstraction |
+| `10.0.10` | Logging contracts such as `ILogger`, `ILoggerFactory`, and `LogLevel` | Direct; approved library-facing abstraction |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

@@ -4,7 +4,7 @@
 
 | Package | Pinned version | Role | Status |
 | --- | --- | --- | --- |
-| `Microsoft.AspNetCore.OpenApi` | `10.0.10` | ASP.NET Core OpenAPI generation, endpoint mapping, and transformer APIs | Centrally pinned; consumed as FastEndpoints.OpenApi infrastructure |
+| `Microsoft.AspNetCore.OpenApi` | `10.0.10` | ASP.NET Core OpenAPI generation, endpoint mapping, and transformer APIs | Companion; centrally pinned and consumed as FastEndpoints.OpenApi infrastructure |
 
 - Owner: IX
 - Last reviewed: 2026-07-27

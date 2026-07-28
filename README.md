@@ -2,7 +2,10 @@
 
 ModularBase centralizes the SDK, package, analyzer, source, build, and architecture policies for future `IX.Modularity.*` libraries. `IX.Modularity.slnx` currently contains three projects: the packable compiler-tooling package [`src/IX.Modularity.Analyzers`](src/IX.Modularity.Analyzers/IX.Modularity.Analyzers.csproj), its non-packable analyzer test project [`test/IX.Modularity.Analyzers.Tests`](test/IX.Modularity.Analyzers.Tests/IX.Modularity.Analyzers.Tests.csproj), and the non-packable architecture test project [`test/IX.Modularity.Architecture.Tests`](test/IX.Modularity.Architecture.Tests/IX.Modularity.Architecture.Tests.csproj). It contains no runtime or application library.
 
-Start with the [architecture policy index](docs/architecture/README.md), the [package catalog](docs/packages/README.md), the [package-selection guidance](docs/package-guidance/README.md), the [illustrated recipes](docs/recipes/README.md), and the [analyzer index](docs/architecture/analyzer-index.md). The repository documents library policy and illustrative composition workflows; it deliberately does not include permanent sample applications or application projects.
+Start with the [documentation index](docs/README.md), which routes to every
+documentation branch.
+
+Useful direct links include the [architecture policy index](docs/architecture/README.md), the [package catalog](docs/packages/README.md), the [package-selection guidance](docs/package-guidance/README.md), the [illustrated recipes](docs/recipes/README.md), and the [analyzer index](docs/architecture/analyzer-index.md). The repository documents library policy and illustrative composition workflows; it deliberately does not include permanent sample applications or application projects.
 
 ## Current repository state
 

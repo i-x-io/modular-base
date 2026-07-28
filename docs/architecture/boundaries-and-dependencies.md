@@ -19,7 +19,7 @@ Project references describe implementation relationships; NuGet dependencies des
 - Follow the [project-role matrix](project-structure.md#dependency-matrix); source dependency cycles are prohibited.
 - `Contracts` and `Abstractions` remain portable and may not expose vendor, ORM, hosting, or container types.
 - Adapters depend inward and translate at the edge; neutral consumers never need the adapter’s technology.
-- Central package management is the sole version authority; project references are versionless.
+- `PackageReference` entries omit `Version` because `Directory.Packages.props` is the sole package-version authority. `ProjectReference` entries express source project dependencies and are governed by the project-role graph.
 
 ## Library-focused examples
 

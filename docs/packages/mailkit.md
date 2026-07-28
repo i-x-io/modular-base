@@ -4,6 +4,7 @@
 
 `MailKit` **4.17.0** — direct catalog package; SMTP, IMAP, and POP client library. It works with the MIME model provided by MimeKit.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 **Review trigger:** `MailKit`/`MimeKit` version changes, target-framework changes, or mail-provider TLS/authentication policy changes.

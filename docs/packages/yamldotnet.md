@@ -4,9 +4,10 @@
 
 `YamlDotNet` **18.1.0** — direct catalog package; YAML parser/emitter and object serialization/deserialization library with a native `net10.0` asset. The catalog owns the version for C# 14 projects.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
-**Review trigger:** `YamlDotNet` version changes, target-framework changes, or serializer/parser default and security-limit changes.
+- **Review trigger:** `YamlDotNet` version changes, target-framework changes, or serializer/parser default and security-limit changes.
 
 ## Decision and scope
 
@@ -52,7 +53,7 @@ Use a separately configured `SerializerBuilder` for output, usually with the sam
 
 ## Enterprise implementation guidance
 
-Deserialize into narrow DTOs, run structural checks, validate with `fluentvalidation.md`, and only then map to domain objects. Bound bytes before parsing and configure `WithMaximumRecursion(...)` for the workload; define policies for aliases, duplicate keys, multiple documents, unknown properties, tags, and type converters. Include file/line context in operator-facing errors while redacting document values and secrets. For configuration, parse and validate a candidate fully before atomically replacing the last known good snapshot.
+Deserialize into narrow DTOs, run structural checks, validate with [FluentValidation](fluentvalidation.md), and only then map to domain objects. Bound bytes before parsing and configure `WithMaximumRecursion(...)` for the workload; define policies for aliases, duplicate keys, multiple documents, unknown properties, tags, and type converters. Include file/line context in operator-facing errors while redacting document values and secrets. For configuration, parse and validate a candidate fully before atomically replacing the last known good snapshot.
 
 ### Configuration reference
 
@@ -70,7 +71,7 @@ Review parser, naming, nullability, required-member, and security-limit release 
 
 ## Integration with the catalog
 
-Use `fluentvalidation.md` for semantic validation and `fluentresults.md` to represent expected configuration/document errors. Do not use `scrutor.md` scanning to discover arbitrary YAML target types. Keep secret resolution outside YAML deserialization so configuration files contain references rather than secret values where possible.
+Use [FluentValidation](fluentvalidation.md) for semantic validation and [FluentResults](fluentresults.md) to represent expected configuration/document errors. Do not use [Scrutor](scrutor.md) scanning to discover arbitrary YAML target types. Keep secret resolution outside YAML deserialization so configuration files contain references rather than secret values where possible.
 
 See the [`YamlDotNet` supply-chain entry](../package-guidance/supply-chain.md#yamldotnet).
 

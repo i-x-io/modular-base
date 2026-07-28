@@ -4,7 +4,7 @@
 
 | Package | Pinned version | Role | Status |
 | --- | --- | --- | --- |
-| `FastEndpoints.Security` | `8.2.0` | FastEndpoints JWT issuance/configuration conveniences and generated access-control permissions | Centrally pinned; catalog-only until an API project consumes it |
+| `FastEndpoints.Security` | `8.2.0` | FastEndpoints JWT issuance/configuration conveniences and generated access-control permissions | Catalog-only; centrally pinned until an API project consumes it |
 
 - Owner: IX
 - Last reviewed: 2026-07-27

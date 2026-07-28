@@ -8,7 +8,7 @@
 | --- | --- |
 | Package | `Pgvector.EntityFrameworkCore` |
 | Pinned version | `0.3.0` |
-| Status | Approved catalog dependency |
+| Status | Companion; use with Pgvector and Npgsql.EntityFrameworkCore.PostgreSQL where EF Core owns vector schema and queries |
 | Role | EF Core model, migration, index, and LINQ support for pgvector |
 
 ## Decision and scope

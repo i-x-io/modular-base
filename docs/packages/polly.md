@@ -4,9 +4,10 @@
 
 `Polly` **8.7.0** — direct catalog package; composable resilience pipelines for retry, timeout, circuit breaker, rate limiter, hedging, and fallback strategies.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
-**Review trigger:** `Polly` version changes, target-framework changes, or resilience strategy/telemetry semantic changes.
+- **Review trigger:** `Polly` version changes, target-framework changes, or resilience strategy/telemetry semantic changes.
 
 ## Decision and scope
 
@@ -14,7 +15,7 @@ Use for explicit transient-fault policies at a named non-HTTP dependency boundar
 
 ## Recommended registration and use
 
-With central package management, add the versionless project reference:
+With central package management, add the versionless `PackageReference`:
 
 ```xml
 <ItemGroup>
@@ -93,7 +94,7 @@ For v7-to-v8 migration, translate policy wraps into ordered resilience pipelines
 
 ## Integration with the catalog
 
-Use `polly-extensions.md` for DI-managed named pipelines. For `HttpClient`, prefer `microsoft-extensions-http-resilience.md`, which applies standardized HTTP-aware strategies. `microsoft-extensions-resilience.md` enriches Polly telemetry. A call path must have a single retry owner across these integrations. `mailkit.md` needs outbox semantics before any send retry.
+Use [Polly.Extensions](polly-extensions.md) for DI-managed named pipelines. For `HttpClient`, prefer [Microsoft.Extensions.Http.Resilience](microsoft-extensions-http-resilience.md), which applies standardized HTTP-aware strategies. [Microsoft.Extensions.Resilience](microsoft-extensions-resilience.md) enriches Polly telemetry. A call path must have a single retry owner across these integrations. [MailKit](mailkit.md) needs outbox semantics before any send retry.
 
 Use the [resilience selection guidance](../package-guidance/package-selection.md#resilience-and-retry-ownership), [resilient typed-HTTP-client recipe](../recipes/resilient-typed-httpclient.md), and [`Polly` supply-chain entry](../package-guidance/supply-chain.md#polly).
 
@@ -101,7 +102,7 @@ Use the [resilience selection guidance](../package-guidance/package-selection.md
 
 Retries amplify work and may duplicate side effects; never include secrets, payloads, or unbounded identifiers in callbacks or metric tags. Reject excess work promptly or use a deliberately bounded queue. A breaker is per pipeline instance, so reuse pipelines to preserve meaningful state. Log final failure at the application boundary and record retry/breaker/rate-limit events as structured telemetry to avoid log storms.
 
-When a DI-managed pipeline constructs a custom rate limiter or another disposable resource, use the `AddResiliencePipelineContext<TKey>` registration overload and call `context.OnPipelineDisposed(...)`; see `polly-extensions.md`. This is especially important for dynamic reload, where old pipelines are discarded. Validate the exact strategy set in trimmed/NativeAOT publishing and exercise failure paths in the published artifact.
+When a DI-managed pipeline constructs a custom rate limiter or another disposable resource, use the `AddResiliencePipelineContext<TKey>` registration overload and call `context.OnPipelineDisposed(...)`; see [Polly.Extensions](polly-extensions.md). This is especially important for dynamic reload, where old pipelines are discarded. Validate the exact strategy set in trimmed/NativeAOT publishing and exercise failure paths in the published artifact.
 
 Operational signals should cover execution attempts, retry events/delay, timeout events, breaker state/rejections, limiter rejections/queue delay, and final dependency outcome with stable pipeline identity. Exclude payloads, secrets, full URLs, user/tenant IDs, and high-cardinality exception text.
 

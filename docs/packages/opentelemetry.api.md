@@ -8,7 +8,7 @@
 
 `<PackageVersion Include="OpenTelemetry.Api" Version="1.17.0" />`
 
-**Role:** the vendor-neutral .NET telemetry API and semantic-conventions support used by instrumentation libraries. **Status:** approved central-catalog dependency; use it in reusable libraries that emit activities or meters without configuring an SDK.
+**Role:** the vendor-neutral .NET telemetry API and semantic-conventions support used by instrumentation libraries. **Adoption:** Direct; use it in reusable libraries that emit activities or meters without configuring an SDK.
 
 ## Decision and scope
 
@@ -32,12 +32,15 @@ using System.Diagnostics;
 internal static class OrderTelemetry
 {
     internal static readonly ActivitySource Source = new("ModularBase.Orders");
-}
 
-using Activity? activity = OrderTelemetry.Source.StartActivity("orders.validate");
-if (activity?.IsAllDataRequested == true)
-{
-    activity.SetTag("orders.validation.outcome", "accepted");
+    internal static void RecordAcceptedValidation()
+    {
+        using Activity? activity = Source.StartActivity("orders.validate");
+        if (activity?.IsAllDataRequested == true)
+        {
+            activity.SetTag("orders.validation.outcome", "accepted");
+        }
+    }
 }
 ```
 
@@ -53,9 +56,10 @@ internal static class OrderMetrics
     internal static readonly Meter Meter = new("ModularBase.Orders");
     internal static readonly Counter<long> Accepted =
         Meter.CreateCounter<long>("orders.accepted", unit: "{order}");
-}
 
-OrderMetrics.Accepted.Add(1, new("orders.channel", "api"));
+    internal static void RecordAcceptedOrder() =>
+        Accepted.Add(1, new("orders.channel", "api"));
+}
 ```
 
 The application must register `.AddMeter("ModularBase.Orders")`. Keep `orders.channel` to a documented finite set; never substitute an order or customer identifier.

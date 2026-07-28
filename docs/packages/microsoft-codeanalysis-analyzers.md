@@ -4,6 +4,7 @@
 
 `Microsoft.CodeAnalysis.Analyzers` **5.6.0** — centrally pinned analyzer-authoring support for projects that implement Roslyn analyzers or source generators.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 - **Review trigger:** Review when this package or the aligned Roslyn compiler API pins change, or when analyzer packaging/diagnostic release policy changes.

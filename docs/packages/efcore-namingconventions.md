@@ -6,7 +6,7 @@
 
 | Package | Exact version | Role | Status |
 | --- | ---: | --- | --- |
-| `EFCore.NamingConventions` | `10.0.1` | Convention-based database identifier naming, including snake case | Cataloged; no provider/migration integration compiled |
+| `EFCore.NamingConventions` | `10.0.1` | Convention-based database identifier naming, including snake case | Companion; no provider/migration integration compiled |
 
 ## Decision and scope
 

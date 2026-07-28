@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `Microsoft.NET.Test.Sdk` |
 | Pinned version | `18.8.1` |
-| Status | Approved test-only dependency for the VSTest alternative |
+| Status | Catalog-only; approved test-only dependency for the VSTest alternative |
 | Role | VSTest host integration for test discovery and execution |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
@@ -73,9 +73,7 @@ The SDK starts test hosts and loads test assemblies and adapters. Restore only f
 
 ## Sources
 
-- [`dotnet test` runner selection and MTP/VSTest behavior](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test)
-- [`dotnet test` with VSTest](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test-vstest)
-- [.NET test platform comparison](https://learn.microsoft.com/en-us/dotnet/core/testing/test-platforms-overview)
-- [Microsoft.NET.Test.Sdk 18.8.1 on NuGet](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/18.8.1)
-
-Accessed 2026-07-27.
+- [`dotnet test` runner selection and MTP/VSTest behavior](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test) — Accessed 2026-07-27.
+- [`dotnet test` with VSTest](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test-vstest) — Accessed 2026-07-27.
+- [.NET test platform comparison](https://learn.microsoft.com/en-us/dotnet/core/testing/test-platforms-overview) — Accessed 2026-07-27.
+- [Microsoft.NET.Test.Sdk 18.8.1 on NuGet](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/18.8.1) — Accessed 2026-07-27.

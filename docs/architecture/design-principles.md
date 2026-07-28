@@ -6,7 +6,7 @@ These principles help future libraries remain cohesive, understandable, and chan
 
 ## Canonical definitions
 
-### Design principles
+### Responsibility, cohesion, and separation of concerns
 
 Single responsibility means a type, module, or package has one primary reason to change. Cohesion measures whether its contents change together. Separation of concerns puts independently changing concerns behind explicit boundaries. DRY means one authoritative representation of a rule; YAGNI rejects speculative capability.
 

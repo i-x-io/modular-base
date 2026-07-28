@@ -2,7 +2,7 @@
 
 ## Catalog entry
 
-`IX.Modularity.Analyzers` **0.1.0** — produced analyzer-only package that enforces complete XML documentation, FluentResults service return contracts, coded business failures, stack-preserving broad catches, and suggests records for eligible class-shaped data objects.
+`IX.Modularity.Analyzers` **0.1.0** — **Produced package** providing analyzer-only enforcement of complete XML documentation, FluentResults service return contracts, coded business failures, stack-preserving broad catches, and record suggestions for eligible class-shaped data objects.
 
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
@@ -23,7 +23,7 @@ Consumers add it as a private analyzer reference, with no runtime asset flow:
                   IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
 ```
 
-Configure `IXM1001` through `IXM1005` and `IXM3001` through `IXM3003` as errors where the consumer adopts this repository’s public-library policy. `IXM2001` remains nonblocking because changing a public class to a record can change equality and compatibility semantics. `IXM3001` accepts only `Result`, `Result<T>`, and their `Task`/`ValueTask` wrappers for externally visible service operations. `IXM3002` rejects direct string-only, base-`Error`, and uncoded failures, including `Result.Try`. `IXM3003` requires an untyped or exact `Exception` catch to finish every reachable path with bare `throw;`.
+Configure `IXM1001` through `IXM1005` and `IXM3001` through `IXM3003` as errors where the consumer adopts this repository’s public-library policy. `IXM2001` remains nonblocking because changing a public class to a record can change equality and compatibility semantics. IXM3001 activates only when the approved FluentResults return symbols resolve in the compilation; when active, it accepts only `Result`, `Result<T>`, and their `Task`/`ValueTask` wrappers for externally visible service operations. IXM3002 does not analyze projects whose `IXModularityProjectRole` is `Test`, `ArchitectureTest`, `Analyzer`, or `SourceGenerator`; elsewhere it rejects direct string-only, base-`Error`, and uncoded failures, including `Result.Try`. `IXM3003` requires an untyped or exact `Exception` catch to finish every reachable path with bare `throw;`.
 
 The package has no DI or runtime configuration. Consumers control analyzer loading and policy through MSBuild and analyzer configuration:
 
@@ -43,7 +43,9 @@ Adopt the package first in a library with an explicit documentation ownership mo
 
 ### Upgrade and rollback
 
-The initial `0.1.0` package has not been published. Its shipped contract includes `IXM1001`–`IXM1005`, `IXM2001`, and `IXM3001`–`IXM3003`. Before publishing it, review `AnalyzerReleases.Shipped.md` for that complete contract and verify `AnalyzerReleases.Unshipped.md` contains only future work. Keep `ModularBase.globalconfig`, `.editorconfig`, the analyzer taxonomy, per-diagnostic help, tests, and package version aligned. Pack the candidate and inspect it before publishing: the analyzer DLL and symbols belong under `analyzers/dotnet/cs/`, while `lib/` and `ref/` must remain absent.
+Publication status is not documented by this repository. Verify the intended package feed before consumption or publication.
+
+The shipped `0.1.0` contract includes `IXM1001`–`IXM1005`, `IXM2001`, and `IXM3001`–`IXM3003`. Before publishing it, review `AnalyzerReleases.Shipped.md` for that complete contract and verify `AnalyzerReleases.Unshipped.md` contains only future work. Keep `ModularBase.globalconfig`, `.editorconfig`, the analyzer taxonomy, per-diagnostic help, tests, and package version aligned. Pack the candidate and inspect it before publishing: the analyzer DLL and symbols belong under `analyzers/dotnet/cs/`, while `lib/` and `ref/` must remain absent.
 
 Pin one consumer to the `0.1.0` candidate, restore, build, and classify every diagnostic before publishing. An `IXM100x` failure normally requires completing documentation or narrowing public surface; an `IXM2001` result requires semantic review, not an automatic class-to-record conversion; `IXM3001` requires a supported result return shape; `IXM3002` requires an own coded error; and `IXM3003` requires bare rethrow from broad catches. After publication, treat a diagnostic-ID reuse, changed default severity, or changed symbol-selection behavior as a contract change.
 

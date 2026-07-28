@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | Options contracts, factories, caching, validation, and `IOptions*` accessors | Approved typed-configuration foundation |
+| `10.0.10` | Options contracts, factories, caching, validation, and `IOptions*` accessors | Direct; approved typed-configuration foundation |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

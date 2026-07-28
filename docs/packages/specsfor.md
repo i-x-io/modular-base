@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `SpecsFor` |
 | Pinned version | `8.0.0-rc2a` |
-| Status | Catalog-only prerelease dependency; do not adopt |
+| Status | Catalog-only; prerelease dependency retained for controlled evaluation or migration only; do not adopt |
 | Role | Legacy BDD-style specification framework retained for evaluation or migration research |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
@@ -14,7 +14,7 @@
 
 ## Decision and scope
 
-Do not adopt SpecsFor for new tests. It is the catalog's sole prerelease dependency and remains available only for a controlled compatibility investigation or migration. Its legacy StructureMap lineage and transitive graph require explicit review before any project reference.
+Do not adopt SpecsFor for new tests. It is the catalog's sole prerelease dependency and remains available only for a controlled compatibility investigation or migration. Its legacy StructureMap lineage and transitive graph require explicit review before any `PackageReference`.
 
 ## Recommended registration and use
 
@@ -62,7 +62,7 @@ Prerelease and aging transitive dependencies increase supply-chain, maintenance,
 ## Verification checklist
 
 - [ ] Architecture approval defines the pilot scope, owner, exit criteria, and removal date.
-- [ ] The project reference is versionless, isolated, non-packable, and restricted to an allowed test role.
+- [ ] The `PackageReference` is versionless, isolated, non-packable, and restricted to an allowed test role.
 - [ ] Direct/transitive package, vulnerability, and license evidence is recorded.
 - [ ] No production project references SpecsFor or StructureMap-derived dependencies.
 - [ ] The preferred xUnit v3 path remains the target for migrated behavior.

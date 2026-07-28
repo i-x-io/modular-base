@@ -4,6 +4,7 @@
 
 `MimeKit` **4.17.0** — direct catalog package; MIME message, body, address, header, and attachment construction/parsing library.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 **Review trigger:** `MimeKit`/`MailKit` version changes, target-framework changes, or MIME/security algorithm behavior changes.

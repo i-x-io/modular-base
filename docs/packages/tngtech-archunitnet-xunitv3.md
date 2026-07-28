@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `TngTech.ArchUnitNET.xUnitV3` |
 | Pinned version | `0.13.3` |
-| Status | Approved direct architecture-test-only dependency |
+| Status | Direct; approved only for the architecture-test project |
 | Role | ArchUnitNET assertions integrated with xUnit v3 |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
@@ -32,7 +32,12 @@ using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnitV3;
+using Xunit;
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
+
+// Replace this minimal declaration with a stable marker from the production
+// assembly whose architecture is under test.
+public sealed class OrderService { }
 
 public sealed class DependencyRules
 {

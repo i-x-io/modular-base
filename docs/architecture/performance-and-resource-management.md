@@ -6,7 +6,7 @@ Make performance, allocation, and resource-lifetime choices explicit and measura
 
 ## Canonical definitions
 
-### Performance and resource management
+### Memory views, ownership, and measurement
 
 A span is a stack-only view over contiguous memory. `Memory<T>` is a heap-storable memory view suitable for asynchronous boundaries. Ownership identifies who disposes or returns a resource. A benchmark measures a representative workload under controlled conditions.
 

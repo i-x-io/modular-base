@@ -8,7 +8,7 @@
 
 `<PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />`
 
-**Role:** OTLP exporter for OpenTelemetry .NET traces, metrics, and logs. **Status:** approved central-catalog dependency; use it when a managed OpenTelemetry Collector or backend accepts OTLP.
+**Role:** OTLP exporter for OpenTelemetry .NET traces, metrics, and logs. **Adoption:** Companion; use it with an OpenTelemetry SDK pipeline when a managed OpenTelemetry Collector or backend accepts OTLP.
 
 ## Decision and scope
 

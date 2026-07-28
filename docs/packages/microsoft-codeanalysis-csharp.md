@@ -4,6 +4,7 @@
 
 `Microsoft.CodeAnalysis.CSharp` **5.6.0** — centrally pinned C#-specific Roslyn API for C# analyzers, source generators, and their isolated tests.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 - **Review trigger:** Review when the CSharp/Common pins, supported C# language version, SDK/compiler host, or analyzer test compilation options change.

@@ -6,7 +6,9 @@ Use this recipe when application code needs a small upload/download boundary tha
 
 ## Required catalog packages
 
-The provider-neutral project references the centrally pinned core package without a version:
+The repository-oriented
+`src/IX.Modularity.Storage/IX.Modularity.Storage.csproj` library references the
+centrally pinned core package:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -15,6 +17,7 @@ The provider-neutral project references the centrally pinned core package withou
     <LangVersion>14.0</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <IXModularityProjectRole>Library</IXModularityProjectRole>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FluentStorage" />

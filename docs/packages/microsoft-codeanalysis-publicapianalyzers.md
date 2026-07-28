@@ -4,6 +4,7 @@
 
 `Microsoft.CodeAnalysis.PublicApiAnalyzers` **5.6.0** — project-scoped catalog analyzer; packable projects opt in and own their public API baseline files.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 - **Review trigger:** Review when the analyzer pin, public API baseline format, nullable API policy, or package-release compatibility process changes.

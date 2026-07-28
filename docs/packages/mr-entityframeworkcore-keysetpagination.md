@@ -6,7 +6,7 @@
 
 | Package | Exact version | Role | Status |
 | --- | ---: | --- | --- |
-| `MR.EntityFrameworkCore.KeysetPagination` | `1.6.0` | Keyset/seek pagination helpers for EF Core queries | Cataloged; no consuming query integration compiled |
+| `MR.EntityFrameworkCore.KeysetPagination` | `1.6.0` | Keyset/seek pagination helpers for EF Core queries | Companion; cataloged, but no consuming query integration is compiled |
 
 ## Decision and scope
 
@@ -92,10 +92,8 @@ Observe page-query duration, returned rows, direction, cursor-decode failures, a
 
 ## Sources
 
-Accessed 2026-07-27.
-
-- [Central package catalog](../../Directory.Packages.props)
-- [MR.EntityFrameworkCore.KeysetPagination 1.6.0 on NuGet](https://www.nuget.org/packages/MR.EntityFrameworkCore.KeysetPagination/1.6.0)
-- [MR.EntityFrameworkCore.KeysetPagination repository](https://github.com/mrahhal/MR.EntityFrameworkCore.KeysetPagination)
-- [Version 1.6.0 source tag](https://github.com/mrahhal/MR.EntityFrameworkCore.KeysetPagination/tree/v1.6.0)
-- [EF Core pagination guidance](https://learn.microsoft.com/ef/core/querying/pagination)
+- [Central package catalog](../../Directory.Packages.props) — Accessed 2026-07-27.
+- [MR.EntityFrameworkCore.KeysetPagination 1.6.0 on NuGet](https://www.nuget.org/packages/MR.EntityFrameworkCore.KeysetPagination/1.6.0) — Accessed 2026-07-27.
+- [MR.EntityFrameworkCore.KeysetPagination repository](https://github.com/mrahhal/MR.EntityFrameworkCore.KeysetPagination) — Accessed 2026-07-27.
+- [Version 1.6.0 source tag](https://github.com/mrahhal/MR.EntityFrameworkCore.KeysetPagination/tree/v1.6.0) — Accessed 2026-07-27.
+- [EF Core pagination guidance](https://learn.microsoft.com/ef/core/querying/pagination) — Accessed 2026-07-27.

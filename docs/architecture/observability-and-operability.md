@@ -6,7 +6,7 @@ Ensure libraries expose useful operational signals without leaking sensitive dat
 
 ## Canonical definitions
 
-### Observability and operability
+### Operational signals
 
 Logging records diagnostic events. Metrics measure numeric observations. Tracing correlates operations across boundaries. Structured logging carries named fields rather than formatted text. Source-generated logging uses `LoggerMessage` attributes to generate efficient structured logging methods.
 

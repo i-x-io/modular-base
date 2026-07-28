@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | Default .NET DI container implementation and registration extensions | Approved composition-root implementation |
+| `10.0.10` | Default .NET DI container implementation and registration extensions | Direct; approved composition-root implementation |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

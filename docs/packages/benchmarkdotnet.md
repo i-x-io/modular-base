@@ -4,6 +4,7 @@
 
 `BenchmarkDotNet` **0.15.8** — centrally pinned benchmark harness for dedicated performance-measurement projects; it is not a production library dependency.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 - **Review trigger:** Review when the BenchmarkDotNet pin, a benchmarked target framework/runtime, or CI benchmark host changes.

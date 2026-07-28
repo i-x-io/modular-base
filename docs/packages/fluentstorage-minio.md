@@ -7,7 +7,7 @@
 | Package | `FluentStorage.Minio` |
 | Pinned version | `8.0.10` |
 | Role | MinIO implementation of FluentStorage `IStore` |
-| Status | Approved for a deliberately operated MinIO/S3-compatible deployment; not a substitute for validating the target service’s semantics |
+| Status | Companion; approved for a deliberately operated MinIO/S3-compatible deployment; not a substitute for validating the target service’s semantics |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
 | Review trigger | Any provider/MinIO client, target-framework, server release, endpoint/TLS, identity/STS, retry, erasure-set, or bucket-policy change |

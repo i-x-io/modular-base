@@ -6,7 +6,7 @@
 
 ## Roles and distribution
 
-Only a project with role `Analyzer` or `SourceGenerator` may use Roslyn compiler implementation packages. A consumer loads `IX.Modularity.Analyzers` as an analyzer asset; it must not reference its assembly at runtime. The package is documented separately from catalogued external packages in [the package guide](../packages/ix-modularity-analyzers.md).
+Roslyn compiler implementation packages are allowed for `Analyzer` and `SourceGenerator` production roles, their focused test projects, and the designated `ArchitectureTest` project when it performs focused C# documentation-syntax validation. A consumer loads `IX.Modularity.Analyzers` as an analyzer asset; it must not reference its assembly at runtime. See [dependency policy](dependency-policy.md) for the authoritative eligibility rule. The package is documented separately from catalogued external packages in [the package guide](../packages/ix-modularity-analyzers.md).
 
 The analyzer reads the compiler-visible `IXModularityProjectRole` property only for rules whose taxonomy says that the role matters. It never uses repository paths, reflection, or application conventions to infer a role.
 

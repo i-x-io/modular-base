@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | Health-check registration and service implementation | Approved observability implementation |
+| `10.0.10` | Health-check registration and service implementation | Direct; approved observability implementation |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

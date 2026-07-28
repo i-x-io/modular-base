@@ -7,7 +7,7 @@
 | Package | `FluentStorage.SFTP` |
 | Pinned version | `8.0.16` |
 | Role | SSH.NET-backed SFTP implementation of FluentStorage `IStore` |
-| Status | Approved for managed SFTP interchange; isolate it from object-store abstractions when protocol semantics matter |
+| Status | Companion; approved for managed SFTP interchange; isolate it from object-store abstractions when protocol semantics matter |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
 | Review trigger | Any `FluentStorage.SFTP`, SSH.NET, target-framework, server SSH policy/host key, cipher/KEX, retry, path, quota, or partner-protocol change |

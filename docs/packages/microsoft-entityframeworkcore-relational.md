@@ -6,7 +6,7 @@
 
 | Package | Exact version | Role | Status |
 | --- | ---: | --- | --- |
-| `Microsoft.EntityFrameworkCore.Relational` | `10.0.10` | Shared relational EF Core APIs used by database providers and relational features | Cataloged; no provider integration compiled |
+| `Microsoft.EntityFrameworkCore.Relational` | `10.0.10` | Shared relational EF Core APIs used by database providers and relational features | Companion; cataloged, but no provider integration is compiled |
 
 ## Decision and scope
 
@@ -83,12 +83,10 @@ Generated SQL is a diagnostic artifact and can contain schema or parameter detai
 
 ## Sources
 
-Accessed 2026-07-27.
-
-- [Central package catalog](../../Directory.Packages.props)
-- [Microsoft.EntityFrameworkCore.Relational 10.0.10 on NuGet](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.Relational/10.0.10)
-- [EF Core relational data documentation](https://learn.microsoft.com/ef/core/modeling/relationships)
-- [EF Core SQL queries and parameterization](https://learn.microsoft.com/ef/core/querying/sql-queries)
-- [EF Core transactions](https://learn.microsoft.com/ef/core/saving/transactions)
-- [EF Core execute update and delete](https://learn.microsoft.com/ef/core/saving/execute-insert-update-delete)
-- [EF Core migrations overview](https://learn.microsoft.com/ef/core/managing-schemas/migrations/)
+- [Central package catalog](../../Directory.Packages.props) — Accessed 2026-07-27.
+- [Microsoft.EntityFrameworkCore.Relational 10.0.10 on NuGet](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.Relational/10.0.10) — Accessed 2026-07-27.
+- [EF Core relational data documentation](https://learn.microsoft.com/ef/core/modeling/relationships) — Accessed 2026-07-27.
+- [EF Core SQL queries and parameterization](https://learn.microsoft.com/ef/core/querying/sql-queries) — Accessed 2026-07-27.
+- [EF Core transactions](https://learn.microsoft.com/ef/core/saving/transactions) — Accessed 2026-07-27.
+- [EF Core execute update and delete](https://learn.microsoft.com/ef/core/saving/execute-insert-update-delete) — Accessed 2026-07-27.
+- [EF Core migrations overview](https://learn.microsoft.com/ef/core/managing-schemas/migrations/) — Accessed 2026-07-27.

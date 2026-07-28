@@ -4,6 +4,7 @@
 
 `Microsoft.Extensions.Resilience` **10.8.0** — direct catalog package; Microsoft.Extensions integration that enriches Polly resilience telemetry with metadata and exception summaries.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 **Review trigger:** package or Polly version changes, target-framework changes, or .NET resilience telemetry/options changes.

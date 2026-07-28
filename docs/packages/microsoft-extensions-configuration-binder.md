@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | Binds `IConfiguration` sections to typed objects | Approved at composition boundaries |
+| `10.0.10` | Binds `IConfiguration` sections to typed objects | Companion; approved at composition boundaries |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

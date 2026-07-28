@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | Configuration contracts such as `IConfiguration` and `IConfigurationSection` | Approved foundation abstraction |
+| `10.0.10` | Configuration contracts such as `IConfiguration` and `IConfigurationSection` | Direct; approved foundation abstraction |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

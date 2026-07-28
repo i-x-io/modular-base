@@ -4,9 +4,10 @@
 
 `FluentResults` **4.0.0** — direct catalog package; result-pattern types that model successful values and expected failures.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
-**Review trigger:** `FluentResults` version changes, target-framework changes, or upstream result/error API changes.
+- **Review trigger:** `FluentResults` version changes, target-framework changes, or upstream result/error API changes.
 
 ## Decision and scope
 
@@ -80,7 +81,7 @@ Before upgrading, compile all composition and mapping code, then test multi-erro
 
 ## Integration with the catalog
 
-Use `fluentvalidation.md` for request validation; translate validation failures into the application result contract at the boundary. `polly.md` reports resilience outcomes; it should not be substituted for domain results.
+Use [FluentValidation](fluentvalidation.md) for request validation; translate validation failures into the application result contract at the boundary. [Polly](polly.md) reports resilience outcomes; it should not be substituted for domain results.
 
 See the [validation/results recipe](../recipes/fastendpoints-validation-results.md) and [`FluentResults` supply-chain entry](../package-guidance/supply-chain.md#fluentresults).
 

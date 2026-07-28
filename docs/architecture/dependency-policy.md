@@ -2,7 +2,7 @@
 
 ## Scope
 
-This repository is the dependency catalog for future .NET packages. `IX.Modularity.slnx` contains one non-packable `ArchitectureTest` project at `test/IX.Modularity.Architecture.Tests`; `src/` contains no production projects. Package entries in [`Directory.Packages.props`](../../Directory.Packages.props) are approved catalog entries, not proof that every package is used.
+This repository is the dependency catalog for future .NET packages. Its current solution contains the packable `IX.Modularity.Analyzers` project, its focused `IX.Modularity.Analyzers.Tests` project, and the repository `IX.Modularity.Architecture.Tests` project. See [project structure](project-structure.md) for the complete inventory and for the distinction between current projects and future library-layout conventions. Package entries in [`Directory.Packages.props`](../../Directory.Packages.props) are approved catalog entries, not proof that every package is used.
 
 ## SDK and language baseline
 

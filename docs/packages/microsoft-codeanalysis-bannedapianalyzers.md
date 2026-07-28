@@ -4,6 +4,7 @@
 
 `Microsoft.CodeAnalysis.BannedApiAnalyzers` **5.6.0** — universal catalog analyzer supplied through a shared `GlobalPackageReference` with private analyzer assets.
 
+- **Adoption:** Global analyzer
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 - **Review trigger:** Review when the analyzer pin, `BannedSymbols.txt` grammar/content, generated-code policy, or approved replacement APIs change.

@@ -4,9 +4,10 @@
 
 `AngleSharp` **1.6.0** — direct catalog package; standards-oriented HTML, SVG, MathML, and CSS DOM parser. The catalog owns the version for `net10.0` projects using C# 14.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
-**Review trigger:** `AngleSharp` version changes, target-framework changes, or upstream parser/loader behavior changes.
+- **Review trigger:** `AngleSharp` version changes, target-framework changes, or upstream parser/loader behavior changes.
 
 ## Decision and scope
 
@@ -60,7 +61,7 @@ Before upgrading, compare parser and loader migration notes, then regression-tes
 
 ## Integration with the catalog
 
-Use `fluentresults.md` for expected parse or projection failures in application workflows and `polly.md` only around explicit, bounded remote fetches. Keep validation of the projected data separate from DOM parsing.
+Use [FluentResults](fluentresults.md) for expected parse or projection failures in application workflows and [Polly](polly.md) only around explicit, bounded remote fetches. Keep validation of the projected data separate from DOM parsing.
 
 See the [`AngleSharp` supply-chain entry](../package-guidance/supply-chain.md#anglesharp).
 

@@ -8,7 +8,7 @@
 
 `<PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />`
 
-**Role:** instrumentation for outbound `HttpClient` requests and their standard HTTP client telemetry. **Status:** approved central-catalog dependency for services that make HTTP dependencies.
+**Role:** instrumentation for outbound `HttpClient` requests and their standard HTTP client telemetry. **Adoption:** Companion; use it with an OpenTelemetry SDK pipeline in services that make HTTP dependencies.
 
 ## Decision and scope
 

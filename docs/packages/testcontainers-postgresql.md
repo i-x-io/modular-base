@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `Testcontainers.PostgreSql` |
 | Pinned version | `4.13.0` |
-| Status | Approved test-only dependency |
+| Status | Direct; approved only for test-role projects that require disposable PostgreSQL infrastructure |
 | Role | Disposable PostgreSQL containers for integration tests |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
@@ -29,6 +29,7 @@ Own the container through xUnit's asynchronous lifecycle, pin the image, and obt
 
 ```csharp
 using Testcontainers.PostgreSql;
+using Xunit;
 
 public sealed class PostgreSqlFixture : IAsyncLifetime
 {

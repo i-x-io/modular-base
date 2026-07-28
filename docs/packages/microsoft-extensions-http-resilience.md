@@ -4,6 +4,7 @@
 
 `Microsoft.Extensions.Http.Resilience` **10.8.0** — direct catalog package; HTTP-specific resilience handlers for `IHttpClientFactory`, built on the Microsoft resilience/Polly integration.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 **Review trigger:** package or Polly version changes, target-framework changes, or .NET HTTP resilience default/telemetry changes.
@@ -14,7 +15,7 @@ Use as the default resilience integration for outbound `HttpClient` dependencies
 
 ## Recommended registration and use
 
-With central package management, add a versionless project reference:
+With Central Package Management, `PackageReference` entries omit `Version` because `Directory.Packages.props` is the package-version authority. `ProjectReference` entries express source-project dependencies and remain governed by project-role and boundary policy:
 
 ```xml
 <ItemGroup>

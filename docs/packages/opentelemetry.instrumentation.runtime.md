@@ -8,7 +8,7 @@
 
 `<PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.17.0" />`
 
-**Role:** .NET runtime metrics instrumentation. **Status:** approved central-catalog dependency for services where runtime resource/GC/thread-pool telemetry supports operational decisions.
+**Role:** .NET runtime metrics instrumentation. **Adoption:** Companion; use it with an OpenTelemetry SDK pipeline where runtime resource/GC/thread-pool telemetry supports operational decisions.
 
 ## Decision and scope
 

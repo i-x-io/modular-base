@@ -6,12 +6,15 @@ This recipe configures one EF Core `DbContext` for PostgreSQL, applies snake-cas
 
 ## Required packages
 
-The infrastructure project uses central package versions and a versionless project file:
+The repository-oriented
+`src/IX.Modularity.Orders.Adapters.PostgreSql/IX.Modularity.Orders.Adapters.PostgreSql.csproj`
+project uses central package versions:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IXModularityProjectRole>Adapter</IXModularityProjectRole>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="EFCore.NamingConventions" />
@@ -73,6 +76,7 @@ Configure all provider extensions on the same options chain:
 
 ```csharp
 using EntityFramework.Exceptions.PostgreSQL;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
@@ -145,16 +149,16 @@ Generate and review migration SQL rather than relying on runtime schema creation
 
 ```bash
 dotnet ef migrations add InitialOrders \
-  --project src/Infrastructure \
-  --startup-project src/Api
+  --project src/IX.Modularity.Orders.Adapters.PostgreSql \
+  --startup-project ../Orders.Api
 
 dotnet ef migrations script --idempotent \
-  --project src/Infrastructure \
-  --startup-project src/Api \
+  --project src/IX.Modularity.Orders.Adapters.PostgreSql \
+  --startup-project ../Orders.Api \
   --output artifacts/orders-migration.sql
 ```
 
-The design-time package/tooling belongs in the migration workflow, not the runtime example above. Review the generated table, column, key, index, and sequence names—especially `uq_orders_order_number`—and deploy through the repository's controlled migration identity and sequencing. An idempotent script does not make a risky rename or data transformation safe; rehearse locking, duration, recovery, and dependent SQL against production-like PostgreSQL.
+The design-time package/tooling belongs in the migration workflow, not the runtime example above. Here `../Orders.Api` represents the consuming standalone application's startup project; it is not a repository project-role example. Review the generated table, column, key, index, and sequence names—especially `uq_orders_order_number`—and deploy through the repository's controlled migration identity and sequencing. An idempotent script does not make a risky rename or data transformation safe; rehearse locking, duration, recovery, and dependent SQL against production-like PostgreSQL.
 
 ## Failure modes and operations
 

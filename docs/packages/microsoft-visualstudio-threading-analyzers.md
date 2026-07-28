@@ -4,6 +4,7 @@
 
 `Microsoft.VisualStudio.Threading.Analyzers` **18.7.23** — universal catalog analyzer supplied through a shared `GlobalPackageReference` with private analyzer assets.
 
+- **Adoption:** Global analyzer
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 - **Review trigger:** Review when the analyzer pin, `VSTHRDxxxx` defaults, supported host threading model, or custom threading AdditionalFiles change.

@@ -6,7 +6,7 @@
 
 | Package | Exact version | Role | Status |
 | --- | ---: | --- | --- |
-| `Microsoft.EntityFrameworkCore.Design` | `10.0.10` | Design-time APIs for EF tooling, scaffolding, and migrations | Cataloged; no migrations/design project exists |
+| `Microsoft.EntityFrameworkCore.Design` | `10.0.10` | Design-time APIs for EF tooling, scaffolding, and migrations | Companion; cataloged, but no migrations/design project exists |
 
 ## Decision and scope
 
@@ -91,12 +91,10 @@ Idempotent scripts consult migration history but still require review and contro
 
 ## Sources
 
-Accessed 2026-07-27.
-
-- [Central package catalog](../../Directory.Packages.props)
-- [Microsoft.EntityFrameworkCore.Design 10.0.10 on NuGet](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.Design/10.0.10)
-- [EF Core design-time tools architecture](https://learn.microsoft.com/ef/core/miscellaneous/internals/tools)
-- [Design-time DbContext creation](https://learn.microsoft.com/ef/core/cli/dbcontext-creation)
-- [EF Core migrations overview](https://learn.microsoft.com/ef/core/managing-schemas/migrations/)
-- [Managing EF Core migrations](https://learn.microsoft.com/ef/core/managing-schemas/migrations/managing)
-- [Applying migrations, scripts, and bundles](https://learn.microsoft.com/ef/core/managing-schemas/migrations/applying)
+- [Central package catalog](../../Directory.Packages.props) — Accessed 2026-07-27.
+- [Microsoft.EntityFrameworkCore.Design 10.0.10 on NuGet](https://www.nuget.org/packages/Microsoft.EntityFrameworkCore.Design/10.0.10) — Accessed 2026-07-27.
+- [EF Core design-time tools architecture](https://learn.microsoft.com/ef/core/miscellaneous/internals/tools) — Accessed 2026-07-27.
+- [Design-time DbContext creation](https://learn.microsoft.com/ef/core/cli/dbcontext-creation) — Accessed 2026-07-27.
+- [EF Core migrations overview](https://learn.microsoft.com/ef/core/managing-schemas/migrations/) — Accessed 2026-07-27.
+- [Managing EF Core migrations](https://learn.microsoft.com/ef/core/managing-schemas/migrations/managing) — Accessed 2026-07-27.
+- [Applying migrations, scripts, and bundles](https://learn.microsoft.com/ef/core/managing-schemas/migrations/applying) — Accessed 2026-07-27.

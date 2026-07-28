@@ -4,6 +4,7 @@
 
 `Meziantou.Analyzer` **3.0.132** — universal catalog analyzer supplied through a shared `GlobalPackageReference` with private analyzer assets.
 
+- **Adoption:** Global analyzer
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
 - **Review trigger:** Review when the analyzer pin, `MAxxxx` rule inventory/default severity, SDK analyzer set, or repository warning policy changes.

@@ -8,7 +8,7 @@
 | --- | --- |
 | Package | `Npgsql` |
 | Pinned version | `10.0.3` |
-| Status | Approved catalog dependency |
+| Status | Direct; approved for PostgreSQL ADO.NET access and data-source configuration |
 | Role | PostgreSQL ADO.NET driver and configured `NpgsqlDataSource` factory |
 
 ## Decision and scope

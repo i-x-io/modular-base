@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `xunit.runner.visualstudio` |
 | Pinned version | `3.1.5` |
-| Status | Approved test-only dependency for the VSTest alternative |
+| Status | Catalog-only; available only for an architecture-approved VSTest alternative |
 | Role | Visual Studio/VSTest adapter for xUnit v3 discovery and execution |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
@@ -32,6 +32,8 @@ Configure only an allowed test-role project and keep all references versionless:
 The adapter is build/test tooling and should not flow transitively to consumers. The repository's current `global.json` selects MTP, so using this alternative first requires an architecture-approved VSTest repository/run configuration (`test.runner` set to `VSTest`, or the MTP selection removed). Then validate CLI and IDE discovery with the same minimal test:
 
 ```csharp
+using Xunit;
+
 public sealed class DiscoveryTests
 {
     [Fact]

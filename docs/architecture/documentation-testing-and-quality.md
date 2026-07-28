@@ -42,6 +42,12 @@ The result diagnostics verify shapes and direct static patterns. Code review mus
 
 `IXM1001`–`IXM1005` and `IXM3001`–`IXM3003` are errors; `IXM2001` and `MA0109` are suggestions. `CS1591` is intentionally none. `make validate`, `make build`, `make test`, and `make format` are the documented public checks.
 
+## Markdown linting
+
+`make docs-lint` requires Markdownlint CLI 0.49.1 as a developer and CI-image prerequisite; it is not a repository package dependency. The command lints the root `README.md`, every Markdown file under `docs/`, `src/IX.Modularity.Analyzers/README.md`, and packaged analyzer documentation under `src/IX.Modularity.Analyzers/docs/`. The analyzer release records `src/IX.Modularity.Analyzers/AnalyzerReleases.Shipped.md` and `src/IX.Modularity.Analyzers/AnalyzerReleases.Unshipped.md` are excluded because they use the analyzer-release format rather than the governed documentation format.
+
+The repository configuration disables only `MD013`, so rendered prose and tables are not constrained to an 80-column source line length. Structural defaults, including `MD024`, `MD026`, and `MD033`, remain enabled; authors correct their findings in the owning document instead of adding broad suppressions.
+
 ## Authoritative references
 
 - [Analyzer index](analyzer-index.md)

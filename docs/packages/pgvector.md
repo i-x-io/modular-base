@@ -8,7 +8,7 @@
 | --- | --- |
 | Package | `Pgvector` |
 | Pinned version | `0.3.2` |
-| Status | Approved catalog dependency |
+| Status | Companion; use with Npgsql for pgvector type registration and values |
 | Role | .NET mappings for pgvector types and Npgsql type registration |
 
 ## Decision and scope

@@ -8,7 +8,7 @@
 | --- | --- |
 | Package | `Npgsql.EntityFrameworkCore.PostgreSQL` |
 | Pinned version | `10.0.3` |
-| Status | Approved catalog dependency |
+| Status | Companion; use with Microsoft.EntityFrameworkCore and Npgsql for PostgreSQL-backed EF Core access |
 | Role | EF Core provider for PostgreSQL types, migrations, SQL translation, JSON, enums, and full-text search |
 
 ## Decision and scope

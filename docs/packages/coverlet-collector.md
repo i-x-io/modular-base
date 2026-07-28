@@ -6,7 +6,7 @@
 | --- | --- |
 | Package | `coverlet.collector` |
 | Pinned version | `10.0.1` |
-| Status | Approved test-only dependency for the VSTest alternative |
+| Status | Catalog-only; approved test-only dependency for the VSTest alternative |
 | Role | VSTest data collector for cross-platform line and branch coverage |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |

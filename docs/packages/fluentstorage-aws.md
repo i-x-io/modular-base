@@ -7,7 +7,7 @@
 | Package | `FluentStorage.AWS` |
 | Pinned version | `8.0.10` |
 | Role | Amazon S3 implementation of FluentStorage `IStore` |
-| Status | Approved for S3 workloads that fit the shared contract; retain native S3 APIs for S3-specific controls |
+| Status | Companion; approved for S3 workloads that fit the shared contract; retain native S3 APIs for S3-specific controls |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
 | Review trigger | Any `FluentStorage.AWS`, AWS SDK, target-framework, S3 endpoint, credential-chain, retry-default, or bucket-policy change |

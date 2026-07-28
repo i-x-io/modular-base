@@ -23,7 +23,7 @@ The target contract is:
 
 ### Current solution contents
 
-`IX.Modularity.slnx` contains `test/IX.Modularity.Architecture.Tests`, a non-packable project with the `ArchitectureTest` role. It enforces the repository's architectural governance without adding a production project under `src/`. Build, restore, test, audit, outdated-package scanning, and SBOM generation therefore run against a real solution and project graph.
+`IX.Modularity.slnx` contains the packable `IX.Modularity.Analyzers` project, its focused `IX.Modularity.Analyzers.Tests` project, and the repository `IX.Modularity.Architecture.Tests` project. Build, restore, test, audit, outdated-package scanning, and SBOM generation therefore run against a real solution and project graph. See [project structure](project-structure.md) for the complete inventory; future library layouts are target conventions rather than current projects.
 
 The project role, permitted dependency direction, and rule force are defined by [project structure](project-structure.md), [architectural rules](architectural-rules.md), and [architecture terminology](terminology.md). This build document describes how the checks run; those documents remain the normative architecture contract.
 
@@ -35,9 +35,9 @@ Future projects inherit deterministic builds, portable PDBs, source embedding, r
 
 Use **CycloneDX JSON** as the repository SBOM output format. The checked-in local tool is `CycloneDX` `6.2.0`, exposed as `dotnet-CycloneDX`. CycloneDX is selected because the configured .NET generator natively produces a dependency BOM from solution/project input and supports an explicit JSON output format. SPDX is not a second generated format in this build: it is an alternative SBOM standard, not an additional authoritative artifact. Produce SPDX only if a downstream compliance consumer explicitly requires it, with that consumer’s validation rules recorded alongside the export.
 
-For the current root solution, `Sbom` writes `bom.cdx.json` beneath `artifacts/sbom/solutions/IX.Modularity/`. When no solution exists, it writes one BOM per discovered project beneath `artifacts/sbom/projects/<relative-entry>/`. The target owns this location and filename; callers do not override them.
+Run `make sbom` to generate the repository SBOM. For the current root solution, the `Sbom` target writes `bom.cdx.json` beneath `artifacts/sbom/solutions/IX.Modularity/`. When no solution exists, it writes one BOM per discovered project beneath `artifacts/sbom/projects/<relative-entry>/`. The target owns this location and filename; callers do not override them.
 
-For the current solution, the configured target executes this equivalent command:
+The configured target implements that public interface with the following equivalent command; this is explanatory rather than a second supported invocation:
 
 ```sh
 dotnet tool run dotnet-CycloneDX -- IX.Modularity.slnx \

@@ -6,7 +6,7 @@
 
 | Package | Exact version | Role | Status |
 | --- | ---: | --- | --- |
-| `EntityFrameworkCore.Exceptions.PostgreSQL` | `10.0.1` | PostgreSQL-aware classification of EF Core database update errors | Cataloged; no persistence error boundary compiled |
+| `EntityFrameworkCore.Exceptions.PostgreSQL` | `10.0.1` | PostgreSQL-aware classification of EF Core database update errors | Companion; no persistence error boundary compiled |
 
 ## Decision and scope
 

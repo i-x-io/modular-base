@@ -7,7 +7,7 @@
 | Package | `FluentStorage.Azure.Files` |
 | Pinned version | `8.0.10` |
 | Role | Azure Files implementation of FluentStorage `IStore` |
-| Status | Approved for file-share workloads; not interchangeable with Azure Blob Storage |
+| Status | Companion; approved for file-share workloads; not interchangeable with Azure Blob Storage |
 | Owner | IX |
 | Last reviewed | 2026-07-27 |
 | Review trigger | Any provider/Azure Files SDK or target-framework change, or a change to REST identity support, share limits, retry defaults, endpoint, SMB/NFS, or storage-account policy |

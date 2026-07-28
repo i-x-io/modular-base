@@ -8,7 +8,7 @@
 
 `<PackageVersion Include="OpenTelemetry" Version="1.17.0" />`
 
-**Role:** the OpenTelemetry .NET SDK package. It supplies SDK builders, providers, processors, samplers, resources, and the in-process pipeline for traces, metrics, and logs. **Status:** approved central-catalog dependency; add it to an application only when that application configures the SDK directly or through the hosting extensions.
+**Role:** the OpenTelemetry .NET SDK package. It supplies SDK builders, providers, processors, samplers, resources, and the in-process pipeline for traces, metrics, and logs. **Adoption:** Direct; add it to an application only when that application configures the SDK directly or through the hosting extensions.
 
 ## Decision and scope
 

@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | Host and hosted-service contracts including `IHost`, `IHostApplicationLifetime`, and `IHostedService` | Approved library-facing abstraction |
+| `10.0.10` | Host and hosted-service contracts including `IHost`, `IHostApplicationLifetime`, and `IHostedService` | Direct; approved library-facing abstraction |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

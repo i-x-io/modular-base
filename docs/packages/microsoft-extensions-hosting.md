@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | Generic Host implementation, configuration, DI, lifetime, and hosted-service integration | Approved application host implementation |
+| `10.0.10` | Generic Host implementation, configuration, DI, lifetime, and hosted-service integration | Direct; approved application host implementation |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |

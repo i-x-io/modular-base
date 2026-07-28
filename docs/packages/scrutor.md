@@ -4,9 +4,10 @@
 
 `Scrutor` **7.0.0** — direct catalog package; assembly scanning and service-decoration extensions for `Microsoft.Extensions.DependencyInjection`.
 
+- **Adoption:** Direct
 - **Owner:** IX
 - **Last reviewed:** 2026-07-27
-**Review trigger:** `Scrutor` version changes, target-framework changes, or Microsoft DI/scanning behavior changes.
+- **Review trigger:** `Scrutor` version changes, target-framework changes, or Microsoft DI/scanning behavior changes.
 
 ## Decision and scope
 
@@ -14,7 +15,7 @@ Use for narrowly bounded convention-based registration or well-defined decorator
 
 ## Recommended registration and use
 
-With central package management, add a versionless project reference:
+With central package management, add a versionless `PackageReference`:
 
 ```xml
 <ItemGroup>
@@ -25,24 +26,35 @@ With central package management, add a versionless project reference:
 Anchor scanning to a marker in an application-owned assembly, filter to the intended contract and namespace, and assign the lifetime explicitly:
 
 ```csharp
+using Microsoft.Extensions.DependencyInjection;
+
 public interface IApplicationAssemblyMarker { }
 public interface ICommandHandler<TCommand>
 {
     Task HandleAsync(TCommand command, CancellationToken cancellationToken);
 }
 
-builder.Services.Scan(scan => scan
-    .FromAssemblyOf<IApplicationAssemblyMarker>()
-    .AddClasses(classes => classes
-        .InNamespaces("Orders.Application.Commands")
-        .AssignableTo(typeof(ICommandHandler<>)))
-    .AsImplementedInterfaces()
-    .WithScopedLifetime());
+public static class ApplicationServiceRegistration
+{
+    public static IServiceCollection AddApplicationServices(
+        this IServiceCollection services)
+    {
+        services.Scan(scan => scan
+            .FromAssemblyOf<IApplicationAssemblyMarker>()
+            .AddClasses(classes => classes
+                .InNamespaces("Orders.Application.Commands")
+                .AssignableTo(typeof(ICommandHandler<>)))
+            .AsImplementedInterfaces()
+            .WithScopedLifetime());
+
+        return services;
+    }
+}
 ```
 
 `AddClasses` starts from public, non-abstract types. `AsImplementedInterfaces` registers every matching interface, so narrow the candidates first when a class implements infrastructure interfaces that should not be exposed.
 
-Decoration wraps an existing registration. Later decoration calls become outer wrappers, so keep the order visible and test it:
+Decoration wraps an existing registration. The following contextual fragment assumes the consuming application declares the shown service and decorator types. Later decoration calls become outer wrappers, so keep the order visible and test it:
 
 ```csharp
 builder.Services.AddScoped<IOrderService, OrderService>();
@@ -73,7 +85,7 @@ Compare supported frameworks and scan/decoration semantics, then snapshot servic
 
 ## Integration with the catalog
 
-The fixed-marker policy aligns with `fluentvalidation-dependencyinjectionextensions.md`. Decorators may invoke a DI-managed `polly-extensions.md` pipeline for non-HTTP work, but `microsoft-extensions-http-resilience.md` remains the preferred HTTP integration. Keep a single retry layer when these packages meet.
+The fixed-marker policy aligns with [FluentValidation.DependencyInjectionExtensions](fluentvalidation-dependencyinjectionextensions.md). Decorators may invoke a DI-managed [Polly.Extensions](polly-extensions.md) pipeline for non-HTTP work, but [Microsoft.Extensions.Http.Resilience](microsoft-extensions-http-resilience.md) remains the preferred HTTP integration. Keep a single retry layer when these packages meet.
 
 See the [`Scrutor` supply-chain entry](../package-guidance/supply-chain.md#scrutor).
 

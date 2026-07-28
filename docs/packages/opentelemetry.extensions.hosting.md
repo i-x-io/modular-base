@@ -8,7 +8,7 @@
 
 `<PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />`
 
-**Role:** integration between the OpenTelemetry SDK and the .NET Generic Host/ASP.NET Core dependency-injection and lifetime model. **Status:** approved central-catalog dependency and the standard registration path for hosted applications.
+**Role:** integration between the OpenTelemetry SDK and the .NET Generic Host/ASP.NET Core dependency-injection and lifetime model. **Adoption:** Companion; use it with the OpenTelemetry SDK as the standard registration path for hosted applications.
 
 ## Decision and scope
 
@@ -25,10 +25,11 @@ With central package management, add versionless references for the hosted SDK a
   <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
   <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
   <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+  <PackageReference Include="Npgsql.OpenTelemetry" />
 </ItemGroup>
 ```
 
-The following composition-root example uses the eight cataloged packages and one cataloged Npgsql integration. It is intended for an ASP.NET Core application; the same `builder.Services` configuration applies to a Generic Host.
+The following composition-root example uses the six direct references shown above. `OpenTelemetry`, `OpenTelemetry.Api`, and `Npgsql` are transitive dependencies in this composition; do not add direct references to them solely because their APIs are available. The example is intended for an ASP.NET Core application; the same `builder.Services` configuration applies to a Generic Host.
 
 ```csharp
 using Npgsql;
@@ -100,7 +101,7 @@ Upgrade this package with `OpenTelemetry`, `OpenTelemetry.Api`, and the configur
 - [OpenTelemetry](opentelemetry.md) is the SDK configured by this package.
 - [OpenTelemetry.Exporter.OpenTelemetryProtocol](opentelemetry.exporter.opentelemetryprotocol.md) configures the `AddOtlpExporter` calls.
 - [OpenTelemetry.Instrumentation.AspNetCore](opentelemetry.instrumentation.aspnetcore.md), [HTTP](opentelemetry.instrumentation.http.md), and [runtime](opentelemetry.instrumentation.runtime.md) add their signal-specific builders.
-- Use `Npgsql.OpenTelemetry` together with `.AddNpgsql()` for tracing and `.AddNpgsqlInstrumentation()` for metrics; see the Npgsql package guide.
+- Use [Npgsql.OpenTelemetry](npgsql.opentelemetry.md) together with `.AddNpgsql()` for tracing and `.AddNpgsqlInstrumentation()` for metrics; [Npgsql](npgsql.md) is transitive through that companion package in this composition.
 - See the catalog-wide [OpenTelemetry composition decision](../package-guidance/package-selection.md#opentelemetry-composition), the [OTLP observability recipe](../recipes/opentelemetry-otlp-postgresql.md), and the [hosting supply-chain entry](../package-guidance/supply-chain.md#opentelemetry-extensions-hosting).
 
 ## Security, performance, AOT, trimming, and operations

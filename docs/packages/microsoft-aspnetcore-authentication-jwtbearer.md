@@ -4,7 +4,7 @@
 
 | Package | Pinned version | Role | Status |
 | --- | --- | --- | --- |
-| `Microsoft.AspNetCore.Authentication.JwtBearer` | `10.0.10` | ASP.NET Core bearer-token authentication handler | Centrally pinned; catalog-only until an API project consumes it |
+| `Microsoft.AspNetCore.Authentication.JwtBearer` | `10.0.10` | ASP.NET Core bearer-token authentication handler | Catalog-only; centrally pinned until an API project consumes it |
 
 - Owner: IX
 - Last reviewed: 2026-07-27

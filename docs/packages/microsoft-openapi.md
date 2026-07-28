@@ -4,7 +4,7 @@
 
 | Package | Pinned version | Role | Status |
 | --- | --- | --- | --- |
-| `Microsoft.OpenApi` | `2.11.0` | OpenAPI.NET document object model used by the ASP.NET Core/FastEndpoints document pipeline | Centrally pinned; compatibility-constrained infrastructure |
+| `Microsoft.OpenApi` | `2.11.0` | OpenAPI.NET document object model used by the ASP.NET Core/FastEndpoints document pipeline | Companion; centrally pinned compatibility-constrained infrastructure |
 
 - Owner: IX
 - Last reviewed: 2026-07-27

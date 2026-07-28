@@ -4,7 +4,7 @@
 
 | Version | Role | Status |
 | --- | --- | --- |
-| `10.0.10` | Health-check contracts including `IHealthCheck`, `HealthCheckResult`, and `HealthCheckContext` | Approved library-facing abstraction |
+| `10.0.10` | Health-check contracts including `IHealthCheck`, `HealthCheckResult`, and `HealthCheckContext` | Direct; approved library-facing abstraction |
 
 | Documentation owner | Last reviewed | Review trigger |
 | --- | --- | --- |
