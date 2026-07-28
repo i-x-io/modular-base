@@ -14,13 +14,14 @@ environment and invokes the same NUKE targets that run locally.
 - central package management and committed lock files;
 - nullable reference types, warnings as errors, deterministic builds, public
   API analysis, banned APIs, and private analyzer dependencies;
-- a real package and a 24-test Microsoft Testing Platform test suite;
+- a real package, a 24-test Microsoft Testing Platform product suite, and 37
+  tests for the enterprise build infrastructure;
 - package, symbols-package, metadata, vulnerability, and CycloneDX SBOM
   validation;
 - pinned `pre-commit`, Markdownlint CLI2, Gitleaks, Typos, JSON-schema,
   actionlint, zizmor, and Conventional Commits hooks;
-- focused pull-request validation, trusted auto-merge, Dependabot, scheduled
-  maintenance, issue forms, and release automation; and
+- focused pull-request validation, API-only labeling, trusted auto-merge,
+  Dependabot, issue forms, and release automation; and
 - MinVer-derived prereleases for every merged pull request plus explicit stable
   releases selected by a `RELEASE:` pull-request title.
 
@@ -56,10 +57,15 @@ graph. The build intentionally exposes only outcome-oriented targets:
 | `Restore` | Restore tools and every managed project graph; pass `--update-locks` only for an intentional lock refresh. |
 | `Test` | Compile the repository, run every MTP suite, and reject missing tests. |
 | `CI` | Run `Test`, PR policy, formatting, package inspection, dependency audit, SBOM generation, repository checks, and history secret scanning. |
-| `Publish` | Run `CI` and `Test`, resolve the merged PR, plan and create the exact repository tag, repack all packages, publish them, and reconcile release evidence and assets. |
+| `PrepareRelease` | After `CI`, resolve the merged PR, create the exact local tag, repack all packages, and generate package-specific SBOMs plus immutable release evidence. Publication occurs only in the protected workflow job after attestation. |
 
 Generated product output is written below `artifacts/`. The running NUKE host
 uses `build/bin` and `build/obj`, keeping it outside cleanable product output.
+
+The workflow set keeps pull-request validation, labels, merge automation,
+scheduled assurance, and release responsibilities separate. Provider-neutral
+build and release preparation belong in NUKE; protected publication and GitHub
+attestation remain isolated workflow responsibilities.
 
 ## Install the Git hooks
 

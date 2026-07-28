@@ -1,3 +1,4 @@
+using ModularBase.Build.Validation;
 using Nuke.Common;
 
 namespace ModularBase.Build;
@@ -25,18 +26,22 @@ internal sealed partial class Build
         .Produces(
             Paths.PackagesDirectory / "*.nupkg",
             Paths.PackagesDirectory / "*.snupkg",
-            Paths.SbomDirectory / "bom.json")
+            Paths.SbomDirectory / "**" / "*.cdx.json")
         .Executes(() => Pipeline.CIAsync());
 
-    private Target Publish => target => target
-        .Description("Plans, tags, validates, evidences, and publishes the merged package release.")
-        .DependsOn(CI, Test)
+    private Target UpdatePackageCatalog => target => target
+        .Description("Regenerates the machine-readable package catalog from central package versions and guides.")
+        .Produces(Paths.RootDirectory / "eng" / "package-catalog.json")
+        .Executes(() => PackageCatalogFile.Write(Paths.RootDirectory));
+
+    private Target PrepareRelease => target => target
+        .Description("Plans, tags, validates, and evidences immutable release inputs without publishing them.")
+        .DependsOn(CI)
         .Requires(() => IsServerBuild)
         .Requires(() => GitHubToken)
-        .Requires(() => ReleaseToken)
         .Produces(
             Paths.ReleasePlan,
             Paths.ReleaseManifest,
             Paths.Checksums)
-        .Executes(() => Pipeline.PublishAsync());
+        .Executes(() => Pipeline.PrepareReleaseAsync());
 }

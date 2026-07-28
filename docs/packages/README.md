@@ -1,6 +1,10 @@
 # Package documentation index
 
-This index is maintained manually from [`Directory.Packages.props`](../../Directory.Packages.props). Keep it 1:1 with the central catalog: every catalog package must have exactly one entry here and one package guide.
+[`Directory.Packages.props`](../../Directory.Packages.props) is the version
+authority. The generated [`eng/package-catalog.json`](../../eng/package-catalog.json)
+is its machine-readable inventory and maps each documented entry to one guide.
+Run `./build.sh UpdatePackageCatalog` after changing a central package or guide;
+CI rejects a stale manifest, missing guide, mismatched heading, or stale version.
 
 `Adoption` states how a project may use a package:
 
@@ -150,7 +154,7 @@ Supporting references are maintained outside this one-to-one package index:
 
 | Package | Pinned version | Adoption | Catalog mechanism |
 | --- | ---: | --- | --- |
-| [`Meziantou.Analyzer`](meziantou-analyzer.md) | `3.0.132` | Global analyzer | GlobalPackageReference |
+| [`Meziantou.Analyzer`](meziantou-analyzer.md) | `3.0.134` | Global analyzer | GlobalPackageReference |
 | [`Microsoft.CodeAnalysis.BannedApiAnalyzers`](microsoft-codeanalysis-bannedapianalyzers.md) | `5.6.0` | Global analyzer | GlobalPackageReference |
 | [`Microsoft.VisualStudio.Threading.Analyzers`](microsoft-visualstudio-threading-analyzers.md) | `18.7.23` | Global analyzer | GlobalPackageReference |
 | [`Roslynator.Analyzers`](roslynator-analyzers.md) | `4.15.0` | Global analyzer | GlobalPackageReference |

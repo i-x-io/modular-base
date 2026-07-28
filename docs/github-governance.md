@@ -7,20 +7,21 @@ credential changes.
 
 ## Operating model
 
-The automation has four focused workflows:
+The automation has five focused workflows:
 
 | Workflow | Trigger | Responsibility |
 | --- | --- | --- |
 | `Pull request` | `pull_request`, `merge_group` | Read-only NUKE `CI`, dependency review, and one aggregate gate. |
-| `Auto-merge` | successful `Pull request` workflow run | Trusted API-only transition into auto-merge or the merge queue. |
-| `Release` | push to `main` | Invoke NUKE `Publish`, attest the released artifacts, and retain evidence. |
+| `Auto-merge` | successful `Pull request` run or submitted approval | Trusted API-only transition into auto-merge or the merge queue after the exact head has both validation and approval. |
+| `Release` | push to `main` | Prepare immutable inputs, attest them without a checkout, then publish through a protected environment. |
 | `Pull request labels` | `pull_request_target`, manual dispatch | API-only branch/path classification without executing pull-request code. |
+| `Scheduled assurance` | weekly, manual dispatch | Repeat the locked audit/repository gate and smoke-test build/test on Windows Server 2025. |
 
-NUKE owns validation, GitHub event/merged-PR interpretation, release
-classification, protected-tag and GitHub-release reconciliation, package
-inspection, version/tag agreement, SBOM generation, release assets, and
-evidence. GitHub Actions owns triggers, permissions, caching, Dependency
-Review, attestations, auto-merge orchestration, and artifact retention.
+NUKE owns validation, merged-PR interpretation, release classification,
+package inspection, version/tag agreement, package-specific SBOM generation,
+and checksummed evidence. GitHub Actions owns triggers, permissions, caching,
+Dependency Review, attestations, protected remote publication, auto-merge
+orchestration, and artifact retention.
 
 ## Repository merge settings
 
@@ -30,7 +31,7 @@ Configure:
 - squash merge as the only merge method;
 - pull-request title as the default squash subject;
 - automatic deletion of head branches;
-- auto-merge enabled;
+- auto-merge enabled only after the reviewed workflow is deployed;
 - merge commits and rebase merge disabled; and
 - default Actions workflow permissions set to read-only.
 
@@ -60,8 +61,11 @@ to the exact successful head SHA.
 configuration from the protected default branch, reads changed paths through
 GitHub, and must never check out or execute pull-request-controlled content.
 
-`Release` runs only after code reaches protected `main`. Treat that branch as
-the trust boundary for code that receives release permissions.
+`Release` runs only after code reaches protected `main`. Its `prepare` job has
+read-only repository access. The `attest` matrix downloads checksum-verified
+artifacts and never checks out repository code. Only `publish` enters a
+protected environment and receives the release secret; it cannot run until
+all package attestations succeed.
 
 ## Main branch ruleset
 
@@ -71,8 +75,8 @@ Create an active ruleset named `main` targeting the default branch. Configure:
 - require linear history and a pull request;
 - allow only squash merge;
 - require all conversations to be resolved;
-- require one approval when at least two independent maintainers are active;
-- dismiss stale approvals when approvals are required;
+- require one code-owner approval for every pull request;
+- dismiss stale approvals and require approval of the latest push;
 - disallow ruleset bypass for normal operation; and
 - require the exact check `Pull request gate` from GitHub Actions.
 
@@ -88,29 +92,29 @@ applicable jobs succeed.
 
 ## Release tag ruleset and credential
 
-Create an active tag ruleset named `repository release tags` targeting:
+Create an active tag ruleset named `release tags` targeting:
 
 ```text
 v*
 ```
 
-Restrict creation, update, and deletion and block force updates. NUKE
-`Publish` is idempotent: an existing tag is accepted only when it already
-points to the pushed `main` commit. A conflicting remote tag fails without
-mutation.
+Restrict creation, update, and deletion and block force updates. Publication
+fails if a tag already exists; published releases are never reconciled or
+mutated. GitHub immutable releases must remain enabled.
 
-Store `RELEASE_TOKEN` as a repository Actions secret. Prefer a short-lived,
-organization-owned GitHub App installation token. If that is not yet
-available, use a fine-grained personal access token limited to this repository
-with Contents write permission and the shortest practical expiration. Add only
-that App or token owner to the tag-ruleset bypass list. Record ownership and
-expiry privately and rotate before expiry.
+Store `RELEASE_TOKEN` in both `release-prerelease` and `release-stable`, not at
+repository scope. Prefer a short-lived, organization-owned GitHub App
+installation token. Until that exists, use a fine-grained personal access
+token limited to this repository with Contents write permission and the
+shortest practical expiration. Add only that App or token owner to the tag
+ruleset bypass list. Record ownership and expiry privately and rotate before
+expiry. There is no job-token fallback.
 
-The workflow falls back to its job token where repository policy permits it,
-but a protected tag ruleset should require the dedicated credential. The job
-token separately receives pull-request read and package write permissions and
-is passed as `GitHubToken`; NUKE derives owner, repository, and package source
-from `[GitRepository]`.
+`release-prerelease` accepts only protected branches. `release-stable` also
+requires approval by the maintainers team. Stable intent must originate in
+this repository on `release/*`, use `RELEASE: <description>`, and carry the
+`stable-release-approved` label. The job token publishes packages; the
+environment secret is used only for the protected tag and GitHub release.
 
 ## GitHub Packages and release evidence
 
@@ -128,11 +132,15 @@ least-privilege credential with `read:packages`. Never commit a token to
 Each release must contain:
 
 - the `.nupkg` and `.snupkg` assets;
-- the CycloneDX JSON SBOM;
+- one uniquely named CycloneDX JSON SBOM per package;
 - `release-plan.json` as a release asset and retained Actions evidence;
 - `release-manifest.json` and `SHA256SUMS` as release assets and retained
   evidence; and
 - GitHub provenance and SBOM attestations.
+
+Validation diagnostics are retained for 14 days. The complete package, SBOM,
+plan, manifest, and checksum evidence produced by a release is retained as one
+Actions artifact for 30 days in addition to the release assets.
 
 Ordinary merges must be marked prerelease and must not become the latest
 release. Only `RELEASE:` merges are stable and update the latest-release
@@ -150,16 +158,21 @@ Enable:
 
 The repository additionally enforces locked restore, NuGet audit, Gitleaks,
 action SHA pinning, actionlint, zizmor, package inspection, and SBOM generation.
-Add CodeQL default setup after verifying its merge-queue check name, then make
-that exact check required if desired.
+CodeQL default setup is enabled for Actions and C# with the extended local and
+remote threat model. The initial run completed successfully. Test-fixture path
+alerts were dismissed as test-only and the build-owned SBOM directory finding
+as a documented false positive; no open alert remains. Confirm default setup on
+a merge-queue commit before adding its check names to the ruleset.
 
-## Bootstrap and reconciliation
+## Reconciliation procedure
 
-1. Push the reviewed automation to `main` before enabling automatic release.
+1. Push the reviewed automation to `main` before enabling auto-merge or release.
 2. Run a test pull request so GitHub records `Pull request gate`.
 3. Enable auto-merge, squash-only merging, the merge queue, and the `main`
    ruleset.
-4. Install `RELEASE_TOKEN` and the immutable release-tag ruleset.
+4. Install `RELEASE_TOKEN` separately in both release environments, replace
+   the maintainer-team tag bypass with the dedicated GitHub App, and remove the
+   repository-scoped secret.
 5. Merge an ordinary test pull request and verify prerelease package, tag,
    attestations, assets, and generated notes.
 6. Merge a controlled `RELEASE:` pull request and verify promotion to a stable
@@ -170,3 +183,27 @@ that exact check required if desired.
 Rulesets remain configured in GitHub rather than synchronized from a
 token-bearing repository script. Record material settings changes in an issue
 or ADR so external policy remains auditable.
+
+## Current reconciliation status
+
+The enterprise-pipeline rollout was reconciled on 2026-07-28 through
+[pull request #15](https://github.com/i-x-io/modular-base/pull/15). The external
+state was verified as follows:
+
+| Control | Verified state |
+| --- | --- |
+| Default branch | `main`; squash-only and automatic head-branch deletion. Auto-merge is temporarily disabled until the reviewed workflow reaches `main`. |
+| Branch ruleset | Active `main` ruleset; one code-owner approval, stale-review dismissal, latest-push approval, resolved conversations, merge queue, and exact `Pull request gate` check are required; deletion, force pushes, bypass, and non-linear history are blocked. |
+| Tag and release immutability | Active `release tags` ruleset targeting `v*`; GitHub immutable releases are enabled. The current team-wide tag bypass still needs replacement by a dedicated App. |
+| Release environments | `release-prerelease` accepts protected branches; `release-stable` additionally requires maintainers-team approval. The existing repository-scoped `RELEASE_TOKEN` still needs to be re-created in both environments and then removed from repository scope. |
+| Workflow set | `Auto-merge` and `Release` are intentionally disabled during rollout. `Pull request`, `Pull request labels`, and Dependabot remain active; `Scheduled assurance` becomes available after merge. |
+| Code scanning | CodeQL default setup is configured for Actions and C# with `remote_and_local` threat modeling. The initial run passed and all 18 path findings were triaged with no open alert; merge-queue behavior remains to be confirmed before making checks required. |
+| Stable release | [`v0.1.0`](https://github.com/i-x-io/modular-base/releases/tag/v0.1.0) targets merge commit `c0deee6f8ee7dcc78791c44c51ce5c5d9c1dea90` and is the latest stable release. |
+| Published evidence | Package, symbols package, CycloneDX SBOM, schema-v2 plan and manifest, checksums, SLSA provenance, CycloneDX attestation, and retained Actions evidence were verified. |
+| Labeling | The API-only labeler successfully synchronized branch/path labels without checking out pull-request content. |
+
+The stable `RELEASE:` path, draft exclusion, ready-for-review validation, and
+merge-group validation have production evidence. The ordinary-prerelease path
+is covered by build tests but still needs a controlled remote smoke release.
+Direct-push and conflicting-tag failures are policy invariants and should be
+tested only in a disposable repository or other non-production fixture.

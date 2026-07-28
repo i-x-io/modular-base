@@ -35,7 +35,6 @@ internal static class BuildComposition
         var dotNet = new DotNetToolchain(paths, policy.Validation);
         var packages = new PackageValidator(paths);
         var dependencies = new DependencyValidator(paths, commands);
-        var githubRelease = new GitHubReleaseClient(identity);
         var pullRequests = new GitHubPullRequestClient(identity);
         var releasePolicy = new ReleasePolicy(policy.Release);
         var publisher = new ReleasePublisher(
@@ -45,9 +44,9 @@ internal static class BuildComposition
             dotNet,
             commands,
             packages,
+            dependencies,
             releasePolicy,
-            new ReleaseEvidenceWriter(paths, toolchain),
-            githubRelease);
+            new ReleaseEvidenceWriter(paths, toolchain));
         return new(
             environment,
             parameters,
@@ -55,7 +54,7 @@ internal static class BuildComposition
             dotNet,
             packages,
             dependencies,
-            new RepositoryValidator(commands),
+            new RepositoryValidator(paths, commands),
             pullRequests,
             publisher);
     }

@@ -6,6 +6,12 @@ namespace ModularBase.Build.Tooling;
 
 internal sealed record ToolchainVersions(string DotNetSdk, string Nuke)
 {
+    public string? CycloneDx
+    {
+        get;
+        init;
+    }
+
     public static ToolchainVersions Read(AbsolutePath rootDirectory)
     {
         ArgumentNullException.ThrowIfNull(rootDirectory);
@@ -25,6 +31,25 @@ internal sealed record ToolchainVersions(string DotNetSdk, string Nuke)
                 StringComparison.Ordinal))
             .Attribute("Version")?.Value
             ?? throw new InvalidDataException("Directory.Packages.props does not define Nuke.Common.");
-        return new(sdkVersion, nukeVersion);
+        AbsolutePath toolManifestPath = rootDirectory / ".config" / "dotnet-tools.json";
+        string? cycloneDxVersion = File.Exists(toolManifestPath)
+            ? ReadCycloneDxVersion(toolManifestPath)
+            : null;
+        return new(sdkVersion, nukeVersion)
+        {
+            CycloneDx = cycloneDxVersion,
+        };
+    }
+
+    private static string ReadCycloneDxVersion(string path)
+    {
+        using var toolManifest = JsonDocument.Parse(File.ReadAllText(path));
+        return toolManifest.RootElement
+            .GetProperty("tools")
+            .GetProperty("cyclonedx")
+            .GetProperty("version")
+            .GetString()
+            ?? throw new InvalidDataException(
+                ".config/dotnet-tools.json does not define cyclonedx.version.");
     }
 }

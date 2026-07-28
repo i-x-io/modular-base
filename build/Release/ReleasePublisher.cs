@@ -13,9 +13,9 @@ internal sealed class ReleasePublisher(
     DotNetToolchain dotNet,
     CommandRunner commands,
     PackageValidator packageValidator,
+    DependencyValidator dependencyValidator,
     ReleasePolicy releasePolicy,
-    ReleaseEvidenceWriter evidence,
-    GitHubReleaseClient github)
+    ReleaseEvidenceWriter evidence)
 {
     private readonly BuildPaths _paths = paths ?? throw new ArgumentNullException(nameof(paths));
     private readonly RepositoryModel _repository = repository
@@ -27,23 +27,20 @@ internal sealed class ReleasePublisher(
         ?? throw new ArgumentNullException(nameof(commands));
     private readonly PackageValidator _packageValidator = packageValidator
         ?? throw new ArgumentNullException(nameof(packageValidator));
+    private readonly DependencyValidator _dependencyValidator = dependencyValidator
+        ?? throw new ArgumentNullException(nameof(dependencyValidator));
     private readonly ReleasePolicy _releasePolicy = releasePolicy
         ?? throw new ArgumentNullException(nameof(releasePolicy));
     private readonly ReleaseEvidenceWriter _evidence = evidence
         ?? throw new ArgumentNullException(nameof(evidence));
-    private readonly GitHubReleaseClient _github = github
-        ?? throw new ArgumentNullException(nameof(github));
-
-    public async Task PublishAsync(
+    public async Task PrepareAsync(
         IReadOnlyCollection<PackageInspection> candidatePackages,
         PullRequestContext pullRequest,
-        PublishCredentials credentials,
         BuildConfiguration configuration,
         DateTimeOffset createdAtUtc)
     {
         ArgumentNullException.ThrowIfNull(candidatePackages);
         ArgumentNullException.ThrowIfNull(pullRequest);
-        ArgumentNullException.ThrowIfNull(credentials);
 
         ReleasePlan plan = _releasePolicy.CreatePlan(
             candidatePackages,
@@ -51,12 +48,15 @@ internal sealed class ReleasePublisher(
             _identity.Commit);
         _evidence.WritePlan(plan);
 
-        _ = await _commands.RunAsync("git", ["tag", "--force", plan.Tag, plan.Commit]).ConfigureAwait(false);
+        _ = await _commands.RunAsync("git", ["tag", plan.Tag, plan.Commit]).ConfigureAwait(false);
         _dotNet.Pack(_repository.PackageProjects, configuration, rebuild: true);
         IReadOnlyList<PackageInspection> taggedPackages = _packageValidator.InspectAll(
             _repository.PackageProjects,
             _identity.Commit);
         ReleasePolicy.ValidateTaggedPackages(plan, taggedPackages);
+        IReadOnlyList<string> sboms = await _dependencyValidator.GenerateSbomsAsync(
+            taggedPackages,
+            configuration).ConfigureAwait(false);
 
         string[] evidenceInputs = [
             .. taggedPackages.SelectMany(package => new[]
@@ -64,7 +64,7 @@ internal sealed class ReleasePublisher(
                 (string)package.PackageFile,
                 (string)package.SymbolsPackageFile,
             }),
-            .. Directory.GetFiles(_paths.SbomDirectory, "*.json", SearchOption.AllDirectories),
+            .. sboms,
             _paths.ReleasePlan,
         ];
         _ = _evidence.CreateManifest(
@@ -75,26 +75,8 @@ internal sealed class ReleasePublisher(
             configuration,
             createdAtUtc);
 
-        await _github.EnsureRemoteTagAsync(plan.Tag, plan.Commit, credentials.ReleaseToken)
-            .ConfigureAwait(false);
-        _dotNet.Publish(
-            [.. taggedPackages.Select(package => (string)package.PackageFile)],
-            _identity.PackageSource,
-            credentials.GitHubToken);
-
-        string[] releaseAssets = [
-            .. evidenceInputs.Where(path => !string.Equals(
-                path,
-                _paths.ReleasePlan,
-                StringComparison.OrdinalIgnoreCase)),
-            _paths.ReleasePlan,
-            _paths.ReleaseManifest,
-            _paths.Checksums,
-        ];
-        await _github.ReconcileReleaseAsync(plan, releaseAssets, credentials.ReleaseToken)
-            .ConfigureAwait(false);
         Log.Information(
-            "Published {PackageCount} package(s) and reconciled GitHub release {Tag}",
+            "Prepared {PackageCount} immutable package(s) and release evidence for {Tag}",
             taggedPackages.Count,
             plan.Tag);
     }

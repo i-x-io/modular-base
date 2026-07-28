@@ -13,4 +13,10 @@ internal sealed record ReleaseManifest(
     IReadOnlyList<ReleaseArtifact> Artifacts)
 {
     public const int CurrentSchemaVersion = 2;
+
+    public string? CycloneDxVersion
+    {
+        get;
+        init;
+    }
 }

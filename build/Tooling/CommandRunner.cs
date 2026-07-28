@@ -6,6 +6,7 @@ namespace ModularBase.Build.Tooling;
 
 internal sealed class CommandRunner(string workingDirectory)
 {
+    private const int MaximumCapturedCharacters = 1_000_000;
     private static readonly TimeSpan s_defaultTimeout = TimeSpan.FromMinutes(10);
     private readonly string _workingDirectory = Path.GetFullPath(
         workingDirectory ?? throw new ArgumentNullException(nameof(workingDirectory)));
@@ -15,7 +16,8 @@ internal sealed class CommandRunner(string workingDirectory)
         IReadOnlyList<string> arguments,
         TimeSpan? timeout = null,
         IReadOnlySet<int>? allowedExitCodes = null,
-        IReadOnlySet<int>? secretArgumentIndexes = null)
+        IReadOnlySet<int>? secretArgumentIndexes = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(executable);
         ArgumentNullException.ThrowIfNull(arguments);
@@ -34,9 +36,12 @@ internal sealed class CommandRunner(string workingDirectory)
             throw new InvalidOperationException($"Failed to start executable '{executable}'.");
         }
 
-        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-        Task<string> errorTask = process.StandardError.ReadToEndAsync();
-        using var cancellation = new CancellationTokenSource(effectiveTimeout);
+        Task<string[]> outputTask = ReadLinesAsync(process.StandardOutput);
+        Task<string[]> errorTask = ReadLinesAsync(process.StandardError);
+        using var timeoutCancellation = new CancellationTokenSource(effectiveTimeout);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            timeoutCancellation.Token,
+            cancellationToken);
         try
         {
             await process.WaitForExitAsync(cancellation.Token).ConfigureAwait(false);
@@ -44,13 +49,16 @@ internal sealed class CommandRunner(string workingDirectory)
         catch (OperationCanceledException exception)
         {
             TryKill(process);
+            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+            _ = await Task.WhenAll(outputTask, errorTask).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
             throw new TimeoutException(
                 $"Command '{executable}' exceeded its {effectiveTimeout} timeout.",
                 exception);
         }
 
-        string[] output = SplitLines(await outputTask.ConfigureAwait(false));
-        string[] error = SplitLines(await errorTask.ConfigureAwait(false));
+        string[] output = await outputTask.ConfigureAwait(false);
+        string[] error = await errorTask.ConfigureAwait(false);
         foreach (string line in output)
         {
             Log.Debug("{CommandOutput}", line);
@@ -98,11 +106,36 @@ internal sealed class CommandRunner(string workingDirectory)
         Log.Information("> {Executable} {Arguments}", executable, displayedArguments);
     }
 
-    private static string[] SplitLines(string value)
+    private static async Task<string[]> ReadLinesAsync(StreamReader reader)
     {
-        return value.Split(
-            ["\r\n", "\n"],
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var lines = new List<string>();
+        int capturedCharacters = 0;
+        bool truncated = false;
+        while (await reader.ReadLineAsync(CancellationToken.None).ConfigureAwait(false) is { } line)
+        {
+            string trimmed = line.Trim();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            if (capturedCharacters + trimmed.Length <= MaximumCapturedCharacters)
+            {
+                lines.Add(trimmed);
+                capturedCharacters += trimmed.Length;
+            }
+            else
+            {
+                truncated = true;
+            }
+        }
+
+        if (truncated)
+        {
+            lines.Add($"[output truncated after {MaximumCapturedCharacters} characters]");
+        }
+
+        return [.. lines];
     }
 
     private static void TryKill(Process process)

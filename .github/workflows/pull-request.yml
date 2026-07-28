@@ -22,7 +22,7 @@ concurrency:
 jobs:
   validate:
     name: Validate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Check out candidate revision
@@ -71,7 +71,7 @@ jobs:
   dependency-review:
     name: Dependency review
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -91,8 +91,10 @@ jobs:
             Apache-2.0,
             BSD-2-Clause,
             BSD-3-Clause,
+            ISC,
             PostgreSQL,
-            LGPL-3.0-only
+            Zlib
+          allow-dependencies-licenses: pkg:nuget/SonarAnalyzer.CSharp
 
   gate:
     name: Pull request gate
@@ -100,7 +102,7 @@ jobs:
     needs:
       - validate
       - dependency-review
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
       DEPENDENCY_REVIEW_RESULT: ${{ needs.dependency-review.result }}

@@ -6,23 +6,75 @@ on:
       - main
 
 permissions:
-  artifact-metadata: write
-  attestations: write
-  contents: write
-  id-token: write
-  packages: write
-  pull-requests: read
+  contents: read
 
 concurrency:
   group: release-main
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Plan, validate, and publish
-    runs-on: ubuntu-latest
+  prepare:
+    name: Prepare immutable release inputs
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      packages: ${{ steps.metadata.outputs.packages }}
+      release-environment: ${{ steps.authorization.outputs.release-environment }}
+      tag: ${{ steps.metadata.outputs.tag }}
+      version: ${{ steps.metadata.outputs.version }}
+      prerelease: ${{ steps.metadata.outputs.prerelease }}
     steps:
+      - name: Authorize release intent
+        id: authorization
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const candidates = await github.paginate(
+              github.rest.repos.listPullRequestsAssociatedWithCommit,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+                per_page: 100,
+              },
+            );
+            const matches = candidates.filter(pr =>
+              pr.merged_at
+              && pr.base.ref === 'main'
+              && pr.base.repo.full_name === context.repo.owner + '/' + context.repo.repo,
+            );
+            if (matches.length !== 1) {
+              core.setFailed(`Expected exactly one merged pull request for ${context.sha}; found ${matches.length}.`);
+              return;
+            }
+
+            const pull = matches[0];
+            const stable = /^RELEASE:\s+\S/.test(pull.title);
+            if (stable) {
+              const labels = new Set(pull.labels.map(label => label.name));
+              if (pull.head.repo.full_name !== context.repo.owner + '/' + context.repo.repo) {
+                core.setFailed('Stable releases must originate in this repository.');
+                return;
+              }
+              if (!pull.head.ref.startsWith('release/')) {
+                core.setFailed('Stable releases must originate from a release/* branch.');
+                return;
+              }
+              if (!labels.has('stable-release-approved')) {
+                core.setFailed('Stable releases require the stable-release-approved label.');
+                return;
+              }
+            }
+
+            core.setOutput('stable', String(stable));
+            core.setOutput(
+              'release-environment',
+              stable ? 'release-stable' : 'release-prerelease',
+            );
+
       - name: Check out merged revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -51,31 +103,145 @@ jobs:
       - name: Install pre-commit
         run: python -m pip install --disable-pip-version-check pre-commit==4.6.1
 
-      - name: Validate, plan, tag, and publish
+      - name: Validate and prepare release inputs
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
-        run: ./build.sh Publish --configuration Release
+        run: ./build.sh PrepareRelease --configuration Release
 
-      - name: Attest released package provenance
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
-        with:
-          subject-path: artifacts/packages/*.*nupkg
+      - name: Read and verify release metadata
+        id: metadata
+        env:
+          AUTHORIZED_STABLE: ${{ steps.authorization.outputs.stable }}
+        run: |
+          set -euo pipefail
+          plan=artifacts/release/release-plan.json
+          test "$(jq -r '.commit' "$plan")" = "$GITHUB_SHA"
+          planned_stable=$(jq -r '(.isPrerelease | not)' "$plan")
+          test "$planned_stable" = "$AUTHORIZED_STABLE"
+          {
+            echo "packages=$(jq -c '.packages' "$plan")"
+            echo "tag=$(jq -r '.tag' "$plan")"
+            echo "version=$(jq -r '.version' "$plan")"
+            echo "prerelease=$(jq -r '.isPrerelease' "$plan")"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Attest released package SBOM
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
-        with:
-          subject-path: artifacts/packages/*.nupkg
-          sbom-path: artifacts/sbom/bom.json
-
-      - name: Retain release evidence
+      - name: Retain prepared release inputs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-${{ github.sha }}
-          path: |
-            artifacts/packages/*.*nupkg
-            artifacts/sbom/**
-            artifacts/release/**
-            artifacts/release-evidence/**
+          path: artifacts
           if-no-files-found: error
           retention-days: 30
+
+  attest:
+    name: Attest ${{ matrix.package.packageId }}
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.prepare.outputs.packages) }}
+    permissions:
+      artifact-metadata: write
+      attestations: write
+      contents: read
+      id-token: write
+    steps:
+      - name: Download prepared release inputs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-${{ github.sha }}
+          path: artifacts
+
+      - name: Verify prepared checksums
+        run: sha256sum --check artifacts/release-evidence/SHA256SUMS
+
+      - name: Attest package provenance
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-path: artifacts/packages/${{ matrix.package.packageId }}.${{ matrix.package.version }}.nupkg
+
+      - name: Attest package SBOM
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-path: artifacts/packages/${{ matrix.package.packageId }}.${{ matrix.package.version }}.nupkg
+          sbom-path: artifacts/sbom/${{ matrix.package.packageId }}/${{ matrix.package.packageId }}.cdx.json
+
+  publish:
+    name: Publish protected release
+    needs:
+      - prepare
+      - attest
+    environment: ${{ needs.prepare.outputs.release-environment }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download attested release inputs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-${{ github.sha }}
+          path: artifacts
+
+      - name: Verify prepared checksums
+        run: sha256sum --check artifacts/release-evidence/SHA256SUMS
+
+      - name: Set up .NET package client
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: "10.0.302"
+
+      - name: Create draft, publish packages, and finalize release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          PACKAGE_TOKEN: ${{ github.token }}
+          RELEASE_PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        # zizmor: ignore[use-trusted-publishing] GitHub Packages requires its scoped Actions token.
+        run: |
+          set -euo pipefail
+          test -n "$GH_TOKEN"
+          test "$(jq -r '.commit' artifacts/release/release-plan.json)" = "$GITHUB_SHA"
+          test "$(jq -r '.tag' artifacts/release/release-plan.json)" = "$RELEASE_TAG"
+
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Tag $RELEASE_TAG already exists; refusing to reconcile a published release." >&2
+            exit 1
+          fi
+
+          release_args=(
+            "$RELEASE_TAG"
+            --repo "$GITHUB_REPOSITORY"
+            --target "$GITHUB_SHA"
+            --title "$RELEASE_VERSION"
+            --generate-notes
+            --draft
+          )
+          if [[ "$RELEASE_PRERELEASE" == "true" ]]; then
+            release_args+=(--prerelease)
+          else
+            release_args+=(--latest)
+          fi
+          gh release create "${release_args[@]}"
+
+          for package in artifacts/packages/*.nupkg; do
+            dotnet nuget push "$package" \
+              --source "https://nuget.pkg.github.com/$GITHUB_REPOSITORY_OWNER/index.json" \
+              --api-key "$PACKAGE_TOKEN"
+          done
+
+          shopt -s nullglob
+          assets=(
+            artifacts/packages/*.nupkg
+            artifacts/packages/*.snupkg
+            artifacts/sbom/*/*.cdx.json
+            artifacts/release/release-plan.json
+            artifacts/release-evidence/release-manifest.json
+            artifacts/release-evidence/SHA256SUMS
+          )
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --repo "$GITHUB_REPOSITORY"
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false

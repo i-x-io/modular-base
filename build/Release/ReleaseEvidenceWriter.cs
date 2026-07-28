@@ -62,7 +62,10 @@ internal sealed class ReleaseEvidenceWriter(BuildPaths paths, ToolchainVersions 
             _toolchain.Nuke,
             createdAtUtc,
             releasePackages,
-            artifacts);
+            artifacts)
+        {
+            CycloneDxVersion = _toolchain.CycloneDx,
+        };
 
         _ = _paths.ReleaseEvidenceDirectory.CreateOrCleanDirectory();
         WriteJson(_paths.ReleaseManifest, manifest);
