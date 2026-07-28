@@ -1,6 +1,9 @@
 [default]
 locale = "en"
 
+[files]
+extend-exclude = ["**/CHANGELOG.md"]
+
 [default.extend-words]
 # NuGet author attribution for Npgsql packages.
 Yoh = "Yoh"

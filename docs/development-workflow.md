@@ -123,7 +123,11 @@ pre-commit run gitleaks-repository --all-files --hook-stage manual
 Markdownlint, Typos, JSON formatting, and basic hygiene hooks can edit files.
 Gitleaks, schema validation, actionlint, and zizmor only report findings.
 NuGet-generated `packages.lock.json` files are syntax-checked but excluded from
-the generic JSON autoformatter; only `UpdateLocks` should rewrite them.
+the generic JSON autoformatter; only `UpdateLocks` should rewrite them. Release
+Please likewise owns `.release-please-manifest.json` and package
+`CHANGELOG.md` files. The manifest remains JSON syntax-checked, and changelogs
+remain covered by hygiene and secret checks, but generic formatters and Typos
+do not rewrite either generated format in a release pull request.
 
 ## NUKE target graph
 
