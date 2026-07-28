@@ -221,6 +221,20 @@ therefore validates the combined commit that would reach `main`, not only the
 individual pull-request head. Use squash as the queue merge method and delete
 the head branch after merge.
 
+Issue forms apply the initial namespaced type and triage labels. Pull requests
+are classified by branch type and changed paths with the official GitHub
+Labeler action. The labeler reads the base branch configuration through the
+API; it never checks out or executes pull-request code. Labels are triage
+metadata, not substitutes for required checks, review, or release notes.
+
+After either CI or pull-request policy completes, a trusted base-branch
+workflow maintains one `Automated pull-request result` comment. It includes
+change statistics, current labels, links and states for every required check,
+dependency-graph change counts, the enforced dependency policy, and the NUKE
+guarantees behind each platform validation. The comment is updated in place so
+synchronizing a branch does not create notification noise. It is informational;
+the required checks and merge-queue run remain authoritative.
+
 ## Dependency updates
 
 Dependabot checks NuGet, GitHub Actions, pre-commit hooks, and the .NET SDK each
@@ -258,10 +272,17 @@ generic MinVer injection cannot express this package-specific tag prefix.
 
 Release Please reads conventional commits on `main` and maintains a release
 pull request that updates `src/IX.Modularity/version.txt` and
-`src/IX.Modularity/CHANGELOG.md`. Merging that pull request creates the GitHub
-release and exact component tag. The release workflow then checks out that tag,
-runs `Publish`, compares the tag version with the packed package version, and
-publishes to `https://nuget.pkg.github.com/i-x-io/index.json`.
+`src/IX.Modularity/CHANGELOG.md`. Its generated version section is also the
+release pull-request summary and, after merge, the GitHub release message. This
+keeps commits, the checked-in changelog, and published release notes aligned;
+do not write a second release message by hand. Consumer-facing `feat`, `fix`,
+`perf`, `refactor`, `docs`, and `revert` commits are grouped into explicit
+sections, while internal build, CI, test, style, and chore commits stay hidden.
+
+Merging the release pull request creates the exact component tag and GitHub
+release. The release workflow then checks out that tag, runs `Publish`, compares
+the tag version with the packed package version, and publishes to
+`https://nuget.pkg.github.com/i-x-io/index.json`.
 
 Do not manually edit the manifest version, create a release tag, or call
 `Publish` from a workstation. Publishing requires GitHub Actions server context

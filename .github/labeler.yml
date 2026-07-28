@@ -1,0 +1,96 @@
+changed-files-labels-limit: 10
+max-files-changed: 500
+
+"type: feature":
+  - head-branch: '^feat/'
+
+"type: bug":
+  - head-branch: '^fix/'
+
+"type: documentation":
+  - head-branch: '^docs/'
+
+"type: tests":
+  - head-branch: '^test/'
+
+"type: performance":
+  - head-branch: '^perf/'
+
+"type: refactor":
+  - head-branch: '^refactor/'
+
+"type: maintenance":
+  - head-branch: '^(build|chore|ci|style|revert)/'
+
+"type: release":
+  - head-branch: '^release-please--'
+
+dependencies:
+  - head-branch: '^dependabot/'
+
+release:
+  - head-branch: '^release-please--'
+
+"area: api":
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/**/*.cs'
+          - 'src/**/PublicAPI.*.txt'
+
+"area: build":
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.config/dotnet-tools.json'
+          - '.nuke/**'
+          - 'build/**'
+          - 'build.ps1'
+          - 'build.sh'
+          - 'Directory.Build.*'
+          - 'Directory.Packages.props'
+          - 'global.json'
+          - 'IX.Modularity.slnx'
+
+"area: ci":
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/dependabot.yml'
+          - '.github/labeler.yml'
+          - '.github/workflows/**'
+
+"area: dependencies":
+  - any:
+      - head-branch: '^dependabot/'
+      - changed-files:
+          - any-glob-to-any-file:
+              - '.config/dotnet-tools.json'
+              - '**/packages.lock.json'
+              - 'Directory.Packages.props'
+              - 'global.json'
+
+"area: documentation":
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+
+"area: hooks":
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.gitleaks.toml'
+          - '.markdownlint-cli2.jsonc'
+          - '.pre-commit-config.yaml'
+          - '_typos.toml'
+
+"area: packaging":
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.release-please-manifest.json'
+          - 'Directory.Build.targets'
+          - 'release-please-config.json'
+          - 'src/**/*.csproj'
+          - 'src/**/CHANGELOG.md'
+          - 'src/**/version.txt'
+
+"area: tests":
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'test/**'

@@ -37,7 +37,9 @@ documented or centrally versioned.
 | Workflow linting | GitHub schemas, actionlint, and strict zizmor collection. |
 | CI | Linux, Windows, and macOS validation using the same NUKE `Validate` target. |
 | Pull requests | Issue forms, PR template, branch pattern, issue linkage, Conventional Commit title. |
-| Releases | Release Please manifest flow, protected component tags, exact tag/package match, GitHub Packages publish target. |
+| Classification | Native issue-form labels and official Labeler branch/path automation with a namespaced taxonomy. |
+| PR feedback | One update-in-place comment with change metadata, required checks, dependency diff, and NUKE guarantees. |
+| Releases | Release Please manifest flow, commit-generated changelog and release message, protected component tags, exact tag/package match, GitHub Packages publish target. |
 | Maintenance | Weekly dependency freshness and documentation link checks. |
 
 ## Pre-commit research outcome
@@ -151,8 +153,13 @@ Checked-in automation covers:
 - pull-request title, branch, and linked-issue policy;
 - four Dependabot ecosystems with grouped updates and cooldowns;
 - release PR, tag, GitHub release, package validation, and package publish;
+- a checked-in changelog and identical generated GitHub release message from
+  Conventional Commits;
 - weekly dependency freshness and Markdown link checks;
 - structured bug/feature forms, private-security routing, and a PR template;
+- native issue labels plus safe branch/path pull-request classification;
+- a trusted base-branch result commenter that works for repository, fork, and
+  Dependabot pull requests without executing their content;
 - immutable action revisions, explicit token permissions, no credential
   persistence, and safe pull-request events.
 
@@ -170,7 +177,7 @@ The baseline is usable, but these items remain:
 | P0 before remote use | Push `main`, let checks register, configure rulesets and release App. | Follow the governance bootstrap order; settings cannot be active before the first branch exists. |
 | P0 before first publish | Exercise Release Please and restore the package from a clean consumer. | Use a controlled `0.1.0` release and verify GitHub Packages permissions. |
 | P1 after first stable release | Package compatibility baseline. | Set `PackageValidationBaselineVersion` to an intentional released version. |
-| P1 with a second maintainer | Ownership enforcement. | Create `i-x-io/maintainers`, add `CODEOWNERS`, require one review. |
+| P1 with a second maintainer | Independent ownership enforcement. | The team and `CODEOWNERS` exist; require one code-owner review after a second active maintainer joins. |
 | P1 when coverage has a decision use | MTP-native coverage and threshold. | Add an open-source MTP integration and ratchet a meaningful threshold; do not add a vanity percentage. |
 | P1 security hardening | CodeQL default setup. | Confirm .NET 10 results and merge-queue check names, then make it required. |
 | P2 release hardening | Package signing/provenance and artifact attestations. | Choose a supported identity, verification policy, and consumer process first. |

@@ -1,0 +1,4 @@
+* @i-x-io/maintainers
+/.github/ @i-x-io/maintainers
+/build/ @i-x-io/maintainers
+/src/IX.Modularity/PublicAPI.*.txt @i-x-io/maintainers

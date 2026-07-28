@@ -40,9 +40,19 @@ create or approve pull requests with the default token; release automation uses
 a dedicated GitHub App so its pull request triggers normal CI.
 
 Fork pull requests must never receive repository secrets. Current pull-request
-workflows require only read permissions and do not use `pull_request_target`.
-Do not introduce `pull_request_target` plus checkout or execution of untrusted
-pull-request code.
+validation workflows use the `pull_request` event with read permissions. The
+labeler is the sole `pull_request_target` workflow: it has only contents read
+and pull-request write access and calls the pinned official Labeler action
+without checkout or execution of pull-request code. Do not add any untrusted
+checkout, script, build, or secret to that workflow.
+
+The pull-request summary uses `workflow_run`, which deliberately receives a
+write-capable token even when the original pull request came from a fork or
+Dependabot. It runs only pinned `actions/github-script` code from the default
+branch, reads check and dependency-graph results through the API, and never
+checks out, caches, builds, or executes pull-request content. Preserve that
+trust boundary: do not download or execute artifacts or scripts from the
+triggering workflow in this job.
 
 ## Main branch ruleset
 
@@ -78,6 +88,9 @@ need pull-request metadata are emitted as successful skipped checks for merge
 groups, while the complete NUKE validation reruns against the merge-queue
 commit. Do not add a required workflow that uses only path filters or lacks a
 `merge_group` trigger; its absent status can block the queue indefinitely.
+The asynchronous `Pull request summary` workflow is intentionally not required:
+it reports the required results after they finish and does not itself validate
+the merge-group commit.
 
 Do not grant administrators a blanket bypass. If emergency bypass is retained,
 limit it to repository administrators in pull-request-only mode and require a
@@ -162,8 +175,8 @@ treated as complete in this baseline.
 
 ## Teams, ownership, and labels
 
-Do not add a placeholder `CODEOWNERS` entry that points to a nonexistent team.
-When `i-x-io/maintainers` exists and has at least two active members, add:
+The `i-x-io/maintainers` team owns the repository-wide policy, build,
+workflow, and public API surfaces through `.github/CODEOWNERS`:
 
 ```text
 * @i-x-io/maintainers
@@ -172,15 +185,34 @@ When `i-x-io/maintainers` exists and has at least two active members, add:
 /src/IX.Modularity/PublicAPI.*.txt @i-x-io/maintainers
 ```
 
-Then enable code-owner review without making release automation unable to
-maintain its pull request.
+Keep mandatory code-owner review disabled while the team has only one active
+human member, because self-approval cannot provide independent review. Enable
+one required code-owner approval as soon as a second active maintainer joins,
+without making release automation unable to maintain its pull request.
 
-Create and consistently use at least these labels: `bug`, `enhancement`,
-`triage`, `security`, `dependencies`, `dotnet`, `github-actions`, `pre-commit`,
-`breaking-change`, `release`, `documentation`, `autorelease: pending`, and
+Use namespaced labels for human workflow decisions:
+
+- type: `type: bug`, `type: feature`, `type: documentation`, `type: tests`,
+  `type: performance`, `type: refactor`, `type: maintenance`, and
+  `type: release`;
+- area: `area: api`, `area: build`, `area: ci`, `area: dependencies`,
+  `area: documentation`, `area: hooks`, `area: packaging`, and `area: tests`;
+- status: `status: triage`, `status: blocked`, `status: ready`, and
+  `status: waiting`;
+- priority: `priority: critical`, `priority: high`, `priority: medium`, and
+  `priority: low`; and
+- compatibility: `impact: breaking`.
+
+Retain integration labels used by other tools: `security`, `dependencies`,
+`dotnet`, `github-actions`, `pre-commit`, `release`, `autorelease: pending`, and
 `autorelease: tagged`. Dependabot references the ecosystem labels in
-`.github/dependabot.yml`; absent labels are simply not applied, so create them
-before relying on label-based triage.
+`.github/dependabot.yml`, while Release Please owns its lifecycle labels.
+
+Issue forms apply existing type and triage labels natively. The pinned official
+`actions/labeler` workflow applies and synchronizes pull-request type and area
+labels from branch names and changed paths. All referenced labels are created
+up front, so the workflow needs `pull-requests: write` but not `issues: write`.
+It is deliberately informational and is not a required status check.
 
 ## Bootstrap order
 
@@ -196,7 +228,7 @@ order:
    request.
 6. Create and activate the `main` ruleset with recorded check names.
 7. Enable the security features and private reporting.
-8. Create labels and, once the team exists, `CODEOWNERS`.
+8. Verify labels, team membership, and `CODEOWNERS` resolution.
 9. Open a non-release test pull request and exercise the merge queue.
 10. Merge a controlled release pull request and verify package consumption.
 
