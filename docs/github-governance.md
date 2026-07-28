@@ -109,6 +109,12 @@ dedicated release GitHub App as an always-allowed bypass actor. People,
 administrator roles, the default Actions token, and Dependabot should not
 create or rewrite release tags.
 
+For a time-bounded first-release bootstrap where App creation still requires an
+interactive organization-owner step, the `i-x-io/maintainers` team may be a
+temporary always-allowed actor while `RELEASE_TOKEN` is in use. Track that
+exception in an issue and replace the team bypass with the App installation as
+soon as the App is available. Do not use a blanket administrator-role bypass.
+
 ## Release GitHub App
 
 Create or reuse an organization-owned GitHub App dedicated to release
@@ -133,6 +139,14 @@ The workflow exchanges these credentials for a short-lived installation token
 and explicitly limits the token to this repository and the three permissions
 above. Rotate the private key according to the organization's credential
 policy and remove the old key after a successful release run.
+
+The workflow also accepts `RELEASE_TOKEN` as a controlled bootstrap fallback.
+Prefer a fine-grained personal access token limited to this repository with
+Contents, Issues, and Pull requests read/write permissions and the shortest
+practical expiration. The workflow always prefers the App when
+`RELEASE_APP_ID` is present. Record the token owner and expiry privately,
+remove the secret after App cutover, and never pass this broader token to NUKE
+or package publication.
 
 The built-in job token publishes the package because the release job requests
 `packages: write`. It is passed to NUKE only for the publish step and is masked

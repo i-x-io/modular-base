@@ -289,6 +289,13 @@ Do not manually edit the manifest version, create a release tag, or call
 and a short-lived token. The GitHub App setup and ruleset bypass are documented
 in [GitHub governance](github-governance.md).
 
+The first release may use the documented, time-bounded `RELEASE_TOKEN`
+bootstrap fallback when the organization-owned App cannot yet be created
+non-interactively. It changes only the GitHub API identity used by Release
+Please; NUKE package publication continues to use the job-scoped built-in
+token. Replace the fallback and temporary team tag bypass with the App rather
+than normalizing a personal credential as permanent infrastructure.
+
 After the first stable package is published, set and maintain
 `PackageValidationBaselineVersion` so SDK package validation checks binary and
 API compatibility against an intentional released baseline.
