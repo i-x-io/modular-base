@@ -9,6 +9,9 @@ empty policy catalog. It contains a shipping `IX.Modularity` project, a
 cross-platform 24-test suite, locked dependencies, deterministic packaging,
 typed NUKE orchestration, managed Git hooks, hardened GitHub workflows,
 templates, release automation, and a documented governance model.
+The controlled first release has completed: `IX.Modularity` 0.1.0 is tagged,
+published in GitHub Packages, retained as a workflow artifact, and verified
+from a clean consumer project.
 
 The selected platform is .NET 10 with stable C# 14. The selected workflow build
 system is NUKE 10.1, while SDK-style MSBuild remains the compiler and project
@@ -61,7 +64,11 @@ separate global copies. Selected hooks are pinned to reviewed revisions:
 
 NuGet-generated `packages.lock.json` files remain under JSON syntax checking
 but are excluded from generic JSON autoformatting, avoiding a permanent diff
-between NuGet's serializer and the hook formatter.
+between NuGet's serializer and the hook formatter. Release Please likewise
+owns `.release-please-manifest.json` and package `CHANGELOG.md` files. The
+manifest remains syntax-checked and both generated formats remain covered by
+hygiene and secret scanning, but generic formatters and Typos do not rewrite
+them in release pull requests.
 
 Alternatives were not stacked when they duplicated a selected capability:
 `markdownlint-cli` duplicates CLI2, codespell duplicates Typos, and
@@ -168,14 +175,41 @@ policy, main and tag rulesets, release credential, package permissions, security
 features, labels, and bootstrap order are documented in
 `docs/github-governance.md`.
 
+## Release acceptance evidence
+
+The controlled first release completed on 2026-07-28 without bypassing the
+main-branch or tag rulesets:
+
+- release pull request [#7](https://github.com/i-x-io/modular-base/pull/7)
+  passed all seven required checks and the three-platform merge-queue build;
+- protected tag
+  [`IX.Modularity-v0.1.0`](https://github.com/i-x-io/modular-base/releases/tag/IX.Modularity-v0.1.0)
+  points to the merged release commit and produced a non-draft, non-prerelease
+  GitHub release;
+- the GitHub release body is the generated `0.1.0` changelog section rather
+  than separately maintained prose;
+- the successful [release workflow](https://github.com/i-x-io/modular-base/actions/runs/30378382153)
+  invoked NUKE `Publish`, published `IX.Modularity` 0.1.0 to GitHub Packages,
+  and retained the package and symbols package as artifact
+  `IX.Modularity-0.1.0`; and
+- a new `net10.0` console project restored the published package from the
+  organization feed, compiled with zero warnings and errors, and executed the
+  public `ModuleId` API.
+
+Package metadata was also checked independently: the nuspec and resolved
+dependency graph report package version `0.1.0`, file version is `0.1.0.0`,
+and informational version is `0.1.0` plus the release commit. The assembly
+version `0.0.0.0` is intentional: MinVer follows the open-source library
+[version-number guidance](https://github.com/adamralph/minver#version-numbers)
+of `{major}.0.0.0`, so every pre-1.0 release shares assembly major version zero.
+
 ## Remaining work and deliberate deferrals
 
 The baseline is usable, but these items remain:
 
 | Priority | Item | Trigger or fix |
 | --- | --- | --- |
-| P0 before first publish | Exercise Release Please and restore the package from a clean consumer. | Use the controlled `0.1.0` release and verify GitHub Packages permissions. |
-| P1 after first stable release | Package compatibility baseline. | Set `PackageValidationBaselineVersion` to an intentional released version. |
+| P1 now | Package compatibility baseline. | Set `PackageValidationBaselineVersion` to the intentional `0.1.0` release after deciding how CI retrieves the GitHub Packages baseline without exposing a broad credential. |
 | P1 credential hardening | Replace the broad CLI bootstrap credential with a repository-scoped fine-grained token or organization-owned App. | Verify the new identity on a release, rotate the old credential, and update the tag-ruleset actor. |
 | P1 with a second maintainer | Independent ownership enforcement. | The team and `CODEOWNERS` exist; require one code-owner review after a second active maintainer joins. |
 | P1 when coverage has a decision use | MTP-native coverage and threshold. | Add an open-source MTP integration and ratchet a meaningful threshold; do not add a vanity percentage. |
@@ -200,8 +234,7 @@ Locally, the implemented baseline has demonstrated:
 - a non-empty CycloneDX JSON SBOM; and
 - schema, actionlint, and strict zizmor validation of GitHub files.
 
-The final acceptance run for the complete uncommitted change set is
-`dotnet nuke Validate --configuration Release` followed by all-file
-`pre-commit` validation. Remote workflow and release acceptance necessarily
-remain pending until this baseline is pushed and GitHub-side settings are
-configured.
+Local acceptance is `dotnet nuke Validate --configuration Release` followed by
+all-file `pre-commit` validation. The protected GitHub workflow, release,
+package publication, retained artifact, and clean-consumer acceptance described
+above have now completed for version `0.1.0`.
