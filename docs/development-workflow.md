@@ -227,6 +227,14 @@ Labeler action. The labeler reads the base branch configuration through the
 API; it never checks out or executes pull-request code. Labels are triage
 metadata, not substitutes for required checks, review, or release notes.
 
+After either CI or pull-request policy completes, a trusted base-branch
+workflow maintains one `Automated pull-request result` comment. It includes
+change statistics, current labels, links and states for every required check,
+dependency-graph change counts, the enforced dependency policy, and the NUKE
+guarantees behind each platform validation. The comment is updated in place so
+synchronizing a branch does not create notification noise. It is informational;
+the required checks and merge-queue run remain authoritative.
+
 ## Dependency updates
 
 Dependabot checks NuGet, GitHub Actions, pre-commit hooks, and the .NET SDK each

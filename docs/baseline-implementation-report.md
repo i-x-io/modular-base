@@ -38,6 +38,7 @@ documented or centrally versioned.
 | CI | Linux, Windows, and macOS validation using the same NUKE `Validate` target. |
 | Pull requests | Issue forms, PR template, branch pattern, issue linkage, Conventional Commit title. |
 | Classification | Native issue-form labels and official Labeler branch/path automation with a namespaced taxonomy. |
+| PR feedback | One update-in-place comment with change metadata, required checks, dependency diff, and NUKE guarantees. |
 | Releases | Release Please manifest flow, commit-generated changelog and release message, protected component tags, exact tag/package match, GitHub Packages publish target. |
 | Maintenance | Weekly dependency freshness and documentation link checks. |
 
@@ -157,6 +158,8 @@ Checked-in automation covers:
 - weekly dependency freshness and Markdown link checks;
 - structured bug/feature forms, private-security routing, and a PR template;
 - native issue labels plus safe branch/path pull-request classification;
+- a trusted base-branch result commenter that works for repository, fork, and
+  Dependabot pull requests without executing their content;
 - immutable action revisions, explicit token permissions, no credential
   persistence, and safe pull-request events.
 

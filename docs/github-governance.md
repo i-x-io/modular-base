@@ -46,6 +46,14 @@ and pull-request write access and calls the pinned official Labeler action
 without checkout or execution of pull-request code. Do not add any untrusted
 checkout, script, build, or secret to that workflow.
 
+The pull-request summary uses `workflow_run`, which deliberately receives a
+write-capable token even when the original pull request came from a fork or
+Dependabot. It runs only pinned `actions/github-script` code from the default
+branch, reads check and dependency-graph results through the API, and never
+checks out, caches, builds, or executes pull-request content. Preserve that
+trust boundary: do not download or execute artifacts or scripts from the
+triggering workflow in this job.
+
 ## Main branch ruleset
 
 Create an active branch ruleset named `main` targeting the default branch.
@@ -80,6 +88,9 @@ need pull-request metadata are emitted as successful skipped checks for merge
 groups, while the complete NUKE validation reruns against the merge-queue
 commit. Do not add a required workflow that uses only path filters or lacks a
 `merge_group` trigger; its absent status can block the queue indefinitely.
+The asynchronous `Pull request summary` workflow is intentionally not required:
+it reports the required results after they finish and does not itself validate
+the merge-group commit.
 
 Do not grant administrators a blanket bypass. If emergency bypass is retained,
 limit it to repository administrators in pull-request-only mode and require a

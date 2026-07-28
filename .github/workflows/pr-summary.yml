@@ -1,0 +1,211 @@
+name: Pull request summary
+
+on:
+  # zizmor: ignore[dangerous-triggers] trusted API-only default-branch reporter; no PR content or artifacts are executed
+  workflow_run:
+    workflows:
+      - CI
+      - Pull request policy
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Existing pull request number to summarize
+        required: true
+        type: number
+
+permissions:
+  actions: read
+  checks: read
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-summary-${{ github.event.workflow_run.head_sha || inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  summarize:
+    name: Update pull request check summary
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      # workflow_run executes trusted code from the default branch. This job
+      # never checks out, builds, or executes pull-request-controlled content.
+      - name: Create or update summary comment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          REQUESTED_PR_NUMBER: ${{ inputs.pr_number || '' }}
+        with:
+          script: |
+            const marker = '<!-- modular-base-pr-check-summary -->';
+            const { owner, repo } = context.repo;
+            const workflowRun = context.payload.workflow_run;
+            let pullNumber = Number(process.env.REQUESTED_PR_NUMBER || 0);
+
+            if (!pullNumber) {
+              pullNumber = workflowRun?.pull_requests?.[0]?.number ?? 0;
+            }
+
+            if (!pullNumber && workflowRun?.head_sha) {
+              const associated = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner,
+                repo,
+                commit_sha: workflowRun.head_sha,
+              });
+              pullNumber = associated.data.find(
+                pull => pull.base.repo.full_name === `${owner}/${repo}`,
+              )?.number ?? 0;
+            }
+
+            if (!pullNumber) {
+              core.notice('No pull request is associated with this workflow run.');
+              return;
+            }
+
+            const { data: pull } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+            const checkRuns = await github.paginate(github.rest.checks.listForRef, {
+              owner,
+              repo,
+              ref: pull.head.sha,
+              filter: 'latest',
+              per_page: 100,
+            });
+
+            const latestByName = new Map();
+            for (const check of checkRuns) {
+              const existing = latestByName.get(check.name);
+              if (!existing || check.id > existing.id) {
+                latestByName.set(check.name, check);
+              }
+            }
+
+            const expectedChecks = [
+              'Pre-commit',
+              'Validate (ubuntu-latest)',
+              'Validate (windows-latest)',
+              'Validate (macos-latest)',
+              'Dependency review',
+              'Conventional pull request',
+              'Branch and issue policy',
+            ];
+            const passingConclusions = new Set(['success', 'neutral', 'skipped']);
+
+            function resultFor(check) {
+              if (!check) return '⌛ waiting';
+              if (check.status !== 'completed') return '⏳ running';
+              if (check.conclusion === 'success') return '✅ passed';
+              if (check.conclusion === 'neutral') return '⚪ neutral';
+              if (check.conclusion === 'skipped') return '⏭️ skipped';
+              if (check.conclusion === 'cancelled') return '🟡 cancelled';
+              return `❌ ${String(check.conclusion ?? 'failed').replaceAll('_', ' ')}`;
+            }
+
+            const expectedRuns = expectedChecks.map(name => latestByName.get(name));
+            const allPassed = expectedRuns.every(
+              check => check?.status === 'completed' && passingConclusions.has(check.conclusion),
+            );
+            const anyFailed = expectedRuns.some(
+              check => check?.status === 'completed' && !passingConclusions.has(check.conclusion),
+            );
+            const headline = anyFailed
+              ? '❌ One or more required checks failed.'
+              : allPassed
+                ? '✅ All required pull-request checks passed.'
+                : '⏳ Required pull-request checks are still running.';
+
+            let dependencySummary = 'Dependency graph diff is not available yet.';
+            try {
+              const comparison = await github.request(
+                'GET /repos/{owner}/{repo}/dependency-graph/compare/{basehead}',
+                {
+                  owner,
+                  repo,
+                  basehead: `${pull.base.sha}...${pull.head.sha}`,
+                },
+              );
+              const changes = Array.isArray(comparison.data) ? comparison.data : [];
+              const added = changes.filter(change => change.change_type === 'added').length;
+              const removed = changes.filter(change => change.change_type === 'removed').length;
+              const updated = changes.filter(change => change.change_type === 'updated').length;
+              const introducedVulnerabilities = changes
+                .filter(change => change.change_type !== 'removed')
+                .reduce((count, change) => count + (change.vulnerabilities?.length ?? 0), 0);
+              dependencySummary = [
+                `${added} added`,
+                `${updated} updated`,
+                `${removed} removed`,
+                `${introducedVulnerabilities} known vulnerable introduction(s) reported by the graph`,
+              ].join('; ');
+            } catch (error) {
+              core.warning(`Dependency graph comparison is unavailable: ${error.message}`);
+            }
+
+            const labels = pull.labels
+              .map(label => typeof label === 'string' ? label : label.name)
+              .filter(Boolean)
+              .map(label => `\`${String(label).replaceAll('`', "'")}\``)
+              .join(', ') || 'none';
+            const checkRows = expectedChecks.map(name => {
+              const check = latestByName.get(name);
+              const linkedName = check?.details_url ? `[${name}](${check.details_url})` : name;
+              return `| ${linkedName} | ${resultFor(check)} |`;
+            });
+            const body = [
+              marker,
+              '## Automated pull-request result',
+              '',
+              headline,
+              '',
+              `**Commit:** \`${pull.head.sha.slice(0, 12)}\` · ` +
+                `**Change:** ${pull.changed_files} files, +${pull.additions}/-${pull.deletions} · ` +
+                `**Labels:** ${labels}`,
+              '',
+              '| Check | Result |',
+              '| --- | --- |',
+              ...checkRows,
+              '',
+              `**Dependency review:** ${dependencySummary}. The blocking check rejects ` +
+                'introduced vulnerabilities at low severity or higher and dependencies outside ' +
+                'the repository license allowlist.',
+              '',
+              'Each platform validation invokes the authoritative NUKE graph: format, compile, ' +
+                'tests, package inspection, vulnerability audit, and CycloneDX SBOM generation. ' +
+                'Open a linked check for logs and retained artifacts.',
+              '',
+              '_This single comment is updated after policy or CI completes; it does not replace ' +
+                'the merge-queue revalidation._',
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: pullNumber,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              comment => comment.user?.type === 'Bot' && comment.body?.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pullNumber,
+                body,
+              });
+            }
