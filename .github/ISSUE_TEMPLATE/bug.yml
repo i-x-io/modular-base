@@ -1,0 +1,75 @@
+name: Bug report
+description: Report reproducible incorrect behavior in IX.Modularity.
+title: "[Bug] "
+labels:
+  - bug
+  - triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Do not include credentials, tokens, or private vulnerability details here; use the private security-reporting link instead.
+
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      description: The exact IX.Modularity package version where this occurs.
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: dotnet-version
+    attributes:
+      label: .NET SDK and runtime
+      description: Paste the relevant lines from `dotnet --info`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Explain the observed behavior and why it is incorrect.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide the smallest complete code sample and steps that reproduce the problem.
+      render: csharp
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Explain what should happen instead.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: regression
+    attributes:
+      label: Regression
+      description: Did a previous package version behave correctly?
+      options:
+        - Unknown
+        - "No"
+        - "Yes"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I removed secrets and private data from this report.
+          required: true

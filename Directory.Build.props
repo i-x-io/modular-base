@@ -33,16 +33,6 @@
 
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Authors>ModularBase contributors</Authors>
-    <PackageTags>modularity;ports-and-adapters;domain-driven-design;dotnet</PackageTags>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <EnablePackageValidation>true</EnablePackageValidation>
-    <EnableStrictModeForCompatibleFrameworksInPackage>true</EnableStrictModeForCompatibleFrameworksInPackage>
-  </PropertyGroup>
-
   <ItemGroup>
     <GlobalAnalyzerConfigFiles Include="$(MSBuildThisFileDirectory)ModularBase.globalconfig" />
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" />

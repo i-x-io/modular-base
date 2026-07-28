@@ -1,10 +1,15 @@
 # Documentation index
 
-This documentation governs the future `IX.Modularity.*` library repository. It includes illustrative package-composition examples, but it is not an application tutorial and does not add permanent sample applications or projects.
+This documentation governs the executable `IX.Modularity.*` library baseline.
+It includes illustrative package-composition examples, but it is not an
+application tutorial.
 
 ## Documentation branches
 
-- [Vanilla C# baseline assessment](vanilla-csharp-baseline-assessment.md) — current-state audit, missing engineering controls, build-system recommendation, and open-source dispatcher/library research.
+- [Current baseline implementation report](baseline-implementation-report.md) — implemented controls, NUKE/C# decisions, hook and library research, and remaining work.
+- [Development workflow](development-workflow.md) — branches, commits, hooks, NUKE targets, pull requests, dependencies, and releases.
+- [GitHub governance](github-governance.md) — workflows, rulesets, App credentials, packages, settings, and bootstrap checklist.
+- [Original vanilla C# assessment](vanilla-csharp-baseline-assessment.md) — historical pre-implementation audit and package/dispatcher research; superseded where the project explicitly selected NUKE.
 - [Package catalog](packages/README.md) — central package entries and package-specific decision guides.
 - [Package guidance](package-guidance/README.md) — package selection, ownership boundaries, and objective supply-chain facts.
 - [Composition recipes](recipes/README.md) — explained, multi-package workflows using the centrally pinned catalog.

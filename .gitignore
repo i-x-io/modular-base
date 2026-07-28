@@ -14,4 +14,14 @@
 .vscode/
 artifacts/
 .cache/
+.nuke/temp/
 BenchmarkDotNet.Artifacts/
+
+# Keep the repository's NUKE project even when a developer has a global
+# `build/` ignore rule. Generated build outputs remain covered above.
+!build/
+!build/*.cs
+!build/*.csproj
+!build/*.props
+!build/*.targets
+!build/packages.lock.json

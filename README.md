@@ -1,98 +1,94 @@
 # ModularBase
 
-ModularBase is a baseline for future `IX.Modularity.*` libraries. It centralizes the .NET SDK version, common build and analyzer settings, package versions, NuGet source policy, package guidance, and local dependency-review tools.
+ModularBase is the executable baseline for `IX.Modularity.*` libraries. Its
+first package, `IX.Modularity`, provides reflection-free contracts for
+explicitly composing modular .NET applications.
 
-[`IX.Modularity.slnx`](IX.Modularity.slnx) is intentionally empty. The repository does not currently contain source projects, test projects, custom analyzers, architecture tests, runtime libraries, or applications.
+The baseline uses .NET 10, stable C# 14, SDK-style projects, and NUKE as the
+single developer and CI build entry point. GitHub Actions provisions the
+environment and invokes the same NUKE targets that run locally.
 
-Start with the [documentation index](docs/README.md). The main documentation branches are the [package catalog](docs/packages/README.md), [package-selection guidance](docs/package-guidance/README.md), and [composition recipes](docs/recipes/README.md).
+## What the baseline includes
 
-## Shared baseline
+- exact SDK selection through `global.json`;
+- central package management and committed lock files;
+- nullable reference types, warnings as errors, deterministic builds, public
+  API analysis, banned APIs, and private analyzer dependencies;
+- a real package and a 24-test Microsoft Testing Platform test suite;
+- package, symbols-package, metadata, vulnerability, and CycloneDX SBOM
+  validation;
+- pinned `pre-commit`, Markdownlint CLI2, Gitleaks, Typos, JSON-schema,
+  actionlint, zizmor, and Conventional Commits hooks;
+- cross-platform CI, pull-request policy, Dependabot, scheduled maintenance,
+  issue forms, and release automation; and
+- MinVer-derived package versions and Release Please release pull requests.
 
-The repository provides:
+Optional packages documented in the package catalog are not runtime
+dependencies. The shipping package currently exposes only
+`Microsoft.Extensions.DependencyInjection.Abstractions`.
 
-- an exact .NET SDK requirement of `10.0.302`, with roll-forward and prerelease SDKs disabled;
-- shared .NET 10 and C# 14 build settings, nullable reference types, deterministic output, and warnings as errors;
-- central package versions and private, build-only third-party analyzers;
-- NuGet.org-only package source mapping and vulnerability auditing;
-- a banned-symbol policy supplied to projects through `BannedSymbols.txt`;
-- package selection and integration documentation; and
-- pinned local CycloneDX and outdated-package tools.
+## Get started
 
-Future projects inherit the applicable settings from `Directory.Build.props`, `Directory.Packages.props`, `ModularBase.globalconfig`, and `.editorconfig`. Packable projects must declare and include their own package README rather than relying on a repository-wide package-readme default.
-
-## Developer checks
-
-The repository uses [`pre-commit`](https://pre-commit.com/) **4.6.1** to install and run pinned checks in isolated environments. Install only the framework; `pre-commit` manages the Node, Go, and Python hook environments for Markdownlint CLI2, Gitleaks, Typos, conventional-pre-commit, and the standard file checks.
-
-Prefer an isolated [`pipx`](https://pipx.pypa.io/) installation:
-
-```sh
-pipx install pre-commit==4.6.1
-pre-commit --version
-pre-commit install --install-hooks
-```
-
-If `pipx` is unavailable, install the same version in a dedicated Python virtual environment rather than the system Python environment. The repository config installs the `pre-commit`, `pre-push`, and `commit-msg` Git hook types.
-
-Initialize or verify the complete repository with:
-
-```sh
-pre-commit validate-config
-pre-commit run --all-files
-pre-commit run --all-files --hook-stage pre-push
-```
-
-The commit stage performs structured-file syntax and formatting checks, portable filename and symlink checks, a submodule ban, secret detection, spelling, Markdown linting, and safe file cleanup. Markdownlint, Typos, JSON formatting, and basic cleanup hooks may modify files. When they do, review the diff, stage the accepted changes, and rerun the command. Gitleaks reports redacted findings without changing files.
-
-Commit messages must follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/):
-
-```text
-<type>[optional scope][!]: <description>
-```
-
-Allowed types are `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, and `test`. Scopes are optional and are not centrally restricted; use a short stable area such as `packages`, `hooks`, or `analyzers`. Use `feat` for a release-relevant feature, `fix` for a release-relevant defect correction, and either `!` or a `BREAKING CHANGE:` footer for an incompatible change. For example:
-
-```text
-chore(hooks): enforce conventional commits
-feat(dispatch)!: replace the handler contract
-```
-
-The validation intentionally permits Git-generated merge messages and `fixup!` commits for local autosquash workflows. It applies to new commits only; existing history is not rewritten.
-
-The pre-push stage runs `dotnet format IX.Modularity.slnx --verify-no-changes --no-restore`. It is currently a no-op because the solution has no projects; it becomes meaningful after a project and its restored assets exist. It is not a substitute for build or test validation.
-
-Run one check explicitly with `pre-commit run <hook-id> --all-files`. `SKIP=<hook-id>` is an exceptional local bypass and should be explained during review; do not use `--no-verify` as a normal workflow.
-
-For a reviewed tooling upgrade, update the framework pin, run `pre-commit autoupdate`, inspect each upstream version and license change, rerun the commit and pre-push stages over all files, validate a representative commit message, and commit the tooling update separately. `pre-commit clean` removes all cached hook environments, while `pre-commit gc` removes only unused cached repositories.
-
-## Adding and validating a project
-
-Install exactly .NET SDK `10.0.302`, then create a project and add it to the solution. For example:
-
-```sh
-dotnet new classlib --name IX.Modularity.Example --output src/IX.Modularity.Example
-dotnet sln IX.Modularity.slnx add src/IX.Modularity.Example/IX.Modularity.Example.csproj
-```
-
-The shared configuration enables NuGet lock files. Generate a new project's initial `packages.lock.json` with an unlocked restore, inspect it, and commit it with the project:
-
-```sh
-dotnet restore IX.Modularity.slnx -p:RestoreLockedMode=false
-```
-
-After the lock file exists, use the standard .NET commands directly:
+Install the exact SDK selected by `global.json`, then restore the repository
+tools and run the authoritative validation:
 
 ```sh
 dotnet tool restore
-dotnet restore IX.Modularity.slnx --locked-mode
-dotnet format IX.Modularity.slnx --verify-no-changes --no-restore
-dotnet build IX.Modularity.slnx --configuration Release --no-restore
-dotnet test IX.Modularity.slnx --configuration Release --no-build
-dotnet pack IX.Modularity.slnx --configuration Release --no-build
-dotnet outdated IX.Modularity.slnx
-dotnet CycloneDX IX.Modularity.slnx
+dotnet nuke Validate --configuration Release
 ```
 
-NuGet auditing is enabled during restore. Review audit findings and generated dependency reports rather than treating successful command completion alone as evidence of package safety.
+The checked-in launchers are equivalent entry points:
 
-Because the solution is currently empty, restore, build, and format commands may complete without evaluating meaningful product code, while test may have no runnable configuration. Those results are not repository validation until at least one project is present.
+```sh
+./build.sh Validate
+```
+
+```powershell
+./build.ps1 Validate
+```
+
+Run `dotnet nuke --help` for parameter completion and the complete target
+graph. Common targets are:
+
+| Target | Purpose |
+| --- | --- |
+| `Restore` | Restore tools, the solution, and the build project from locks. |
+| `Format` | Verify solution formatting without modifying files. |
+| `Compile` | Compile product and tests with the selected configuration. |
+| `Test` | Run the MTP suite and reject zero discovered tests. |
+| `Pack` | Create `.nupkg` and `.snupkg` artifacts. |
+| `InspectPackages` | Check package contents, metadata, and runtime dependencies. |
+| `Audit` | Audit direct and transitive packages for vulnerabilities. |
+| `Sbom` | Generate and semantically validate a CycloneDX JSON SBOM. |
+| `Validate` | Run the complete local and CI quality gate. |
+| `UpdateLocks` | Regenerate locks after a reviewed dependency change. |
+| `Outdated` | Fail when scheduled maintenance finds package updates. |
+| `Publish` | Validate and publish an exact release tag in GitHub Actions. |
+
+Generated output is written below `artifacts/`.
+
+## Install the Git hooks
+
+Install `pre-commit` 4.6.1 in an isolated environment, then let it provision
+the pinned hook tools:
+
+```sh
+pipx install pre-commit==4.6.1
+pre-commit install --install-hooks
+```
+
+The installed hook types are `pre-commit`, `commit-msg`, and `pre-push`.
+Commit-time hooks provide fast staged-file feedback; pre-push invokes the full
+NUKE `Validate` target. CI repeats the required checks because local hooks can
+be skipped.
+
+## Development and governance
+
+- [Contribution guide](CONTRIBUTING.md)
+- [Complete development workflow](docs/development-workflow.md)
+- [GitHub repository setup and rulesets](docs/github-governance.md)
+- [Current implementation report](docs/baseline-implementation-report.md)
+- [Security policy](SECURITY.md)
+- [Documentation index](docs/README.md)
+
+The repository is licensed under the [MIT License](LICENSE).

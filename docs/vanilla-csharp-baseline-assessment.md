@@ -1,5 +1,11 @@
 # Vanilla C# baseline assessment
 
+> **Historical assessment.** This document records the repository before the
+> executable baseline was implemented. Its original native-MSBuild build-system
+> recommendation was superseded by the explicit decision to use NUKE. See the
+> [current implementation report](baseline-implementation-report.md) and
+> [development workflow](development-workflow.md) for authoritative guidance.
+
 Assessment date: 2026-07-28
 
 Repository state: `main` at `7c1f50c`

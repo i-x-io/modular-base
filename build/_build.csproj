@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ModularBase.Build</RootNamespace>
+    <NukeTelemetryVersion>1</NukeTelemetryVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nuke.Common" />
+    <!--
+      NUKE 10.1.0 resolves vulnerable transitive versions as of 2026-07-28.
+      Keep these build-private floor overrides until NUKE adopts patched versions.
+    -->
+    <PackageReference Include="NuGet.Packaging" PrivateAssets="all" />
+    <PackageReference Include="System.Security.Cryptography.Xml" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

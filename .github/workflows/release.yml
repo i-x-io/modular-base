@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  packages: write
+  pull-requests: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release Please and publish
+    if: vars.RELEASE_APP_ID != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release automation token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: i-x-io
+          repositories: modular-base
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
+
+      - name: Create or update release pull request
+        id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      - name: Check out released tag
+        if: steps.release.outputs['src/IX.Modularity--release_created'] == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ steps.release.outputs['src/IX.Modularity--tag_name'] }}
+
+      - name: Set up .NET
+        if: steps.release.outputs['src/IX.Modularity--release_created'] == 'true'
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore local tools
+        if: steps.release.outputs['src/IX.Modularity--release_created'] == 'true'
+        run: dotnet tool restore
+
+      - name: Validate and publish tagged package
+        if: steps.release.outputs['src/IX.Modularity--release_created'] == 'true'
+        env:
+          PACKAGE_TOKEN: ${{ github.token }}
+        run: dotnet nuke Publish --configuration Release --package-token "$PACKAGE_TOKEN"
+
+      - name: Upload released package
+        if: steps.release.outputs['src/IX.Modularity--release_created'] == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: IX.Modularity-${{ steps.release.outputs['src/IX.Modularity--version'] }}
+          path: artifacts/packages/*.*nupkg
+          if-no-files-found: error
+          retention-days: 30

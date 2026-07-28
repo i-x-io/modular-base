@@ -22,6 +22,7 @@ repos:
           - --autofix
           - --no-sort-keys
           - --no-ensure-ascii
+        exclude: '(^|/)packages\.lock\.json$'
       - id: check-merge-conflict
       - id: check-symlinks
       - id: check-toml
@@ -43,6 +44,7 @@ repos:
       - id: forbid-submodules
       - id: fix-byte-order-marker
       - id: end-of-file-fixer
+        exclude: '(^|/)packages\.lock\.json$'
         stages:
           - pre-commit
       - id: mixed-line-ending
@@ -65,8 +67,19 @@ repos:
     rev: v8.30.1
     hooks:
       - id: gitleaks
+        name: Detect staged hard-coded secrets
         args:
           - --config=.gitleaks.toml
+        stages:
+          - pre-commit
+      - id: gitleaks
+        alias: gitleaks-repository
+        name: Detect hard-coded secrets in repository history
+        entry: gitleaks git --redact --verbose
+        args:
+          - --config=.gitleaks.toml
+        stages:
+          - manual
 
   - repo: https://github.com/crate-ci/typos
     rev: v1.48.0
@@ -87,11 +100,32 @@ repos:
         stages:
           - commit-msg
 
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.37.4
+    hooks:
+      - id: check-github-workflows
+      - id: check-dependabot
+      - id: check-github-issue-forms
+      - id: check-github-issue-config
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.28.0
+    hooks:
+      - id: zizmor
+        args:
+          - --no-progress
+          - --strict-collection
+
   - repo: local
     hooks:
-      - id: dotnet-format
-        name: Verify .NET formatting
-        entry: dotnet format IX.Modularity.slnx --verify-no-changes --no-restore
+      - id: nuke-validate
+        name: Run authoritative NUKE validation
+        entry: dotnet nuke Validate
         language: system
         pass_filenames: false
         always_run: true

@@ -9,3 +9,11 @@ condition = "AND"
 regexTarget = "line"
 regexes = ['''Test credential resolution, RBAC/firewall access, and authorization failures\.''']
 paths = ['''^docs/packages/fluentstorage-azure-blobs\.md$''']
+
+[[allowlists]]
+description = "Reviewed prose false positive in the original Azure Blob guidance commit"
+condition = "AND"
+commits = ['''4bcee2bccfd97c94fbc1740172e2aa045cca9c05''']
+regexTarget = "line"
+regexes = ['''Compile the actual `FromClient` path and integration-test credential resolution, RBAC/firewall access, overwrite, prefix listing, large streams, cancellation, SDK retries, and any native ETag/lease/version operations used beside the abstraction\.''']
+paths = ['''^docs/packages/fluentstorage-azure-blobs\.md$''']

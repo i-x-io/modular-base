@@ -1,0 +1,108 @@
+version: 2
+
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 10
+    rebase-strategy: auto
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build(deps)
+    labels:
+      - dependencies
+      - dotnet
+    groups:
+      microsoft-runtime:
+        patterns:
+          - Microsoft.*
+          - System.*
+        update-types:
+          - minor
+          - patch
+      build-quality:
+        patterns:
+          - MinVer
+          - Nuke.Common
+          - NuGet.*
+          - Roslynator.*
+          - SonarAnalyzer.*
+          - Meziantou.*
+        update-types:
+          - minor
+          - patch
+      testing:
+        patterns:
+          - AwesomeAssertions
+          - coverlet.*
+          - Microsoft.NET.Test.Sdk
+          - Testcontainers.*
+          - TngTech.*
+          - xunit.*
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:15"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    rebase-strategy: auto
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build(actions)
+    labels:
+      - dependencies
+      - github-actions
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:30"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    rebase-strategy: auto
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build(hooks)
+    labels:
+      - dependencies
+      - pre-commit
+    groups:
+      hooks:
+        patterns:
+          - "*"
+
+  - package-ecosystem: dotnet-sdk
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:45"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 2
+    rebase-strategy: auto
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build(sdk)
+    labels:
+      - dependencies
+      - dotnet

@@ -2,6 +2,12 @@
   "version": 1,
   "isRoot": true,
   "tools": {
+    "nuke.globaltool": {
+      "version": "10.1.0",
+      "commands": [
+        "nuke"
+      ]
+    },
     "cyclonedx": {
       "version": "6.2.0",
       "commands": [

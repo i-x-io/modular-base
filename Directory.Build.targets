@@ -1,0 +1,16 @@
+<Project>
+  <!--
+    Directory.Build.props is imported before individual project properties, so
+    IsPackable is not reliable there. Apply package-only defaults after each
+    project has declared whether it is packable.
+  -->
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>ModularBase contributors</Authors>
+    <PackageTags>modularity;ports-and-adapters;domain-driven-design;dotnet</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <EnableStrictModeForCompatibleFrameworksInPackage>true</EnableStrictModeForCompatibleFrameworksInPackage>
+  </PropertyGroup>
+</Project>

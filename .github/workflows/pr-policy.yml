@@ -1,0 +1,78 @@
+name: Pull request policy
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+  # Required-check names must also be emitted for merge-queue commits. The
+  # pull-request-only jobs below are intentionally skipped for this event.
+  merge_group:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-policy-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  conventional-title:
+    name: Conventional pull request
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate pull request title
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            style
+            test
+          requireScope: false
+          validateSingleCommit: false
+
+  branch-and-issue:
+    name: Branch and issue policy
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name and linked issue
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$PR_AUTHOR" == *"[bot]" ]]; then
+            exit 0
+          fi
+
+          branch_pattern='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)/[1-9][0-9]*-[a-z0-9]+(-[a-z0-9]+)*$'
+          if [[ ! "$HEAD_BRANCH" =~ $branch_pattern ]]; then
+            printf 'Branch %s does not follow <type>/<issue>-<description>.\n' "$HEAD_BRANCH" >&2
+            exit 1
+          fi
+
+          shopt -s nocasematch
+          issue_pattern='(close[sd]?|fix(e[sd])?|resolve[sd]?)[[:space:]]+#[1-9][0-9]*'
+          if [[ ! "$PR_BODY" =~ $issue_pattern ]]; then
+            printf 'The pull request body must link an issue with Closes #123 (or an equivalent GitHub closing keyword).\n' >&2
+            exit 1
+          fi

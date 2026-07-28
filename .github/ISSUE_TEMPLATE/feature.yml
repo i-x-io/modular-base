@@ -1,0 +1,54 @@
+name: Feature request
+description: Propose a focused capability or public API change.
+title: "[Feature] "
+labels:
+  - enhancement
+  - triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the need before prescribing an implementation. New runtime dependencies require an explicit package and licensing decision.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What concrete consumer problem cannot be handled cleanly today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed contract
+      description: Show the smallest API or behavior change that would solve the problem.
+      render: csharp
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include direct composition and package-free alternatives where applicable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility and dependency impact
+      description: Describe source/binary compatibility, trimming/AOT, and any proposed external package or license.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I searched existing issues and discussions for this request.
+          required: true
+        - label: I am willing to help validate the proposed behavior.
+          required: false
