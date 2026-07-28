@@ -37,7 +37,8 @@ documented or centrally versioned.
 | Workflow linting | GitHub schemas, actionlint, and strict zizmor collection. |
 | CI | Linux, Windows, and macOS validation using the same NUKE `Validate` target. |
 | Pull requests | Issue forms, PR template, branch pattern, issue linkage, Conventional Commit title. |
-| Releases | Release Please manifest flow, protected component tags, exact tag/package match, GitHub Packages publish target. |
+| Classification | Native issue-form labels and official Labeler branch/path automation with a namespaced taxonomy. |
+| Releases | Release Please manifest flow, commit-generated changelog and release message, protected component tags, exact tag/package match, GitHub Packages publish target. |
 | Maintenance | Weekly dependency freshness and documentation link checks. |
 
 ## Pre-commit research outcome
@@ -151,8 +152,11 @@ Checked-in automation covers:
 - pull-request title, branch, and linked-issue policy;
 - four Dependabot ecosystems with grouped updates and cooldowns;
 - release PR, tag, GitHub release, package validation, and package publish;
+- a checked-in changelog and identical generated GitHub release message from
+  Conventional Commits;
 - weekly dependency freshness and Markdown link checks;
 - structured bug/feature forms, private-security routing, and a PR template;
+- native issue labels plus safe branch/path pull-request classification;
 - immutable action revisions, explicit token permissions, no credential
   persistence, and safe pull-request events.
 

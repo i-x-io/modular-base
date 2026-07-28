@@ -40,9 +40,11 @@ create or approve pull requests with the default token; release automation uses
 a dedicated GitHub App so its pull request triggers normal CI.
 
 Fork pull requests must never receive repository secrets. Current pull-request
-workflows require only read permissions and do not use `pull_request_target`.
-Do not introduce `pull_request_target` plus checkout or execution of untrusted
-pull-request code.
+validation workflows use the `pull_request` event with read permissions. The
+labeler is the sole `pull_request_target` workflow: it has only contents read
+and pull-request write access and calls the pinned official Labeler action
+without checkout or execution of pull-request code. Do not add any untrusted
+checkout, script, build, or secret to that workflow.
 
 ## Main branch ruleset
 
@@ -177,12 +179,29 @@ human member, because self-approval cannot provide independent review. Enable
 one required code-owner approval as soon as a second active maintainer joins,
 without making release automation unable to maintain its pull request.
 
-Create and consistently use at least these labels: `bug`, `enhancement`,
-`triage`, `security`, `dependencies`, `dotnet`, `github-actions`, `pre-commit`,
-`breaking-change`, `release`, `documentation`, `autorelease: pending`, and
+Use namespaced labels for human workflow decisions:
+
+- type: `type: bug`, `type: feature`, `type: documentation`, `type: tests`,
+  `type: performance`, `type: refactor`, `type: maintenance`, and
+  `type: release`;
+- area: `area: api`, `area: build`, `area: ci`, `area: dependencies`,
+  `area: documentation`, `area: hooks`, `area: packaging`, and `area: tests`;
+- status: `status: triage`, `status: blocked`, `status: ready`, and
+  `status: waiting`;
+- priority: `priority: critical`, `priority: high`, `priority: medium`, and
+  `priority: low`; and
+- compatibility: `impact: breaking`.
+
+Retain integration labels used by other tools: `security`, `dependencies`,
+`dotnet`, `github-actions`, `pre-commit`, `release`, `autorelease: pending`, and
 `autorelease: tagged`. Dependabot references the ecosystem labels in
-`.github/dependabot.yml`; absent labels are simply not applied, so create them
-before relying on label-based triage.
+`.github/dependabot.yml`, while Release Please owns its lifecycle labels.
+
+Issue forms apply existing type and triage labels natively. The pinned official
+`actions/labeler` workflow applies and synchronizes pull-request type and area
+labels from branch names and changed paths. All referenced labels are created
+up front, so the workflow needs `pull-requests: write` but not `issues: write`.
+It is deliberately informational and is not a required status check.
 
 ## Bootstrap order
 

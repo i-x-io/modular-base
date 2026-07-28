@@ -54,13 +54,20 @@ jobs:
       - name: Validate branch name and linked issue
         env:
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         shell: bash
         run: |
           set -euo pipefail
 
           if [[ "$PR_AUTHOR" == *"[bot]" ]]; then
+            exit 0
+          fi
+
+          release_branch_pattern='^release-please--branches--main--components--IX\.Modularity$'
+          if [[ "$HEAD_REPOSITORY" == "$GITHUB_REPOSITORY" && "$HEAD_BRANCH" =~ $release_branch_pattern && ",${PR_LABELS}," == *",autorelease: pending,"* ]]; then
             exit 0
           fi
 

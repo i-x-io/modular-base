@@ -2,8 +2,8 @@ name: Feature request
 description: Propose a focused capability or public API change.
 title: "[Feature] "
 labels:
-  - enhancement
-  - triage
+  - "type: feature"
+  - "status: triage"
 body:
   - type: markdown
     attributes:

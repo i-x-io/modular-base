@@ -2,8 +2,8 @@ name: Bug report
 description: Report reproducible incorrect behavior in IX.Modularity.
 title: "[Bug] "
 labels:
-  - bug
-  - triage
+  - "type: bug"
+  - "status: triage"
 body:
   - type: markdown
     attributes:
