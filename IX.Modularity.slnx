@@ -1,8 +1,2 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/IX.Modularity/IX.Modularity.csproj" />
-  </Folder>
-  <Folder Name="/test/">
-    <Project Path="test/IX.Modularity.Tests/IX.Modularity.Tests.csproj" />
-  </Folder>
 </Solution>
