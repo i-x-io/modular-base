@@ -29,7 +29,7 @@ jobs:
     steps:
       - name: Authorize release intent
         id: authorization
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const candidates = await github.paginate(
@@ -158,12 +158,12 @@ jobs:
         run: sha256sum --check artifacts/release-evidence/SHA256SUMS
 
       - name: Attest package provenance
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
         with:
           subject-path: artifacts/packages/${{ matrix.package.packageId }}.${{ matrix.package.version }}.nupkg
 
       - name: Attest package SBOM
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
         with:
           subject-path: artifacts/packages/${{ matrix.package.packageId }}.${{ matrix.package.version }}.nupkg
           sbom-path: artifacts/sbom/${{ matrix.package.packageId }}/${{ matrix.package.packageId }}.cdx.json
